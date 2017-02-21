@@ -10,11 +10,11 @@ cd ../
 ./autogen.sh
 ./configure --with-antlr-dir=$PWD/antlr-3.4 ANTLR=$PWD/antlr-3.4/bin/antlr3 --enable-optimized --enable-language-bindings=python
 make
-make install
 mkdir python_bindings
 cd python_bindings
-cp /usr/local/share/pyshared/CVC4.py .
-cp /usr/local/lib/pyshared/CVC4.so _CVC4.so
+cp `find ../ -name "CVC4.so"` _CVC4.so
+cp `find ../ -name "CVC4.py"` CVC4.py
 export PYTHONPATH=$PWD
+echo "================================================================================"
 echo "run export PYTHONPATH=$PWD"
 popd
