@@ -10,7 +10,7 @@ Breafly, given a JavaScript-like SharedArrayBuffer bounded execution
 program (see .txt files in the examples folder), EMME computes all
 valid executions according with the ECMA specification
 (http://tc39.github.io/ecmascript_sharedmem/shmem.html). The valid
-executions are provided as: 1) graphvis relational representation
+executions are provided as: 1) graphviz relational representation
 between memory events (i.e., mm*.dot), and 2) possible outputs (i.e.,
 outputs.txt) of the JS program (i.e., program.js).
 
