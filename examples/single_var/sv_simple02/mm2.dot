@@ -1,0 +1,12 @@
+digraph memory_model {
+rankdir=LR;
+id3_R_t2 -> id2_W_t1 [label = "RBF[0]", color="red"];
+id3_R_t2 -> id2_W_t1 [label = "RF", color="red"];
+id1_W_main -> id2_W_t1 [label = "HB", color="black"];
+id1_W_main -> id3_R_t2 [label = "HB", color="black"];
+id2_W_t1 -> id3_R_t2 [label = "HB", color="black"];
+id1_W_main -> id2_W_t1 [label = "MO", color="black"];
+id1_W_main -> id3_R_t2 [label = "MO", color="black"];
+id2_W_t1 -> id3_R_t2 [label = "MO", color="black"];
+id2_W_t1 -> id3_R_t2 [label = "SW", color="black"];
+}
