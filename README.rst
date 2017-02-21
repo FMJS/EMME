@@ -26,4 +26,4 @@ For lazy users, run:
   
 4) litmus.py -c "<path to d8> --harmony_sharedarraybuffer examples/single_var/sv_simple01/program.js" -o examples/single_var/sv_simple01/outputs.txt -n 1k -j 4 (to check if the d8 engine obeys the expected results)
 
-have a look at LICENSE
+For more details on the LICENSE, have a look at LICENSE.txt
