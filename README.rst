@@ -18,9 +18,12 @@ For more details have a look at docs/documentation.pdf.
 
 For lazy users, run:
 1) cd ext_tools && sudo get_CVC4.sh && cd .. (to install the CVC4 SMT solver)
+   
 2) make (to install python dependencies)
+   
 3) python emme.py examples/single_var/sv_simple01.txt (to generate
   the valid executions in the folder examples/single_var/sv_simple01/)
+  
 4) litmus.py -c "<path to d8> --harmony_sharedarraybuffer examples/single_var/sv_simple01/program.js"
   -o examples/single_var/sv_simple01/outputs.txt -n 1k -j 4 (to check
    if the d8 engine obeys the expected results)
