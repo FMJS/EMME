@@ -17,7 +17,7 @@ import sys
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JSV8Printer, CVC4Printer, PrintersFactory, PrinterType, NotRegisteredPrinterException
 
-from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor
+from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
 
 class Config():
@@ -34,16 +34,15 @@ class Config():
     
     def __init__(self):
         self.inputfile = None
-        self.preproc = None
-        self.expand_bounded_sets = None
-        self.verbosity = None
+        self.preproc = CPP
+        self.expand_bounded_sets = True
+        self.verbosity = 0
         self.defines = None
         self.prefix = None
-        self.sat = None
-        self.only_model = None
-        self.skip_solving = None
+        self.sat = False
+        self.only_model = False
+        self.skip_solving = False
         self.jsprinter = None
-    
 
 def main(config):
     verbosity = config.verbosity
@@ -211,7 +210,6 @@ def main(config):
         
 if __name__ == "__main__":
 
-    CPP = "cpp"
     preproc = None
     cpp_preproc = True
     expand_bounded_sets = True

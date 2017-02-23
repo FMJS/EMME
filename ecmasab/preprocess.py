@@ -17,6 +17,8 @@ import subprocess
 import argparse
 import six
 
+CPP = "cpp"
+
 class QuantPreprocessor():
     expand_sets = None
     verbosity = None
