@@ -67,15 +67,22 @@ def parse_and_generate(example):
     c4printer.print_block_type(program)
 
     jprinter = PrintersFactory.printer_by_name(JSV8Printer().NAME)
+    jprog = jprinter.print_program(program)
 
-    jprinter.print_program(program)
-
-    executionstr = open("%s/models.txt"%example,"r").read()
-
-    executions = parser.executions_from_string(executionstr)
-    c4printer.print_executions(executions)
-    jprinter.print_executions(program, executions)
-
+    with open("%s/program.js"%example,"r") as f:
+        a = f.read()
+        b = jprog
+        assert a == b
+    
+    execsstr = open("%s/models.txt"%example,"r").read()
+    execs = parser.executions_from_string(execsstr)
+    eprint = c4printer.print_executions(execs)
+    
+    with open("%s/outputs.txt"%example,"r") as f:
+        a = f.read()
+        b = jprinter.print_executions(program, execs)
+        assert a == b
+    
     assert True
 
 def be_parsing(example):

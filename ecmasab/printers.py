@@ -316,12 +316,14 @@ class JSV8Printer(JSPrinter):
             ret += "};`;\n"
 
 
+        blocks = [(x.name, x.size) for x in program.get_blocks()]
+        blocks.sort()
         ret += "var data = {\n"
-        for sab in program.get_blocks():
-            size = sab.get_size()
+        for sab in blocks:
+            size = sab[1]
             if (size % 8) != 0:
                 size = (int(size / 8)+1) * 8
-            ret += "%s_sab : new SharedArrayBuffer(%s),\n"%(sab.get_name(), size)
+            ret += "%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
         ret += "}\n"
 
         for thread in program.get_threads():
@@ -337,7 +339,7 @@ class JSV8Printer(JSPrinter):
             ret += "var w%s = new Worker(%s);\n"%(thread.get_name(), thread.get_name())
 
 
-        block_pars = ", ".join(["data.%s_sab"%str(x) for x in program.get_blocks()])
+        block_pars = ", ".join(["data.%s_sab"%str(x[0]) for x in blocks])
         for thread in program.get_threads():
             if thread.get_name() == MAIN:
                 continue

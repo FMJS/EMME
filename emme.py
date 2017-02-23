@@ -224,7 +224,7 @@ if __name__ == "__main__":
                        help='the input file describing the program')
     
 
-    jsprinters = [x.get_name() for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
+    jsprinters = [x.NAME for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
     djsprinter = JSV8Printer().NAME
 
     parser.set_defaults(jsprinter=djsprinter)
