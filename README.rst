@@ -6,7 +6,7 @@ with shared array memory access (i.e., SharedArrayBuffer).
 
 `Learn more <https://github.com/FMJS/emme>`_.
 
-Breafly, given a JavaScript-like SharedArrayBuffer bounded execution
+Briefly, given a JavaScript-like SharedArrayBuffer bounded execution
 program (see .txt files in the examples folder), EMME computes all
 valid executions according with the ECMA specification
 (http://tc39.github.io/ecmascript_sharedmem/shmem.html). The valid
