@@ -13,5 +13,5 @@ RUN yum install -y clang clang-devel llvm llvm-devel lbzip2 ncurses-devel
 RUN ln -s /usr/lib64/libtinfo.so /usr/lib64/libtinfo.so.5
 RUN cd EMME-master/ext_tools && git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 ENV PATH="/tmp/EMME-master/ext_tools/depot_tools":$PATH
-RUN cd EMME-master/ext_tools && mkdir v8 && cd v8 && fetch v8 && cd v8 && ./tools/dev/v8gen.py x64.release && ninja -C out.gn/x64.release -j 4
-RUN echo 'alias d8="/tmp/EMME-master/ext_tools/v8/v8/out.gn/x64.release/d8 --harmony_sharedarraybuffer"' >> ~/.bashrc
+RUN cd EMME-master/ext_tools && mkdir v8 && cd v8 && fetch v8 && cd v8 && git checkout 6d82e6182b765f5111724908d0579ea84a5141ea && ./tools/dev/v8gen.py x64.release && ninja -C out.gn/x64.release -j 4
+RUN cd EMME-master && echo "/tmp/EMME-master/ext_tools/v8/v8/out.gn/x64.release/d8 --harmony_sharedarraybuffer \$1" > run_v8.sh && chmod +x run_v8.sh
