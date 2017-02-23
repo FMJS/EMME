@@ -67,6 +67,7 @@ def test_sv_parsing():
     examples.append(sv%"16")
     examples.append(sv%"17")
     examples.append(sv%"18")
+    examples.append(sv%"19")
 
     # Double variables examples
     examples.append(dv%"01")

@@ -389,13 +389,14 @@ class JSV8Printer(JSPrinter):
 
 
         if (ordering == SC) and not is_float:
-            if operation == WRITE:
+            if not event_address:
+                addr = event.get_offset()
+                event_values = event.get_value()
+            else:
+                addr = event_address[0]/block_size
                 event_values = event.get_correct_value()
-                if not event_address:
-                    addr = event.get_offset()
-                    event_values = event.get_value()
-                else:
-                    addr = event_address[0]/block_size
+
+            if operation == WRITE:
                 operation = "Atomics.store(%s, %s, %s);"%(block_name, \
                                                         addr, \
                                                         event_values)
@@ -404,7 +405,7 @@ class JSV8Printer(JSPrinter):
             if operation == READ:
                 operation = "%s = Atomics.load(%s, %s);"%(event_name, \
                                                           block_name, \
-                                                          event_address[0]/block_size)
+                                                          addr)
                 if postfix:
                     operation += " print(\"%s_\"+%s+\": \"+%s);"%(event_name, postfix, event_name)
                 else:

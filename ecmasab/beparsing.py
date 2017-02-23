@@ -521,7 +521,7 @@ class BeParser():
 
                 if floop:
                     address = None
-                    offset = "".join(list(command.address.asList())[0])
+                    offset = "".join(list(command.address.asList()[1:])[0])
                 else:
                     addr = int(command.address[1])
                     baddr = varsize*addr

@@ -67,7 +67,8 @@ def main(config):
 
     if verbosity > 0:
         print("** Running with path \"%s\" **\n"%(config.prefix))
-        
+
+
     # Parsing of the bounded execution #
     try:
         with open(config.inputfile, "r") as f:
