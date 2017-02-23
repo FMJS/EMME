@@ -64,18 +64,12 @@ def main(config):
     execs = config.prefix+"outputs.txt"
     mm = ("/".join(abspath.split("/")[:-1]))+"/model/memory_model.cvc"
 
-
     if verbosity > 0:
         print("** Running with path \"%s\" **\n"%(config.prefix))
 
-
     # Parsing of the bounded execution #
-    try:
-        with open(config.inputfile, "r") as f:
-            program = parser.program_from_string(f.read())
-    except Exception as e:
-        print(e)
-        sys.exit(1)
+    with open(config.inputfile, "r") as f:
+        program = parser.program_from_string(f.read())
 
     if verbosity > 0:
         sys.stdout.write("Generating bounded execution... ")
@@ -131,8 +125,6 @@ def main(config):
     if config.only_model:
         sys.exit(0)
 
-
-
     # Running the solver to generate all sat models #
     c4solver = CVC4Solver()
     c4solver.set_verbosity(verbosity)
@@ -159,14 +151,12 @@ def main(config):
             sys.stdout.write("DONE\n")
             sys.stdout.flush()
 
-            
     if verbosity > 0:
         if totmodels > 0:
             print(" -> Found %s total models"%(totmodels))
         else:
             print(" -> No viable executions found")
 
-                
     if verbosity > 0:
         sys.stdout.write("Generating JS program... ")
         sys.stdout.flush()
@@ -190,34 +180,23 @@ def main(config):
         executions = None
         jsexecs = []
         
-        try:
-            with open(models, "r") as modelfile:
-                executions = parser.executions_from_string(modelfile.read())
-        except Exception as e:
-            print(e)
-
+        with open(models, "r") as modelfile:
+            executions = parser.executions_from_string(modelfile.read())
 
         with open(execs, "w") as exefile:
             jsexecs = jprinter.compute_possible_executions(program, executions)
             exefile.write("\n".join(jsexecs))
             
         # Generation of all possible outputs for the JS litmus test #
-        try:
-            with open(execs, "w") as exefile:
-                jsexecs = jprinter.compute_possible_executions(program, executions)
-                exefile.write("\n".join(jsexecs))
-        except Exception as e:
-            print(e)
+        with open(execs, "w") as exefile:
+            jsexecs = jprinter.compute_possible_executions(program, executions)
+            exefile.write("\n".join(jsexecs))
 
         # Generation of all possible MM interpretations #
-        try:
-            mms = dprinter.print_executions(program, executions)
-            for i in range(len(mms)):
-                with open(dots%(str(i+1)), "w") as dot:
-                    dot.write(mms[i])
-        except Exception as e:
-            print(e)
-            
+        mms = dprinter.print_executions(program, executions)
+        for i in range(len(mms)):
+            with open(dots%(str(i+1)), "w") as dot:
+                dot.write(mms[i])
 
         if verbosity > 0:
             sys.stdout.write("DONE\n")
@@ -335,5 +314,9 @@ if __name__ == "__main__":
     config.skip_solving = skip_solving
     config.jsprinter = jsprinter
 
-    main(config)
+    try:
+        main(config)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
