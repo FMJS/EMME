@@ -32,17 +32,11 @@ class QuantPreprocessor():
         self.expand_sets = True
         self.verbosity = 0
 
+    def set_verbosity(self, verbosity):
+        self.verbosity = verbosity
+        
     def set_expand_sets(self, value):
         self.expand_sets = value
-
-    def get_expand_sets(self):
-        return self.expand_sets
-
-    def set_verbosity(self, value):
-        self.verbosity = value
-
-    def get_verbosity(self):
-        return self.verbosity
 
     def __cleanup_model(self, model):
         lines = [x for x in model.split("\n") if ((x != "") and (x[0] != '%'))]
@@ -175,7 +169,7 @@ class QuantPreprocessor():
                 cond3 = (not " IN " in self.__print_formula(formula[2:]))
 
         if cond1 and cond2 and cond3:
-            if self.verbosity > 0:
+            if self.verbosity > 1:
                 print("%% Processing quantifier %s: %s" % (quantifier, self.__print_formula(formula)))
             if self.expand_sets or (quantifier == self.BIGUNION) or (quantifier == self.BIGSUM):
                 value = self.__sub_quantifier_expand(formula, quantifier, set_dict)
@@ -190,52 +184,6 @@ class QuantPreprocessor():
 
         return formula
 
-
-    def __find_closing_par(self, string, index):
-
-        pos = 1
-        while index < len(string):
-            char = string[index]
-            if char == "(":
-                pos += 1
-            if char == ")":
-                pos -= 1
-
-            if pos == 0:
-                return index
-
-            index += 1
-
-
-    def __process_quantifier_td_int(self, formula, set_dict, set_type_dict):
-        quantifiers = self.FORALL + "|" + self.EXISTS + "|" + self.BIGUNION + "|" + self.BIGSUM
-        value = re.search("(%s)\s\([a-zA-Z0-9 ,_]+IN "%quantifiers, formula)
-        quantifier = value.group(0)
-
-        begin = formula.find(quantifier)
-        end = self.__find_closing_par(formula, begin)
-
-        sub_formula = formula[begin:end]
-
-        quantifier = quantifier.split()[0]
-
-        new_formula = self.__get_all_splits(sub_formula, set_dict)
-        operation = " AND " if quantifier == self.FORALL else \
-                    " OR " if quantifier == self.EXISTS else \
-                    " | " if quantifier == self.BIGUNION else \
-                    " + " if quantifier == self.BIGSUM else None
-        new_formula = operation.join(new_formula)
-
-        return formula.replace(sub_formula, new_formula)
-
-    def __process_quantifier_td(self, formula, set_dict, set_type_dict):
-
-        while " IN " in formula:
-            formula = self.__process_quantifier_td_int(formula, set_dict, set_type_dict)
-
-        return formula
-
-
     def __process_quantifier(self, formula, set_dict, set_type_dict):
         sup = [True]
         value = True
@@ -244,8 +192,6 @@ class QuantPreprocessor():
             formula = self.__process_quantifier_int(formula, set_dict, set_type_dict, sup)
 
         return formula
-
-
 
     def __get_all_splits(self, el, set_dict):
         set_range = re.search("(?<=IN\s)\s*[a-zA-Z0-9_\.]*\s*(?=\)\s:)", el).group(0)

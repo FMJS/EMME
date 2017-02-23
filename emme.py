@@ -110,6 +110,7 @@ def main(config):
 
     # Preprocessing the quantifiers #
     qupre = QuantPreprocessor()
+    qupre.set_verbosity(config.verbosity)
     qupre.set_expand_sets(config.expand_bounded_sets)
     strmodel = qupre.preprocess_from_string(strmodel)
 
