@@ -127,7 +127,7 @@ def main(config):
 
     if verbosity > 0:
         print("** Running with path \"%s\" **\n"%(config.get_prefix()))
-
+        
     # Parsing of the bounded execution #
     try:
         with open(config.get_inputfile(), "r") as f:
@@ -254,6 +254,11 @@ def main(config):
                 executions = parser.executions_from_string(modelfile.read())
         except Exception as e:
             print(e)
+
+
+        with open(execs, "w") as exefile:
+            jsexecs = jprinter.compute_possible_executions(program, executions)
+            exefile.write("\n".join(jsexecs))
             
         # Generation of all possible outputs for the JS litmus test #
         try:

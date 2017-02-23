@@ -16,66 +16,63 @@ import unittest
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import CVC4Printer, JSV8Printer
 
-class ParserTestSuite(unittest.TestCase):
-    """Basic test cases."""
+def parse_and_generate(example):
 
-    def __parsing(self, example):
+    strp = open("%s.txt"%example,"r").read()
 
-        strp = open("%s.txt"%example,"r").read()
+    parser = BeParser()
+    program = parser.program_from_string(strp)
 
-        parser = BeParser()
-        program = parser.program_from_string(strp)
+    c4printer = CVC4Printer()
 
-        c4printer = CVC4Printer()
+    c4printer.print_program(program)
+    c4printer.print_data_type(program)
+    c4printer.print_block_type(program)
 
-        c4printer.print_program(program)
-        c4printer.print_data_type(program)
-        c4printer.print_block_type(program)
+    jprinter = JSV8Printer()
 
-        jprinter = JSV8Printer()
+    jprinter.print_program(program)
 
-        jprinter.print_program(program)
+    executionstr = open("%s/models.txt"%example,"r").read()
 
-        executionstr = open("%s/models.txt"%example,"r").read()
+    executions = parser.executions_from_string(executionstr)
+    c4printer.print_executions(executions)
+    jprinter.print_executions(program, executions)
 
-        executions = parser.executions_from_string(executionstr)
-        c4printer.print_executions(executions)
-        jprinter.print_executions(program, executions)
+    assert True
 
-        assert True
+def test_sv_parsing():
+    sv = "examples/single_var/sv_simple%s"
+    dv = "examples/double_vars/dv_simple%s"
+    tv = "examples/triple_vars/tv_simple%s"
+    
+    examples = []
 
-    def test_parsing01(self):
-        self.__parsing("examples/single_var/sv_simple01")
-        
-    def test_parsing02(self):
-        self.__parsing("examples/single_var/sv_simple02")
+    # Single variable examples
+    examples.append(sv%"01")
+    examples.append(sv%"02")
+    examples.append(sv%"03")
+    examples.append(sv%"04")
+    examples.append(sv%"05")
+    examples.append(sv%"06")
+    examples.append(sv%"07")
+    examples.append(sv%"08")
+    examples.append(sv%"09")
+    examples.append(sv%"10")
+    examples.append(sv%"11")
+    examples.append(sv%"12")
+    examples.append(sv%"13")
+    examples.append(sv%"14")
+    examples.append(sv%"15")
+    examples.append(sv%"16")
+    examples.append(sv%"17")
+    examples.append(sv%"18")
 
-    def test_parsing03(self):
-        self.__parsing("examples/single_var/sv_simple03")
-        
-    def test_parsing04(self):
-        self.__parsing("examples/single_var/sv_simple04")
-        
-    def test_parsing09(self):
-        self.__parsing("examples/single_var/sv_simple09")
-        
-    def test_parsing05(self):
-        self.__parsing("examples/single_var/sv_simple05")
-
-    def test_parsing08(self):
-        self.__parsing("examples/single_var/sv_simple08")
-        
-    def test_parsing13(self):
-        self.__parsing("examples/single_var/sv_simple13")
-        
-    def test_parsing14(self):
-        self.__parsing("examples/single_var/sv_simple14")
-        
-    def test_parsing10(self):
-        self.__parsing("examples/single_var/sv_simple10")
-        
-    def test_parsing11(self):
-        self.__parsing("examples/single_var/sv_simple11")
-
-if __name__ == "__main__":
-    unittest.main()
+    # Double variables examples
+    examples.append(dv%"01")
+    
+    # Triple variables examples
+    examples.append(tv%"01")
+    
+    for example in examples:
+        yield parse_and_generate, example

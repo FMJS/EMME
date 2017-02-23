@@ -7,7 +7,7 @@ ASSERT (id1_W_main.ID = id1_W_main_Type) AND
        (id1_W_main.O = W) AND
        (id1_W_main.T = NT) AND
        (id1_W_main.R = I) AND
-       (id1_W_main.M = {Int(0), Int(1), Int(2), Int(3), Int(4), Int(5), Int(6), Int(7), Int(8), Int(9), Int(10)}) AND
+       (id1_W_main.M = {Int(0), Int(1), Int(2), Int(3), Int(4), Int(5), Int(6), Int(7), Int(8), Int(9), Int(10), Int(11)}) AND
        (id1_W_main.B = x);
 
 id2_W_t1 : MEM_OP_TYPE;

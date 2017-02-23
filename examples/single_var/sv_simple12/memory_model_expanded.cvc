@@ -40,7 +40,7 @@ ASSERT (id1_W_main.ID = id1_W_main_Type) AND
        (id1_W_main.O = W) AND
        (id1_W_main.T = NT) AND
        (id1_W_main.R = I) AND
-       (id1_W_main.M = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) AND
+       (id1_W_main.M = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}) AND
        (id1_W_main.B = x);
 id2_W_t1 : MEM_OP_TYPE;
 ASSERT (id2_W_t1.ID = id2_W_t1_Type) AND

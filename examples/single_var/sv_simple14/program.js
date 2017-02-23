@@ -2,13 +2,13 @@ if (this.Worker) {
 (function execution() {
 var t1 =
 `onmessage = function(data) {
-var x = new Int8Array(data.x_sab); x[0] = 1.00;
-var x = new Int8Array(data.x_sab); x[1] = 1.00;
+var x = new Int8Array(data.x_sab); x[0] = 1;
+var x = new Int8Array(data.x_sab); x[1] = 1;
 };`;
 var t2 =
 `onmessage = function(data) {
-var x = new Int8Array(data.x_sab); x[1] = 2.00;
-var x = new Int8Array(data.x_sab); x[2] = 2.00;
+var x = new Int8Array(data.x_sab); x[1] = 2;
+var x = new Int8Array(data.x_sab); x[2] = 2;
 };`;
 var t3 =
 `onmessage = function(data) {

@@ -11,7 +11,7 @@
 import six
 import itertools
 
-from ecmasab.execution import Executions, BLOCKING_RELATIONS
+from ecmasab.execution import Executions, BLOCKING_RELATIONS, For_Loop
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN, TYPE
 
 class NotRegisteredPrinterException(Exception):
@@ -139,7 +139,7 @@ class CVC4Printer():
             ret += self.print_thread(thread) + "\n"
 
         for thread in program.get_threads():
-            for event in thread.get_events():
+            for event in thread.get_events(True):
                 ret += self.print_event(event) + "\n"
 
         for thread in program.get_threads():
@@ -173,12 +173,12 @@ class CVC4Printer():
         return ret
 
     def __print_thread_events_set(self, thread):
-        return "ASSERT %s.E = {%s};" % (str(thread.get_name()), str(", ".join([x.get_name() for x in thread.get_events()])))
+        return "ASSERT %s.E = {%s};" % (str(thread.get_name()), str(", ".join([x.get_name() for x in thread.get_events(True)])))
     
     def __print_thread_program_order(self, thread):
-        if len(thread.get_events()) < 2:
+        if len(thread.get_events(True)) < 2:
             return "ASSERT %s.PO = empty_rel_set;" % (thread.get_name())
-        thread_events = thread.get_events()
+        thread_events = thread.get_events(True)
         pairs = []
         for i in range(len(thread_events)):
             for j in range(len(thread_events[i+1:])):
@@ -198,7 +198,7 @@ class CVC4Printer():
         rom_events = []
         wom_events = []
         for thread in program.get_threads():
-            events += [x for x in thread.get_events()]
+            events += [x for x in thread.get_events(True)]
 
         rom_events = [x.get_name() for x in events if x.is_read_or_modify()]
         wom_events = [x.get_name() for x in events if x.is_write_or_modify()]
@@ -307,8 +307,11 @@ class JSV8Printer(JSPrinter):
                 continue
             ret += "var %s =\n"%thread.get_name()
             ret += "`onmessage = function(data) {\n"
-            for ev in thread.get_events():
-                ret += self.print_event(ev)
+            for ev in thread.get_events(False):
+                if isinstance(ev, For_Loop):
+                    ret += self.print_floop(ev)
+                else:
+                    ret += self.print_event(ev)
 
             ret += "};`;\n"
 
@@ -324,7 +327,7 @@ class JSV8Printer(JSPrinter):
         for thread in program.get_threads():
             if thread.get_name() != MAIN:
                 continue
-            for ev in thread.get_events():
+            for ev in thread.get_events(True):
                 ret += self.print_event(ev)
 
 
@@ -346,25 +349,39 @@ class JSV8Printer(JSPrinter):
 
         return ret
 
-    def print_event(self, event):
+    def print_floop(self, floop):
+        ret = ""
+        ret += "for(%s = %s; %s <= %s; %s++){\n"%(floop.get_cname(), \
+                                                 floop.get_fromind(), \
+                                                 floop.get_cname(), \
+                                                 floop.get_toind(),
+                                                 floop.get_cname())
+        for ev in floop.get_events():
+            ret += self.print_event(ev, floop.get_cname())
+
+        ret += "}\n"
+
+        return ret
+    
+    def print_event(self, event, postfix=None):
         operation = event.get_operation()
         ordering = event.get_ordering()
         block_name = event.get_block().get_name()
         event_name = event.get_name()
         event_address = event.get_address()
         tear = event.get_tear()
-        block_size = len(event_address)
+        block_size = event.get_size()
         is_float = tear == WTEAR
         var_def = ""
         
         if (ordering != INIT):
             if is_float:
                 var_def = "var %s = new Float%sArray(data.%s);"%(block_name, \
-                                                                  len(event_address)*8, \
+                                                                  block_size*8, \
                                                                   block_name+"_sab")
             else:
                 var_def = "var %s = new Int%sArray(data.%s);"%(block_name, \
-                                                           len(event_address)*8, \
+                                                           block_size*8, \
                                                            block_name+"_sab")
 
         if (operation == WRITE) and (ordering == INIT):
@@ -374,8 +391,13 @@ class JSV8Printer(JSPrinter):
         if (ordering == SC) and not is_float:
             if operation == WRITE:
                 event_values = event.get_correct_value()
+                if not event_address:
+                    addr = event.get_offset()
+                    event_values = event.get_value()
+                else:
+                    addr = event_address[0]/block_size
                 operation = "Atomics.store(%s, %s, %s);"%(block_name, \
-                                                        event_address[0]/block_size, \
+                                                        addr, \
                                                         event_values)
 
 
@@ -383,21 +405,38 @@ class JSV8Printer(JSPrinter):
                 operation = "%s = Atomics.load(%s, %s);"%(event_name, \
                                                           block_name, \
                                                           event_address[0]/block_size)
-                operation += " print(\"%s: \"+%s);"%(event_name, event_name)
+                if postfix:
+                    operation += " print(\"%s_\"+%s+\": \"+%s);"%(event_name, postfix, event_name)
+                else:
+                    operation += " print(\"%s: \"+%s);"%(event_name, event_name)
 
         if (ordering == UNORD) or is_float:
-            if operation == WRITE:
+            if not event_address:
+                addr = event.get_offset()
+                event_values = event.get_value()
+            else:
+                addr = event_address[0]/block_size
                 event_values = event.get_correct_value()
-                operation = ("%s[%s] = "+self.float_pri_js+";")%(block_name, \
-                                                                 event_address[0]/block_size, \
-                                                                 event_values)
+                    
+            if operation == WRITE:
+                if is_float:
+                    event_values = self.float_pri_js%event_values
+
+                operation = ("%s[%s] = %s;")%(block_name, \
+                                              addr, \
+                                              event_values)
 
             if operation == READ:
+                approx = self.float_app_js if is_float else ""
+                    
                 operation = "%s = %s[%s];"%(event_name, \
                                             block_name, \
-                                            event_address[0]/block_size)
-                approx = self.float_app_js if is_float else ""
-                operation += " print(\"%s: \"+%s%s);"%(event_name, event_name, approx)
+                                            addr)
+
+                if postfix:
+                    operation += " print(\"%s_\"+%s+\": \"+%s%s);"%(event_name, postfix, event_name, approx)
+                else:
+                    operation += " print(\"%s: \"+%s%s);"%(event_name, event_name, approx)
             
 
         return var_def+" "+operation+"\n"

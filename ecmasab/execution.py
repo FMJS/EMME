@@ -282,7 +282,7 @@ class Program():
     def get_events(self):
         events = []
         for thread in self.threads:
-            events += thread.get_events()
+            events += thread.get_events(True)
         return events
 
     def sort_threads(self):
@@ -327,15 +327,29 @@ class Block():
             self.size = size
         
 class Thread():
-    events = []
+    events = None
+    uevents = None
     name = None
     
     def __init__(self, name):
         self.events = []
+        self.uevents = []
         self.name = name
         
-    def get_events(self):
-        return self.events
+    def get_events(self, expand_loops):
+        if not expand_loops:
+            return self.events
+
+        if self.uevents:
+            return self.uevents
+        
+        i = 0
+        self.uevents = self.events
+        while i < len(self.uevents):
+            if isinstance(self.uevents[i], For_Loop):
+                self.uevents = self.uevents[:i] + self.uevents[i].get_uevents() + self.uevents[i+1:]
+            i += 1
+        return self.uevents
 
     def __eq__(self, item):
         if self.get_name() != item.get_name():
@@ -345,10 +359,10 @@ class Thread():
         return True
 
     def get_blocks(self):
-        blocks = []
-        for event in self.events:
-            blocks.append(event.get_block())
-        return blocks
+        blocks = set([])
+        for event in self.get_events(True):
+            blocks.add(event.get_block())
+        return list(blocks)
     
     def get_name(self):
         return self.name
@@ -361,7 +375,83 @@ class Thread():
         for event in events:
             self.events.append(event)
         return self.events
+
+
+class For_Loop():
+    events = None
+    uevents = None
+    fromind = None
+    toind = None
+    cname = None
     
+    def __init__(self):
+        self.events = []
+        self.uevents = None
+        self.fromind = 0
+        self.toind = 0
+        self.cname = None
+
+    def set_values(self, cname, frind, toind):
+        self.cname = cname
+        self.fromind = frind
+        self.toind = toind
+        
+    def get_events(self):
+        return self.events
+
+    def get_uevents(self):
+        if not self.uevents:
+            self.uevents = []
+            self.__compute_events()
+        return self.uevents
+
+    def get_cname(self):
+        return self.cname
+
+    def get_fromind(self):
+        return self.fromind
+
+    def get_toind(self):
+        return self.toind
+    
+    def append(self, event):
+        self.events.append(event)
+
+    def __compute_events(self):
+        for i in range(self.fromind, self.toind+1):
+            for event in self.events:
+                size = event.get_size()
+                value = event.get_value()
+                offset = event.get_offset()
+
+                offset = offset.replace(self.cname,str(i))
+                offset = int(eval(offset))
+                
+                baddr = size*offset
+                eaddr = (size*(offset+1))-1
+                address = range(baddr, eaddr+1, 1)
+                name = "%s_%s"%(event.get_name(), i)
+
+                me = Memory_Event(name = name, \
+                                  operation = event.get_operation(), \
+                                  tear = event.get_tear(), \
+                                  ordering = event.get_ordering(), \
+                                  address = address, \
+                                  block = event.get_block(),\
+                                  values = None)
+
+                if value:
+                    value = value.replace(self.cname,str(i))
+                    if event.is_wtear():
+                        value = float(eval(value))
+                        me.set_values_from_float(value, baddr, eaddr)
+                    else:
+                        value = int(eval(value))
+                        me.set_values_from_int(value, baddr, eaddr)
+
+                self.uevents.append(me)
+
+                
 class Memory_Event():
     name = None
     operation = None
@@ -372,6 +462,8 @@ class Memory_Event():
     values = None
     id_ev = 1
     offset = None
+    size = None
+    value = None
 
     op_purpose = None
     
@@ -388,6 +480,8 @@ class Memory_Event():
         self.block = block
         self.values = values
         self.op_purpose = None
+        self.size = None
+        self.value = None
 
         if values:
             self.block.update_size(len(values))
@@ -442,6 +536,12 @@ class Memory_Event():
     def get_tear(self):
         return self.tear
 
+    def is_ntear(self):
+        return self.tear == NTEAR
+
+    def is_wtear(self):
+        return self.tear == WTEAR
+
     def get_ordering(self):
         return self.ordering
 
@@ -451,14 +551,36 @@ class Memory_Event():
     def get_values(self):
         return self.values
 
+    def set_param_value(self, size, value):
+        self.size = size
+        self.value = value
+
+    def get_param_value(self):
+        return self.value
+        
     def set_values(self, values):
+        self.offset = None
         self.values = values
 
         self.block.update_size(len(values))
 
     def set_op_purpose(self, op_purpose):
         self.op_purpose = op_purpose
-        
+
+    def set_offset(self, offset):
+        self.offset = offset
+
+    def get_size(self):
+        if not self.size:
+            self.size = len(self.address)
+        return self.size
+
+    def get_value(self):
+        return self.value
+
+    def get_offset(self):
+        return self.offset
+    
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
         size = (end-begin)+1
@@ -467,7 +589,7 @@ class Memory_Event():
 
         self.tear = NTEAR
 
-        self.block.update_size(end)
+        self.block.update_size(end+1)
 
     def set_values_from_float(self, float_value, begin, end):
         self.offset = begin
@@ -477,7 +599,7 @@ class Memory_Event():
 
         self.tear = WTEAR
 
-        self.block.update_size(end)
+        self.block.update_size(end+1)
         
     def set_int_values(self, int_value):
         self.address = range(0, self.block.get_size(), 1)
