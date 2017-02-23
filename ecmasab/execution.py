@@ -76,15 +76,6 @@ class Executions():
 
     def get_size(self):
         return len(self.executions)
-
-    def __eq__(self, item):
-        if (self.get_program() != item.get_program()):
-            return False
-        other_execs = item.get_executions()
-        for execution in self.executions:
-            if execution not in other_execs:
-                return False
-        return True
     
 class Execution():
     happens_before = None
@@ -106,21 +97,6 @@ class Execution():
         self.synchronizes_with = Relation(SW)
         self.reads_values = []
 
-    def __eq__(self, item):
-        checks = []
-        checks.append((self.get_HB(), item.get_HB()))
-        checks.append((self.get_MO(), item.get_MO()))
-        checks.append((self.get_RBF(), item.get_RBF()))
-        checks.append((self.get_RF(), item.get_RF()))
-        checks.append((self.get_SW(), item.get_SW()))
-        checks.append((self.get_program(), item.get_program()))
-        for check in checks:
-            if check[0] != check[1]:
-                return False
-
-        return True
-
-    
     def __repr__(self):
         relations = []
         relations.append(self.happens_before)
@@ -220,16 +196,6 @@ class Relation():
     def __repr__(self):
         return "%s = {%s}"%(self.name, ", ".join([str(x) for x in self.tuples]))
 
-    def __eq__(self, item):
-        if item.get_name() != self.get_name():
-            return False
-        other_tuples = item.get_tuples()
-        for tup in self.tuples:
-            if tup not in other_tuples:
-                return False
-            
-        return True
-    
     def get_name(self):
         return self.name
 
@@ -260,13 +226,6 @@ class Program():
         self.threads = []
         self.blocks = []
 
-    def __eq__(self, item):
-        other_threads = item.get_threads()
-        for thread in self.threads:
-            if thread not in other_threads:
-                return False
-        return True
-        
     def add_thread(self, thread):
         self.threads.append(thread)
 
@@ -350,13 +309,6 @@ class Thread():
                 self.uevents = self.uevents[:i] + self.uevents[i].get_uevents() + self.uevents[i+1:]
             i += 1
         return self.uevents
-
-    def __eq__(self, item):
-        if self.get_name() != item.get_name():
-            return False
-        if self.get_events() != item.get_events():
-            return False
-        return True
 
     def get_blocks(self):
         blocks = set([])
@@ -488,10 +440,6 @@ class Memory_Event():
 
     def __repr__(self):
         return self.name
-
-    def __eq__(self, item):
-        return self.get_name() == item.get_name()
-
 
     @staticmethod        
     def reset_unique_names():

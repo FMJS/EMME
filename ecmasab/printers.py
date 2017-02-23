@@ -10,9 +10,13 @@
 
 import six
 import itertools
+import re
 
 from ecmasab.execution import Executions, BLOCKING_RELATIONS, For_Loop
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN, TYPE
+from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
+from ecmasab.exceptions import UnreachableCodeException
+
 
 class NotRegisteredPrinterException(Exception):
     pass
@@ -21,6 +25,7 @@ class PrinterType():
     SMT = 0
     JS = 1
     GRAPH = 2
+    BEXEC = 3
 
 class PrintersFactory():
     printers = {}
@@ -32,6 +37,7 @@ class PrintersFactory():
         PrintersFactory.register_printer(JSV8Printer())
         PrintersFactory.register_printer(JSSMPrinter())
         PrintersFactory.register_printer(DotPrinter())
+        PrintersFactory.register_printer(BePrinter())
     
     @staticmethod
     def register_printer(printer):
@@ -62,9 +68,6 @@ class JSPrinter():
     def __init__(self):
         pass
 
-    def get_name(self):
-        return self.NAME
-    
     def print_executions(self, program, interps):
         pass
 
@@ -84,9 +87,6 @@ class CVC4Printer():
     def __init__(self):
         pass
 
-    def get_name(self):
-        return self.NAME
-    
     def print_executions(self, interps):
         ret = []
         for interp in interps.get_executions():
@@ -466,9 +466,6 @@ class DotPrinter():
     def __init__(self):
         pass
 
-    def get_name(self):
-        return self.NAME
-    
     def print_executions(self, program, interps):
         graphs = []
         for interp in interps.get_executions():
@@ -509,5 +506,143 @@ class DotPrinter():
     
     def print_event(self, event):
         pass
+    
+    
+
+class BePrinter():
+    NAME = "BE"
+    TYPE = PrinterType.BEXEC
+
+    float_pri_js = "%.2f"
+    
+    def __init__(self):
+        pass
+
+    def print_execution(self, program, interp):
+        return self.print_program(program)
+    
+    def print_program(self, program):
+        program.sort_threads()
+        ret = ""
+
+        blocks = [x.name for x in program.get_blocks()]
+        blocks.sort()
+        for sab in blocks:
+            ret += "var %s = new SharedArrayBuffer();\n"%(sab)
+
+        for thread in program.get_threads():
+            if thread.get_name() != MAIN:
+                continue
+            for ev in thread.get_events(True):
+                ret += self.print_event(ev)
+
+        for thread in program.get_threads():
+            if thread.get_name() == MAIN:
+                continue
+            ret += "Thread %s {\n"%(thread.get_name())
+            for ev in thread.get_events(False):
+                if isinstance(ev, For_Loop):
+                    ret += self.print_floop(ev)
+                else:
+                    ret += self.print_event(ev)
+
+            ret += "}\n"
+                
+        return ret
+
+    def print_event(self, event, postfix=None):
+        operation = event.get_operation()
+        ordering = event.get_ordering()
+        block_name = event.get_block().get_name()
+        event_name = event.get_name()
+        event_address = event.get_address()
+        tear = event.get_tear()
+        block_size = event.get_size()
+        is_float = tear == WTEAR
+        
+        if (ordering == INIT):
+            return ""
+        
+        if (operation == WRITE) and (ordering == INIT):
+            operation = ""
+
+
+        if (ordering == SC) and not is_float:
+            if not event_address:
+                addr = event.get_offset()
+                event_values = event.get_value()
+            else:
+                addr = event_address[0]/block_size
+                event_values = event.get_correct_value()
+
+            if operation == WRITE:
+                operation = "Atomics.store(%s%s, %s, %s);"%(block_name, \
+                                                            self.__get_block_size(block_size, False), \
+                                                            addr, \
+                                                            event_values)
+
+
+            if operation == READ:
+                operation = "print(Atomics.load(%s%s, %s));"%(block_name, \
+                                                        self.__get_block_size(block_size, False), \
+                                                        addr)
+
+        if (ordering == UNORD) or is_float:
+            if not event_address:
+                addr = event.get_offset()
+                event_values = event.get_value()
+            else:
+                addr = event_address[0]/block_size
+                event_values = event.get_correct_value()
+
+            if operation == WRITE:
+                if is_float:
+                    event_values = self.float_pri_js%event_values
+                    event_values = re.sub("0+\Z","", event_values)
+                
+                operation = ("%s%s[%s] = %s;")%(block_name, \
+                                                self.__get_block_size(block_size, is_float),\
+                                                addr, \
+                                                event_values)
+
+            if operation == READ:
+                operation = "print(%s%s[%s]);"%(block_name, \
+                                                self.__get_block_size(block_size, is_float),\
+                                                addr)            
+
+        return operation+"\n"
+
+
+    def __get_block_size(self, size, isfloat):
+        if not isfloat:
+            if size == 1:
+                return T_INT8
+            elif size == 2:
+                return T_INT16
+            elif size == 4:
+                return T_INT32
+            else:
+                raise UnreachableCodeException("Int size %s not valid"%str(size))
+            
+        if isfloat:
+            if size == 4:
+                return T_FLO32
+            elif size == 8:
+                return T_FLO64
+            else:
+                raise UnreachableCodeException("Float size %s not valid"%str(size))
+    
+    def print_floop(self, floop):
+        ret = ""
+        ret += "for(%s = %s..%s) {\n"%(floop.get_cname(), \
+                                    floop.get_fromind(), \
+                                    floop.get_toind())
+        for ev in floop.get_events():
+            ret += self.print_event(ev, floop.get_cname())
+
+        ret += "}\n"
+
+        return ret
+    
     
     

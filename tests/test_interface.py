@@ -12,6 +12,7 @@
 
 import sys
 import unittest
+import shutil
 
 from ecmasab.printers import JSV8Printer
 from emme import Config, main
@@ -58,27 +59,35 @@ ex_tv.append(tv%"01")
 examples = ex_sv + ex_dv + ex_tv
 
 
-def run_all(example, skip_solving, sat):
+def run_all(example, skip_solving, sat, expand):
 
     config = Config()
     config.inputfile = example+".txt"
     config.prefix = example+"/"
     if sat:
         config.prefix = "/tmp/"+example+"/"
+        shutil.rmtree(config.prefix)
     config.sat = sat
     config.verbosity = 3
     config.jsprinter = JSV8Printer().NAME
     config.skip_solving = skip_solving
-    
-    main(config)
-    
+    expand_bounded_sets = expand
+
+    try:
+        main(config)
+    except:
+        assert False
+        
     assert True
 
 def test_generation():
     for example in examples:
-        yield run_all, example, True, False
+        yield run_all, example, True, False, True
     
 def test_all():
     for example in ex_sv_s:
-        yield run_all, example, False, True
+        yield run_all, example, False, True, True
 
+    for example in ex_sv_s:
+        yield run_all, example, False, True, False
+        

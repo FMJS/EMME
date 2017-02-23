@@ -58,8 +58,8 @@ class CVC4Solver():
         return self.verbosity
 
     def __add_execution(self, execution):
-        # if str(execution) in self.executions:
-        #     raise UnreachableCodeException("Enumeration of not distincs models")
+        if str(execution) in self.executions:
+            raise UnreachableCodeException("Enumeration of not distincs models")
         
         self.executions.append(str(execution))
     
@@ -238,23 +238,3 @@ class CVC4Solver():
                 return [ind+pre_ind, 1]
             
         return [-1, -1]
-        
-if __name__ == "__main__":
-
-        
-    parser = argparse.ArgumentParser(description='CVC4 based Memory Models interpretations')
-    
-    parser.set_defaults(input_file=None)
-    parser.add_argument('input_file', metavar='input', type=str, nargs='?',
-                       help='the CVC input file')
-
-    parser.set_defaults(models=None)
-    parser.add_argument('-m', '--models', metavar='models', type=str, nargs='?',
-                       help='the blocking models')
-    
-    args = parser.parse_args()
-
-    strfile = args.input_file
-    models = args.models
-    
-    main(strfile, models)
