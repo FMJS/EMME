@@ -71,7 +71,7 @@ def run_all(example, skip_solving, sat, expand):
     config.verbosity = 3
     config.jsprinter = JSV8Printer().NAME
     config.skip_solving = skip_solving
-    expand_bounded_sets = expand
+    config.expand_bounded_sets = expand
 
     try:
         main(config)
