@@ -255,11 +255,6 @@ def main(config):
         except Exception as e:
             print(e)
 
-
-        with open(execs, "w") as exefile:
-            jsexecs = jprinter.compute_possible_executions(program, executions)
-            exefile.write("\n".join(jsexecs))
-            
         # Generation of all possible outputs for the JS litmus test #
         try:
             with open(execs, "w") as exefile:
