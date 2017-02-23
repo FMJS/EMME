@@ -43,94 +43,34 @@ class Config():
         self.only_model = None
         self.skip_solving = None
         self.jsprinter = None
-
-    def set_inputfile(self, inputfile):
-        self.inputfile = inputfile
-
-    def set_prefix(self, prefix):
-        self.prefix = prefix
-        
-    def set_preproc(self, preproc):
-        self.preproc = preproc
-
-    def set_expand_bounded_sets(self, expand_bounded_sets):
-        self.expand_bounded_sets = expand_bounded_sets
-
-    def set_verbosity(self, verbosity):
-        self.verbosity = verbosity
-
-    def set_defines(self, defines):
-        self.defines = defines
-
-    def set_sat(self, sat):
-        self.sat = sat
-
-    def set_only_model(self, only_model):
-        self.only_model = only_model
-
-    def set_skip_solving(self, skip_solving):
-        self.skip_solving = skip_solving
-        
-    def set_jsprinter(self, jsprinter):
-        self.jsprinter = jsprinter
-        
-    def get_inputfile(self):
-        return self.inputfile
-
-    def get_prefix(self):
-        return self.prefix
-    
-    def get_preproc(self):
-        return self.preproc
-
-    def get_expand_bounded_sets(self):
-        return self.expand_bounded_sets
-
-    def get_verbosity(self):
-        return self.verbosity
-
-    def get_defines(self):
-        return self.defines
-
-    def get_sat(self):
-        return self.sat
-
-    def get_only_model(self):
-        return self.only_model
-
-    def get_skip_solving(self):
-        return self.skip_solving
-    
-    def get_jsprinter(self):
-        return self.jsprinter
     
 
 def main(config):
-    verbosity = config.get_verbosity()
+    verbosity = config.verbosity
         
     parser = BeParser()
     c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
 
     abspath = os.path.abspath(__file__)
         
-    model = config.get_prefix()+"memory_model.cvc"
-    model_ex = config.get_prefix()+"memory_model_expanded.cvc"
-    instance = config.get_prefix()+"instance.cvc"
-    block_type = config.get_prefix()+"block_type.cvc"
-    id_type = config.get_prefix()+"id_type.cvc"
-    models = config.get_prefix()+"models.txt"
-    dots = config.get_prefix()+"mm%s.dot"
-    jsprogram = config.get_prefix()+"program.js"
-    execs = config.get_prefix()+"outputs.txt"
+    model = config.prefix+"memory_model.cvc"
+    model_ex = config.prefix+"memory_model_expanded.cvc"
+    instance = config.prefix+"instance.cvc"
+    block_type = config.prefix+"block_type.cvc"
+    id_type = config.prefix+"id_type.cvc"
+    models = config.prefix+"models.txt"
+    dots = config.prefix+"mm%s.dot"
+    jsprogram = config.prefix+"program.js"
+    execs = config.prefix+"outputs.txt"
     mm = ("/".join(abspath.split("/")[:-1]))+"/model/memory_model.cvc"
 
 
     if verbosity > 0:
-        print("** Running with path \"%s\" **\n"%(config.get_prefix()))
+        print("** Running with path \"%s\" **\n"%(config.prefix))
         
     # Parsing of the bounded execution #
     try:
-        with open(config.get_inputfile(), "r") as f:
+        with open(config.inputfile, "r") as f:
             program = parser.program_from_string(f.read())
     except Exception as e:
         print(e)
@@ -140,8 +80,8 @@ def main(config):
         sys.stdout.write("Generating bounded execution... ")
         sys.stdout.flush()
         
-    if not os.path.exists(config.get_prefix()):
-        os.makedirs(config.get_prefix())
+    if not os.path.exists(config.prefix):
+        os.makedirs(config.prefix)
         
     if verbosity > 0:
         sys.stdout.write("DONE\n")
@@ -171,12 +111,12 @@ def main(config):
     # Preprocessing the model using cpp #
     cpppre = ExtPreprocessor("cpp")
     cpppre.set_output_file(model_ex)
-    cpppre.set_defines(config.get_defines())
+    cpppre.set_defines(config.defines)
     strmodel = cpppre.preprocess_from_file(model)
 
     # Preprocessing the quantifiers #
     qupre = QuantPreprocessor()
-    qupre.set_expand_sets(config.get_expand_bounded_sets())
+    qupre.set_expand_sets(config.expand_bounded_sets)
     strmodel = qupre.preprocess_from_string(strmodel)
 
     # Generation of the expanded CVC4 model into the directory #
@@ -187,7 +127,7 @@ def main(config):
         sys.stdout.write("DONE\n")
         sys.stdout.flush()
 
-    if config.get_only_model():
+    if config.only_model:
         sys.exit(0)
 
 
@@ -196,18 +136,18 @@ def main(config):
     c4solver = CVC4Solver()
     c4solver.set_verbosity(verbosity)
 
-    if True: #not config.get_sat():
+    if True: #not config.sat:
         c4solver.set_models_file(models)
 
     totmodels = c4solver.get_models_size()
         
-    if not config.get_skip_solving():
+    if not config.skip_solving:
         if verbosity > 0:
             sys.stdout.write("Solving... ")
             sys.stdout.flush()
         
         try:
-            if config.get_sat():
+            if config.sat:
                 totmodels = c4solver.solve_n(strmodel, 1)
             else:
                 totmodels = c4solver.solve_all(strmodel)
@@ -231,7 +171,7 @@ def main(config):
         sys.stdout.flush()
         
     # Generation of the JS litmus test #
-    jprinter = PrintersFactory.printer_by_name(config.get_jsprinter())
+    jprinter = PrintersFactory.printer_by_name(config.jsprinter)
     dprinter = PrintersFactory.printer_by_name("DOT")
 
     with open(jsprogram, "w") as f:
@@ -241,7 +181,7 @@ def main(config):
         sys.stdout.write("DONE\n")
         sys.stdout.flush()
     
-    if (totmodels > 0) and (not config.get_sat()):
+    if (totmodels > 0) and (not config.sat):
         if verbosity > 0:
             sys.stdout.write("Generating expected outputs... ")
             sys.stdout.flush()
@@ -255,6 +195,11 @@ def main(config):
         except Exception as e:
             print(e)
 
+
+        with open(execs, "w") as exefile:
+            jsexecs = jprinter.compute_possible_executions(program, executions)
+            exefile.write("\n".join(jsexecs))
+            
         # Generation of all possible outputs for the JS litmus test #
         try:
             with open(execs, "w") as exefile:
@@ -378,16 +323,16 @@ if __name__ == "__main__":
         sys.exit(1)
     
     config = Config()
-    config.set_inputfile(inputfile)
-    config.set_prefix(prefix)
-    config.set_preproc(preproc)
-    config.set_expand_bounded_sets(expand_bounded_sets)
-    config.set_verbosity(verbosity)
-    config.set_defines(defines)
-    config.set_sat(check_sat)
-    config.set_only_model(only_model)
-    config.set_skip_solving(skip_solving)
-    config.set_jsprinter(jsprinter)
+    config.inputfile = inputfile
+    config.prefix = prefix
+    config.preproc = preproc
+    config.expand_bounded_sets = expand_bounded_sets
+    config.verbosity = verbosity
+    config.defines = defines
+    config.sat = check_sat
+    config.only_model = only_model
+    config.skip_solving = skip_solving
+    config.jsprinter = jsprinter
 
     main(config)
 
