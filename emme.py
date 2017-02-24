@@ -63,6 +63,8 @@ def main(config):
     execs = config.prefix+"outputs.txt"
     mm = ("/".join(abspath.split("/")[:-1]))+"/model/memory_model.cvc"
 
+    print config.prefix
+    
     if verbosity > 0:
         print("** Running with path \"%s\" **\n"%(config.prefix))
 

@@ -203,19 +203,19 @@ class BeParser():
 
 
     def __compute_reads_values(self):
-        program = self.executions.get_program()
-        executions = self.executions.get_executions()
+        program = self.executions.program
+        executions = self.executions.executions
         events = program.get_events()
-        ev_map = dict((x.get_name(), x) for x in events)
+        ev_map = dict((x.name, x) for x in events)
         read_evs = [x for x in events if x.is_read()]
 
         for exe in executions:
-            rbf_map = dict(((x[0], int(x[2])), x[1]) for x in exe.get_RBF().get_tuples())
+            rbf_map = dict(((x[0], int(x[2])), x[1]) for x in exe.get_RBF().tuples)
             for read_event in read_evs:
                 values = []
-                for i in read_event.get_address():
-                    write_event = ev_map[rbf_map[(read_event.get_name(), i)]]
-                    value = write_event.get_values()[i]
+                for i in read_event.address:
+                    write_event = ev_map[rbf_map[(read_event.name, i)]]
+                    value = write_event.values[i]
                     values.append(value)
                 new_read_event = copy.deepcopy(read_event)
                 new_read_event.set_values(values)
@@ -235,7 +235,7 @@ class BeParser():
 
     def __populate_executions(self):
         execs = Executions()
-        execs.set_program(self.program)
+        execs.program = self.program
         for model in self.models:
             execution = Execution()
             for relation in model:
@@ -254,17 +254,17 @@ class BeParser():
 
     def __add_relation(self, exe, rel):
 
-        if rel.get_name() == HB:
+        if rel.name == HB:
             exe.set_HB(rel)
-        elif rel.get_name() == MO:
+        elif rel.name == MO:
             exe.set_MO(rel)
-        elif rel.get_name() == AO:
+        elif rel.name == AO:
             pass
-        elif rel.get_name() == RBF:
+        elif rel.name == RBF:
             exe.set_RBF(rel)
-        elif rel.get_name() == RF:
+        elif rel.name == RF:
             exe.set_RF(rel)
-        elif rel.get_name() == SW:
+        elif rel.name == SW:
             exe.set_SW(rel)
         else:
             raise UnreachableCodeException()
@@ -341,7 +341,7 @@ class BeParser():
                 block = Block(block_name)
                 blocks[block_name] = block
 
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.get_name())
+                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.name)
                 me = Memory_Event(name = name, \
                                   operation = WRITE, \
                                   tear = NTEAR, \
@@ -377,7 +377,7 @@ class BeParser():
                     address = range(baddr, eaddr+1, 1)
                     varsize = eaddr+1
                 
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.get_name())
+                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.name)
                 me = Memory_Event(name = name, \
                                   operation = WRITE, \
                                   tear = None, \
@@ -403,7 +403,7 @@ class BeParser():
                     thread.append(me)
                 else:
                     me.set_param_value(varsize, value)
-                    me.set_offset(offset) 
+                    me.offset = offset 
                     floop.append(me)
 
             elif command_name == P_SABASS:
@@ -435,7 +435,7 @@ class BeParser():
                     varsize = eaddr+1
 
                 ordering = SC if self.__var_type_is_float(command.typeop) else UNORD
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.get_name())
+                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.name)
                 me = Memory_Event(name = name, \
                                   operation = WRITE, \
                                   tear = None, \
@@ -463,7 +463,7 @@ class BeParser():
                 else:
                     value = "".join(value)
                     me.set_param_value(varsize, value)
-                    me.set_offset(offset) 
+                    me.offset = offset
                     floop.append(me)
 
             elif command_name == P_ACCESS:
@@ -486,7 +486,7 @@ class BeParser():
                     
                 tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                 ordering = SC if self.__var_type_is_float(command.typeop) else UNORD
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.get_name())
+                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.name)
                 me = Memory_Event(name = name, \
                                   operation = READ, \
                                   tear = tear, \
@@ -497,14 +497,14 @@ class BeParser():
 
                 blocks[block_name].update_size(varsize)
                 if op_purpose:
-                    me.set_op_purpose(op_purpose)
+                    me.op_purpose = op_purpose
                     op_purpose = None
 
                 if not floop:
                     thread.append(me)                                
                 else:
                     me.set_param_value(varsize, None)
-                    me.set_offset(offset)
+                    me.offset = offset
                     floop.append(me)
 
             elif command_name == P_LOAD:
@@ -531,7 +531,7 @@ class BeParser():
 
                 tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
 
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.get_name())
+                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.name)
                 me = Memory_Event(name = name, \
                                   operation = READ, \
                                   tear = tear, \
@@ -542,7 +542,7 @@ class BeParser():
                 
                 blocks[block_name].update_size(varsize)
                 if op_purpose:
-                    me.set_op_purpose(op_purpose)
+                    me.op_purpose = op_purpose
                     op_purpose = None
                 
                 if not floop:
@@ -550,7 +550,7 @@ class BeParser():
                 else:
                     value = "".join(command.value)
                     me.set_param_value(varsize, value)
-                    me.set_offset(offset)
+                    me.offset = offset
                     floop.append(me)
                     
 

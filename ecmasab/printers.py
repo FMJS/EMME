@@ -89,14 +89,14 @@ class CVC4Printer():
 
     def print_executions(self, interps):
         ret = []
-        for interp in interps.get_executions():
+        for interp in interps.executions:
             ret.append(self.print_execution(interp))
 
         return "\n".join(ret)
 
     def print_assertions(self, interps):
         ret = []
-        for interp in interps.get_executions():
+        for interp in interps.executions:
             ret.append(self.print_assert_execution(interp))
 
         return ret
@@ -122,8 +122,8 @@ class CVC4Printer():
     
     
     def __print_relation(self, relation):
-        tuples = relation.get_tuples()
-        return "%s = {%s}"%(relation.get_name(), ", ".join([self.__print_tuple(x) for x in tuples]))
+        tuples = relation.tuples
+        return "%s = {%s}"%(relation.name, ", ".join([self.__print_tuple(x) for x in tuples]))
 
     def __print_tuple(self, tup):
         if len(tup) > 2:
@@ -135,14 +135,14 @@ class CVC4Printer():
 
         ret = ""
         
-        for thread in program.get_threads():
+        for thread in program.threads:
             ret += self.print_thread(thread) + "\n"
 
-        for thread in program.get_threads():
+        for thread in program.threads:
             for event in thread.get_events(True):
                 ret += self.print_event(event) + "\n"
 
-        for thread in program.get_threads():
+        for thread in program.threads:
             ret += self.__print_thread_events_set(thread) + "\n"
             ret += self.__print_thread_program_order(thread) + "\n"
 
@@ -154,41 +154,41 @@ class CVC4Printer():
         return ret
 
     def print_thread(self, thread):
-        return "%s : THREAD_TYPE;" % thread.get_name()
+        return "%s : THREAD_TYPE;" % thread.name
     
     def print_event(self, event):
-        return "%s : MEM_OP_TYPE;\n%s" % (event.get_name(), self.print_event_formula(event))
+        return "%s : MEM_OP_TYPE;\n%s" % (event.name, self.print_event_formula(event))
     
     def print_event_formula(self, event):
         ret = "ASSERT "
         indent = " "*len(ret)
-        ret +=  "(%s.ID = %s) AND\n" % (event.get_name(), str(event.get_name())+TYPE)
-        ret += "%s(%s.O = %s) AND\n" % (indent, event.get_name(), str(event.get_operation()))
-        ret += "%s(%s.T = %s) AND\n" % (indent, event.get_name(), str(event.get_tear()))
-        ret += "%s(%s.R = %s) AND\n" % (indent, event.get_name(), str(event.get_ordering()))
-        if type(event.get_address()[0]) == int:
-            address = "{%s}" % (", ".join(["Int(%s)" % el for el in event.get_address()]))
-            ret += "%s(%s.M = %s) AND\n" % (indent, event.get_name(), address)
-        ret += "%s(%s.B = %s);\n"    % (indent, event.get_name(), str(event.get_block()))
+        ret +=  "(%s.ID = %s) AND\n" % (event.name, str(event.name)+TYPE)
+        ret += "%s(%s.O = %s) AND\n" % (indent, event.name, str(event.operation))
+        ret += "%s(%s.T = %s) AND\n" % (indent, event.name, str(event.tear))
+        ret += "%s(%s.R = %s) AND\n" % (indent, event.name, str(event.ordering))
+        if type(event.address[0]) == int:
+            address = "{%s}" % (", ".join(["Int(%s)" % el for el in event.address]))
+            ret += "%s(%s.M = %s) AND\n" % (indent, event.name, address)
+        ret += "%s(%s.B = %s);\n"    % (indent, event.name, str(event.block))
         return ret
 
     def __print_thread_events_set(self, thread):
-        return "ASSERT %s.E = {%s};" % (str(thread.get_name()), str(", ".join([x.get_name() for x in thread.get_events(True)])))
+        return "ASSERT %s.E = {%s};" % (str(thread.name), str(", ".join([x.name for x in thread.get_events(True)])))
     
     def __print_thread_program_order(self, thread):
         if len(thread.get_events(True)) < 2:
-            return "ASSERT %s.PO = empty_rel_set;" % (thread.get_name())
+            return "ASSERT %s.PO = empty_rel_set;" % (thread.name)
         thread_events = thread.get_events(True)
         pairs = []
         for i in range(len(thread_events)):
             for j in range(len(thread_events[i+1:])):
-                pairs.append((thread_events[i].get_name(), thread_events[i+j+1].get_name()))
+                pairs.append((thread_events[i].name, thread_events[i+j+1].name))
         
         pairs = [("(%s, %s)" % (x,y)) for x,y in pairs]
-        return "ASSERT %s.PO = {%s};" % (thread.get_name(), ", ".join(pairs))
+        return "ASSERT %s.PO = {%s};" % (thread.name, ", ".join(pairs))
     
     def __print_agent_order(self, program):
-        ao = [x.get_name()+".PO" for x in program.get_threads()]
+        ao = [x.name+".PO" for x in program.threads]
         ret = "ASSERT AO = %s;" % (" | ".join(ao))
 
         return ret
@@ -197,12 +197,12 @@ class CVC4Printer():
         events = []
         rom_events = []
         wom_events = []
-        for thread in program.get_threads():
+        for thread in program.threads:
             events += [x for x in thread.get_events(True)]
 
-        rom_events = [x.get_name() for x in events if x.is_read_or_modify()]
-        wom_events = [x.get_name() for x in events if x.is_write_or_modify()]
-        events = [x.get_name() for x in events]
+        rom_events = [x.name for x in events if x.is_read_or_modify()]
+        wom_events = [x.name for x in events if x.is_write_or_modify()]
+        events = [x.name for x in events]
 
         permutations = list(itertools.permutations(events, 2))
 
@@ -219,10 +219,10 @@ class CVC4Printer():
         max_size = 0
         sizes = []
         for event in events:
-            if type(event.get_address()[0]) == int:
-                sizes.append(event.get_address()[-1])
+            if type(event.address[0]) == int:
+                sizes.append(event.address[-1])
             else:
-                sizes.append(event.get_address()[-1][-1])
+                sizes.append(event.address[-1][-1])
 
         max_size = max(sizes)
         return "ASSERT locs = {%s};" % (", ".join(["Int(%s)"%str(x) for x in range(max_size+1)]))
@@ -242,17 +242,17 @@ class CVC4Printer():
             for write in [x for x in program.get_events() if x.is_write_or_modify()]:
                 inters = 0
 
-                rset = read.get_address()
+                rset = read.address
                 rset = set(rset) if type(rset[0]) == int else set([y for x in rset for y in x])
-                wset = write.get_address()
+                wset = write.address
                 wset = set(wset) if type(wset[0]) == int else set([y for x in wset for y in x])
 
                 inters = list(set(rset) & set(wset))
                         
-                if (len(inters) > 0) and (read.get_block() == write.get_block()):
-                    compat_events.append("(%s, %s)"%(read.get_name(), write.get_name()))
+                if (len(inters) > 0) and (read.block == write.block):
+                    compat_events.append("(%s, %s)"%(read.name, write.name))
                 for inter in inters:
-                    compat_bytes_events.append("((%s, %s), Int(%s))"%(read.get_name(), write.get_name(), inter))
+                    compat_bytes_events.append("((%s, %s), Int(%s))"%(read.name, write.name, inter))
 
         ret = ""
         ret += "ASSERT comp_RF = {%s};\n"%(", ".join(compat_events))
@@ -271,26 +271,26 @@ class JSV8Printer(JSPrinter):
 
     def compute_possible_executions(self, program, interps):
         ret = set([])
-        for interp in interps.get_executions():
+        for interp in interps.executions:
             ret.add(self.print_execution(program, interp))
 
         return list(ret)
     
     def print_execution(self, program, interp):
         reads = []
-        for el in interp.get_reads_values():
+        for el in interp.reads_values:
             value = el.get_correct_value()
-            if el.get_tear() == WTEAR:
+            if el.tear == WTEAR:
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                reads.append(("%s: "+self.float_pri_js)%(el.get_name(), value))
+                reads.append(("%s: "+self.float_pri_js)%(el.name, value))
             else:
-                reads.append("%s: %s"%(el.get_name(), value))
+                reads.append("%s: %s"%(el.name, value))
         return ";".join(reads)
 
     def __print_relation(self, relation):
-        tuples = relation.get_tuples()
-        return "%s = {%s}"%(relation.get_name(), ", ".join([self.__print_tuple(x) for x in tuples]))
+        tuples = relation.tuples
+        return "%s = {%s}"%(relation.name, ", ".join([self.__print_tuple(x) for x in tuples]))
 
     def __print_tuple(self, tup):
         return "(%s)"%(",".join([str(x) for x in tup]))
@@ -302,10 +302,10 @@ class JSV8Printer(JSPrinter):
         ret += "if (this.Worker) {\n"
         ret += "(function execution() {\n"
 
-        for thread in program.get_threads():
-            if thread.get_name() == MAIN:
+        for thread in program.threads:
+            if thread.name == MAIN:
                 continue
-            ret += "var %s =\n"%thread.get_name()
+            ret += "var %s =\n"%thread.name
             ret += "`onmessage = function(data) {\n"
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
@@ -326,25 +326,25 @@ class JSV8Printer(JSPrinter):
             ret += "%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
         ret += "}\n"
 
-        for thread in program.get_threads():
-            if thread.get_name() != MAIN:
+        for thread in program.threads:
+            if thread.name != MAIN:
                 continue
             for ev in thread.get_events(True):
                 ret += self.print_event(ev)
 
 
-        for thread in program.get_threads():
-            if thread.get_name() == MAIN:
+        for thread in program.threads:
+            if thread.name == MAIN:
                 continue
-            ret += "var w%s = new Worker(%s);\n"%(thread.get_name(), thread.get_name())
+            ret += "var w%s = new Worker(%s);\n"%(thread.name, thread.name)
 
 
         block_pars = ", ".join(["data.%s_sab"%str(x[0]) for x in blocks])
-        for thread in program.get_threads():
-            if thread.get_name() == MAIN:
+        for thread in program.threads:
+            if thread.name == MAIN:
                 continue
             
-            ret += "w%s.postMessage(data, [%s]);\n"%(thread.get_name(), block_pars)
+            ret += "w%s.postMessage(data, [%s]);\n"%(thread.name, block_pars)
 
         ret += "})();\n"
         ret += "}\n"
@@ -353,25 +353,25 @@ class JSV8Printer(JSPrinter):
 
     def print_floop(self, floop):
         ret = ""
-        ret += "for(%s = %s; %s <= %s; %s++){\n"%(floop.get_cname(), \
-                                                 floop.get_fromind(), \
-                                                 floop.get_cname(), \
-                                                 floop.get_toind(),
-                                                 floop.get_cname())
-        for ev in floop.get_events():
-            ret += self.print_event(ev, floop.get_cname())
+        ret += "for(%s = %s; %s <= %s; %s++){\n"%(floop.cname, \
+                                                 floop.fromind, \
+                                                 floop.cname, \
+                                                 floop.toind,
+                                                 floop.cname)
+        for ev in floop.events:
+            ret += self.print_event(ev, floop.cname)
 
         ret += "}\n"
 
         return ret
     
     def print_event(self, event, postfix=None):
-        operation = event.get_operation()
-        ordering = event.get_ordering()
-        block_name = event.get_block().get_name()
-        event_name = event.get_name()
-        event_address = event.get_address()
-        tear = event.get_tear()
+        operation = event.operation
+        ordering = event.ordering
+        block_name = event.block.name
+        event_name = event.name
+        event_address = event.address
+        tear = event.tear
         block_size = event.get_size()
         is_float = tear == WTEAR
         var_def = ""
@@ -392,8 +392,8 @@ class JSV8Printer(JSPrinter):
 
         if (ordering == SC) and not is_float:
             if not event_address:
-                addr = event.get_offset()
-                event_values = event.get_value()
+                addr = event.offset
+                event_values = event.value
             else:
                 addr = event_address[0]/block_size
                 event_values = event.get_correct_value()
@@ -415,8 +415,8 @@ class JSV8Printer(JSPrinter):
 
         if (ordering == UNORD) or is_float:
             if not event_address:
-                addr = event.get_offset()
-                event_values = event.get_value()
+                addr = event.offset
+                event_values = event.value
             else:
                 addr = event_address[0]/block_size
                 event_values = event.get_correct_value()
@@ -470,7 +470,7 @@ class DotPrinter():
 
     def print_executions(self, program, interps):
         graphs = []
-        for interp in interps.get_executions():
+        for interp in interps.executions:
             graphs.append(self.print_execution(program, interp))
         return graphs
 
@@ -480,12 +480,12 @@ class DotPrinter():
         ret.append("rankdir=LR;")
         
         color = "red"
-        for tup in interp.get_RBF().get_tuples():
-            label = "%s[%s]"%(interp.get_RBF().get_name(), tup[2])
+        for tup in interp.get_RBF().tuples:
+            label = "%s[%s]"%(interp.get_RBF().name, tup[2])
             ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
 
-        for tup in interp.get_RF().get_tuples():
-            label = interp.get_RF().get_name()
+        for tup in interp.get_RF().tuples:
+            label = interp.get_RF().name
             ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
         
         relations = []
@@ -495,8 +495,8 @@ class DotPrinter():
 
         color = "black"
         for relation in relations:
-            label = relation.get_name()
-            for tup in relation.get_tuples():
+            label = relation.name
+            for tup in relation.tuples:
                 ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
         
         ret.append("}")
@@ -532,16 +532,16 @@ class BePrinter():
         for sab in blocks:
             ret += "var %s = new SharedArrayBuffer();\n"%(sab)
 
-        for thread in program.get_threads():
-            if thread.get_name() != MAIN:
+        for thread in program.threads:
+            if thread.name != MAIN:
                 continue
             for ev in thread.get_events(True):
                 ret += self.print_event(ev)
 
-        for thread in program.get_threads():
-            if thread.get_name() == MAIN:
+        for thread in program.threads:
+            if thread.name == MAIN:
                 continue
-            ret += "Thread %s {\n"%(thread.get_name())
+            ret += "Thread %s {\n"%(thread.name)
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
                     ret += self.print_floop(ev)
@@ -553,12 +553,12 @@ class BePrinter():
         return ret
 
     def print_event(self, event, postfix=None):
-        operation = event.get_operation()
-        ordering = event.get_ordering()
-        block_name = event.get_block().get_name()
-        event_name = event.get_name()
-        event_address = event.get_address()
-        tear = event.get_tear()
+        operation = event.operation
+        ordering = event.ordering
+        block_name = event.block.name
+        event_name = event.name
+        event_address = event.address
+        tear = event.tear
         block_size = event.get_size()
         is_float = tear == WTEAR
         
@@ -571,8 +571,8 @@ class BePrinter():
 
         if (ordering == SC) and not is_float:
             if not event_address:
-                addr = event.get_offset()
-                event_values = event.get_value()
+                addr = event.offset
+                event_values = event.value
             else:
                 addr = event_address[0]/block_size
                 event_values = event.get_correct_value()
@@ -591,8 +591,8 @@ class BePrinter():
 
         if (ordering == UNORD) or is_float:
             if not event_address:
-                addr = event.get_offset()
-                event_values = event.get_value()
+                addr = event.offset
+                event_values = event.value
             else:
                 addr = event_address[0]/block_size
                 event_values = event.get_correct_value()
@@ -636,11 +636,11 @@ class BePrinter():
     
     def print_floop(self, floop):
         ret = ""
-        ret += "for(%s = %s..%s) {\n"%(floop.get_cname(), \
-                                    floop.get_fromind(), \
-                                    floop.get_toind())
-        for ev in floop.get_events():
-            ret += self.print_event(ev, floop.get_cname())
+        ret += "for(%s = %s..%s) {\n"%(floop.cname, \
+                                    floop.fromind, \
+                                    floop.toind)
+        for ev in floop.events:
+            ret += self.print_event(ev, floop.cname)
 
         ret += "}\n"
 

@@ -14,6 +14,7 @@ import argparse
 import re
 import six
 import copy
+import os
 
 from ecmasab.execution import Executions, Execution, Relation, Memory_Event, RF, RELATIONS, BLOCKING_RELATIONS
 from ecmasab.beparsing import BeParser
@@ -71,12 +72,12 @@ class CVC4Solver():
             el = []
             for i in xrange(len(tup.getChildren())):
                 if tup.getChild(i).getType().isTuple():
-                    el.append(self.__gen_memory_event(tup.getChild(i).getChild(0)).get_name())
-                    el.append(self.__gen_memory_event(tup.getChild(i).getChild(1)).get_name())
+                    el.append(self.__gen_memory_event(tup.getChild(i).getChild(0)).name)
+                    el.append(self.__gen_memory_event(tup.getChild(i).getChild(1)).name)
                 elif tup.getChild(i).getType().isInteger():
                     el.append(int(tup.getChild(i).toString()))
                 else:
-                    el.append(self.__gen_memory_event(tup.getChild(i)).get_name())
+                    el.append(self.__gen_memory_event(tup.getChild(i)).name)
 
             relation.add_tuple(tuple(el))
 
@@ -134,13 +135,11 @@ class CVC4Solver():
     def __load_models(self):
         c4printer = CVC4Printer()
         parser = BeParser()
-        try:
-            if self.models_file:
+        if self.models_file:
+            if os.path.exists(self.models_file):
                 with open(self.models_file, "r") as f:
                     executions = parser.executions_from_string(f.read())
                     self.assertions = c4printer.print_assertions(executions)
-        except:
-            pass
 
     def get_models_size(self):
         self.__load_models()

@@ -50,7 +50,6 @@ examples.append(dv%"01")
 # Triple variables examples
 examples.append(tv%"01")
 
-
 def parse_and_generate(example):
 
     strp = open("%s.txt"%example,"r").read()

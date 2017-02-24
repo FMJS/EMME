@@ -13,6 +13,7 @@
 import sys
 import unittest
 import shutil
+import os
 
 from ecmasab.printers import JSV8Printer
 from emme import Config, main
@@ -66,17 +67,15 @@ def run_all(example, skip_solving, sat, expand):
     config.prefix = example+"/"
     if sat:
         config.prefix = "/tmp/"+example+"/"
-        shutil.rmtree(config.prefix)
+        if os.path.exists(config.prefix):
+            shutil.rmtree(config.prefix)
     config.sat = sat
     config.verbosity = 3
     config.jsprinter = JSV8Printer().NAME
     config.skip_solving = skip_solving
     config.expand_bounded_sets = expand
 
-    try:
-        main(config)
-    except:
-        assert False
+    main(config)
         
     assert True
 
@@ -90,4 +89,9 @@ def test_all():
 
     for example in ex_sv_s:
         yield run_all, example, False, True, False
+        
+
+if __name__ == "__main__":
+    for example in ex_sv_s:
+        run_all(example, False, True, False)
         

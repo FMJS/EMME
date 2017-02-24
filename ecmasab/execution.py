@@ -60,19 +60,10 @@ class Executions():
         self.executions = []
 
     def add_execution(self, exe):
-        if (not exe.get_program()) and (self.program):
-            exe.set_program(self.program)
+        if (not exe.program) and (self.program):
+            exe.program = self.program
         assert(isinstance(exe, Execution))
         self.executions.append(exe)
-
-    def get_executions(self):
-        return self.executions
-
-    def get_program(self):
-        return self.program
-
-    def set_program(self, program):
-        self.program = program
 
     def get_size(self):
         return len(self.executions)
@@ -106,17 +97,8 @@ class Execution():
         relations.append(self.synchronizes_with)
         return " AND ".join([str(x) for x in relations])
         
-    def set_program(self, program):
-        self.program = program
-
-    def get_program(self):
-        return self.program
-        
     def add_read_values(self, read_event):
         self.reads_values.append(read_event)
-
-    def get_reads_values(self):
-        return self.reads_values
         
     def get_HB(self):
         return self.happens_before
@@ -155,8 +137,6 @@ class Execution():
             self.set_RBF(rel)
         elif name == MO:
             self.set_MO(rel)
-        elif name == RF:
-            self.set_RF(rel)
         elif name == SW:
             self.set_SW(rel)
         elif name == HB:
@@ -173,8 +153,6 @@ class Execution():
             return self.get_RBF()
         elif name == MO:
             return self.get_MO()
-        elif name == RF:
-            return self.get_RF()
         elif name == SW:
             return self.get_SW()
         elif name == HB:
@@ -184,7 +162,6 @@ class Execution():
 
         return None
     
-            
 class Relation():
     name = None
     tuples = None
@@ -195,18 +172,9 @@ class Relation():
 
     def __repr__(self):
         return "%s = {%s}"%(self.name, ", ".join([str(x) for x in self.tuples]))
-
-    def get_name(self):
-        return self.name
-
-    def set_name(self, name):
-        self.name = name
         
     def add_tuple(self, tup):
         self.tuples.append(tup)
-
-    def get_tuples(self):
-        return self.tuples
 
     @staticmethod
     def get_bi_tuple(ev1, ev2):
@@ -215,8 +183,6 @@ class Relation():
     @staticmethod
     def get_tr_tuple(ev1, ev2, addr):
         return (ev1, ev2, addr)
-    
-
         
 class Program():
     threads = []
@@ -228,9 +194,6 @@ class Program():
 
     def add_thread(self, thread):
         self.threads.append(thread)
-
-    def get_threads(self):
-        return self.threads
 
     def get_blocks(self):
         blocks = []
@@ -247,7 +210,7 @@ class Program():
     def sort_threads(self):
         threads_map = {}
         for thread in self.threads:
-            threads_map[thread.get_name()] = thread
+            threads_map[thread.name] = thread
 
         self.threads = []
         if MAIN in threads_map:
@@ -268,18 +231,6 @@ class Block():
 
     def __repr__(self):
         return self.name
-
-    def get_name(self):
-        return self.name
-
-    def set_name(self, name):
-        self.name = name
-    
-    def get_size(self):
-        return self.size
-
-    def set_size(self, size):
-        self.size = size
 
     def update_size(self, size):
         if size > self.size:
@@ -313,11 +264,8 @@ class Thread():
     def get_blocks(self):
         blocks = set([])
         for event in self.get_events(True):
-            blocks.add(event.get_block())
+            blocks.add(event.block)
         return list(blocks)
-    
-    def get_name(self):
-        return self.name
     
     def append(self, event):
         self.events.append(event)
@@ -347,24 +295,12 @@ class For_Loop():
         self.cname = cname
         self.fromind = frind
         self.toind = toind
-        
-    def get_events(self):
-        return self.events
 
     def get_uevents(self):
         if not self.uevents:
             self.uevents = []
             self.__compute_events()
         return self.uevents
-
-    def get_cname(self):
-        return self.cname
-
-    def get_fromind(self):
-        return self.fromind
-
-    def get_toind(self):
-        return self.toind
     
     def append(self, event):
         self.events.append(event)
@@ -373,8 +309,8 @@ class For_Loop():
         for i in range(self.fromind, self.toind+1):
             for event in self.events:
                 size = event.get_size()
-                value = event.get_value()
-                offset = event.get_offset()
+                value = event.value
+                offset = event.offset
 
                 offset = offset.replace(self.cname,str(i))
                 offset = int(eval(offset))
@@ -382,14 +318,14 @@ class For_Loop():
                 baddr = size*offset
                 eaddr = (size*(offset+1))-1
                 address = range(baddr, eaddr+1, 1)
-                name = "%s_%s"%(event.get_name(), i)
+                name = "%s_%s"%(event.name, i)
 
                 me = Memory_Event(name = name, \
-                                  operation = event.get_operation(), \
-                                  tear = event.get_tear(), \
-                                  ordering = event.get_ordering(), \
+                                  operation = event.operation, \
+                                  tear = event.tear, \
+                                  ordering = event.ordering, \
                                   address = address, \
-                                  block = event.get_block(),\
+                                  block = event.block,\
                                   values = None)
 
                 if value:
@@ -451,21 +387,6 @@ class Memory_Event():
         Memory_Event.id_ev = Memory_Event.id_ev + 1
         return "id%s"%ret
     
-    def get_name(self):
-        return self.name
-
-    def get_block(self):
-        return self.block
-
-    def get_address(self):
-        return self.address
-
-    def get_operation(self):
-        return self.operation
-
-    def get_op_purpose(self):
-        return self.op_purpose
-    
     def is_read(self):
         return self.operation == READ
 
@@ -480,9 +401,6 @@ class Memory_Event():
 
     def is_write_or_modify(self):
         return self.is_write() or self.is_modify()
-    
-    def get_tear(self):
-        return self.tear
 
     def is_ntear(self):
         return self.tear == NTEAR
@@ -490,21 +408,9 @@ class Memory_Event():
     def is_wtear(self):
         return self.tear == WTEAR
 
-    def get_ordering(self):
-        return self.ordering
-
-    def get_address(self):
-        return self.address
-
-    def get_values(self):
-        return self.values
-
     def set_param_value(self, size, value):
         self.size = size
         self.value = value
-
-    def get_param_value(self):
-        return self.value
         
     def set_values(self, values):
         self.offset = None
@@ -512,22 +418,10 @@ class Memory_Event():
 
         self.block.update_size(len(values))
 
-    def set_op_purpose(self, op_purpose):
-        self.op_purpose = op_purpose
-
-    def set_offset(self, offset):
-        self.offset = offset
-
     def get_size(self):
         if not self.size:
             self.size = len(self.address)
         return self.size
-
-    def get_value(self):
-        return self.value
-
-    def get_offset(self):
-        return self.offset
     
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
@@ -550,12 +444,12 @@ class Memory_Event():
         self.block.update_size(end+1)
         
     def set_int_values(self, int_value):
-        self.address = range(0, self.block.get_size(), 1)
-        self.set_values_from_int(int_value, 0, self.block.get_size())
+        self.address = range(0, self.block.size, 1)
+        self.set_values_from_int(int_value, 0, self.block.size)
 
     def set_init_values(self):
-        self.address = range(0, self.block.get_size(), 1)
-        self.values = [0]*self.block.get_size()
+        self.address = range(0, self.block.size, 1)
+        self.values = [0]*self.block.size
         
     def get_correct_value(self):
         if not self.values:
