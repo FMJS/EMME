@@ -20,6 +20,7 @@ from emme import Config, main
 from tests.input_tests import examples, ex_fast
 
 tmp_dir = ".tmp_examples/"
+outputs = "outputs.txt"
 
 def run(config):
     config.verbosity = 3
@@ -27,7 +28,7 @@ def run(config):
     config.defines = "enc_RF=0,enc_RBF1=0,enc_RBF2=0"
     
     main(config)
-
+    
 def run_fresh(example, skip_solving, expand):
     config = Config()
     config.inputfile = example+".txt"
@@ -40,8 +41,21 @@ def run_fresh(example, skip_solving, expand):
     config.skip_solving = skip_solving
     config.expand_bounded_sets = expand
 
+    #solving one instance
     run(config)
 
+    # generating the expected outputs
+    config.skip_solving = True
+    config.sat = False
+    run(config)
+    
+    # checking if the new model is correct
+    with open(config.prefix+outputs, "r") as new:
+        with open(example+"/"+outputs, "r") as old:
+            linesold = [x.strip() for x in old.readlines()]
+            for linenew in new.readlines():
+                assert(linenew in linesold)
+                
     shutil.rmtree(tmp_dir)    
 
 def run_existing(example, skip_solving):
