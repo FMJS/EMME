@@ -1,50 +1,93 @@
 main : THREAD_TYPE;
 t1 : THREAD_TYPE;
 t2 : THREAD_TYPE;
+t3 : THREAD_TYPE;
 id1_W_main : MEM_OP_TYPE;
 ASSERT (id1_W_main.ID = id1_W_main_Type) AND
        (id1_W_main.O = W) AND
        (id1_W_main.T = NT) AND
        (id1_W_main.R = I) AND
-       (id1_W_main.M = {Int(0), Int(1), Int(2), Int(3), Int(4), Int(5), Int(6), Int(7)}) AND
+       (id1_W_main.M = {Int(0), Int(1), Int(2), Int(3)}) AND
        (id1_W_main.B = x);
 
-id2_W_t1_0 : MEM_OP_TYPE;
-ASSERT (id2_W_t1_0.ID = id2_W_t1_0_Type) AND
-       (id2_W_t1_0.O = W) AND
-       (id2_W_t1_0.T = WT) AND
-       (id2_W_t1_0.R = SC) AND
-       (id2_W_t1_0.M = {Int(0), Int(1), Int(2), Int(3)}) AND
-       (id2_W_t1_0.B = x);
+id2_W_t1 : MEM_OP_TYPE;
+ASSERT (id2_W_t1.ID = id2_W_t1_Type) AND
+       (id2_W_t1.O = W) AND
+       (id2_W_t1.T = NT) AND
+       (id2_W_t1.R = U) AND
+       (id2_W_t1.M = {Int(0)}) AND
+       (id2_W_t1.B = x);
 
-id2_W_t1_1 : MEM_OP_TYPE;
-ASSERT (id2_W_t1_1.ID = id2_W_t1_1_Type) AND
-       (id2_W_t1_1.O = W) AND
-       (id2_W_t1_1.T = WT) AND
-       (id2_W_t1_1.R = SC) AND
-       (id2_W_t1_1.M = {Int(4), Int(5), Int(6), Int(7)}) AND
-       (id2_W_t1_1.B = x);
+id3_W_t1 : MEM_OP_TYPE;
+ASSERT (id3_W_t1.ID = id3_W_t1_Type) AND
+       (id3_W_t1.O = W) AND
+       (id3_W_t1.T = NT) AND
+       (id3_W_t1.R = U) AND
+       (id3_W_t1.M = {Int(1)}) AND
+       (id3_W_t1.B = x);
 
-id3_R_t2 : MEM_OP_TYPE;
-ASSERT (id3_R_t2.ID = id3_R_t2_Type) AND
-       (id3_R_t2.O = R) AND
-       (id3_R_t2.T = WT) AND
-       (id3_R_t2.R = SC) AND
-       (id3_R_t2.M = {Int(0), Int(1), Int(2), Int(3), Int(4), Int(5), Int(6), Int(7)}) AND
-       (id3_R_t2.B = x);
+id4_W_t1 : MEM_OP_TYPE;
+ASSERT (id4_W_t1.ID = id4_W_t1_Type) AND
+       (id4_W_t1.O = W) AND
+       (id4_W_t1.T = NT) AND
+       (id4_W_t1.R = U) AND
+       (id4_W_t1.M = {Int(2)}) AND
+       (id4_W_t1.B = x);
+
+id5_W_t2 : MEM_OP_TYPE;
+ASSERT (id5_W_t2.ID = id5_W_t2_Type) AND
+       (id5_W_t2.O = W) AND
+       (id5_W_t2.T = NT) AND
+       (id5_W_t2.R = U) AND
+       (id5_W_t2.M = {Int(1)}) AND
+       (id5_W_t2.B = x);
+
+id6_W_t2 : MEM_OP_TYPE;
+ASSERT (id6_W_t2.ID = id6_W_t2_Type) AND
+       (id6_W_t2.O = W) AND
+       (id6_W_t2.T = NT) AND
+       (id6_W_t2.R = U) AND
+       (id6_W_t2.M = {Int(2)}) AND
+       (id6_W_t2.B = x);
+
+id7_W_t2 : MEM_OP_TYPE;
+ASSERT (id7_W_t2.ID = id7_W_t2_Type) AND
+       (id7_W_t2.O = W) AND
+       (id7_W_t2.T = NT) AND
+       (id7_W_t2.R = U) AND
+       (id7_W_t2.M = {Int(3)}) AND
+       (id7_W_t2.B = x);
+
+id8_R_t3 : MEM_OP_TYPE;
+ASSERT (id8_R_t3.ID = id8_R_t3_Type) AND
+       (id8_R_t3.O = R) AND
+       (id8_R_t3.T = NT) AND
+       (id8_R_t3.R = U) AND
+       (id8_R_t3.M = {Int(0), Int(1), Int(2), Int(3)}) AND
+       (id8_R_t3.B = x);
+
+id9_R_t3 : MEM_OP_TYPE;
+ASSERT (id9_R_t3.ID = id9_R_t3_Type) AND
+       (id9_R_t3.O = R) AND
+       (id9_R_t3.T = NT) AND
+       (id9_R_t3.R = U) AND
+       (id9_R_t3.M = {Int(2), Int(3)}) AND
+       (id9_R_t3.B = x);
 
 ASSERT main.E = {id1_W_main};
 ASSERT main.PO = empty_rel_set;
-ASSERT t1.E = {id2_W_t1_0, id2_W_t1_1};
-ASSERT t1.PO = {(id2_W_t1_0, id2_W_t1_1)};
-ASSERT t2.E = {id3_R_t2};
-ASSERT t2.PO = empty_rel_set;
-ASSERT ev_set = {id1_W_main, id2_W_t1_0, id2_W_t1_1, id3_R_t2};
-ASSERT rom_ev_set = {id3_R_t2};
-ASSERT wom_ev_set = {id1_W_main, id2_W_t1_0, id2_W_t1_1};
-ASSERT pair_ev_set = {(id1_W_main, id2_W_t1_0), (id1_W_main, id2_W_t1_1), (id1_W_main, id3_R_t2), (id2_W_t1_0, id1_W_main), (id2_W_t1_0, id2_W_t1_1), (id2_W_t1_0, id3_R_t2), (id2_W_t1_1, id1_W_main), (id2_W_t1_1, id2_W_t1_0), (id2_W_t1_1, id3_R_t2), (id3_R_t2, id1_W_main), (id3_R_t2, id2_W_t1_0), (id3_R_t2, id2_W_t1_1)};
+ASSERT t1.E = {id2_W_t1, id3_W_t1, id4_W_t1};
+ASSERT t1.PO = {(id2_W_t1, id3_W_t1), (id2_W_t1, id4_W_t1), (id3_W_t1, id4_W_t1)};
+ASSERT t2.E = {id5_W_t2, id6_W_t2, id7_W_t2};
+ASSERT t2.PO = {(id5_W_t2, id6_W_t2), (id5_W_t2, id7_W_t2), (id6_W_t2, id7_W_t2)};
+ASSERT t3.E = {id8_R_t3, id9_R_t3};
+ASSERT t3.PO = {(id8_R_t3, id9_R_t3)};
+ASSERT ev_set = {id1_W_main, id2_W_t1, id3_W_t1, id4_W_t1, id5_W_t2, id6_W_t2, id7_W_t2, id8_R_t3, id9_R_t3};
+ASSERT rom_ev_set = {id8_R_t3, id9_R_t3};
+ASSERT wom_ev_set = {id1_W_main, id2_W_t1, id3_W_t1, id4_W_t1, id5_W_t2, id6_W_t2, id7_W_t2};
+ASSERT pair_ev_set = {(id1_W_main, id2_W_t1), (id1_W_main, id3_W_t1), (id1_W_main, id4_W_t1), (id1_W_main, id5_W_t2), (id1_W_main, id6_W_t2), (id1_W_main, id7_W_t2), (id1_W_main, id8_R_t3), (id1_W_main, id9_R_t3), (id2_W_t1, id1_W_main), (id2_W_t1, id3_W_t1), (id2_W_t1, id4_W_t1), (id2_W_t1, id5_W_t2), (id2_W_t1, id6_W_t2), (id2_W_t1, id7_W_t2), (id2_W_t1, id8_R_t3), (id2_W_t1, id9_R_t3), (id3_W_t1, id1_W_main), (id3_W_t1, id2_W_t1), (id3_W_t1, id4_W_t1), (id3_W_t1, id5_W_t2), (id3_W_t1, id6_W_t2), (id3_W_t1, id7_W_t2), (id3_W_t1, id8_R_t3), (id3_W_t1, id9_R_t3), (id4_W_t1, id1_W_main), (id4_W_t1, id2_W_t1), (id4_W_t1, id3_W_t1), (id4_W_t1, id5_W_t2), (id4_W_t1, id6_W_t2), (id4_W_t1, id7_W_t2), (id4_W_t1, id8_R_t3), (id4_W_t1, id9_R_t3), (id5_W_t2, id1_W_main), (id5_W_t2, id2_W_t1), (id5_W_t2, id3_W_t1), (id5_W_t2, id4_W_t1), (id5_W_t2, id6_W_t2), (id5_W_t2, id7_W_t2), (id5_W_t2, id8_R_t3), (id5_W_t2, id9_R_t3), (id6_W_t2, id1_W_main), (id6_W_t2, id2_W_t1), (id6_W_t2, id3_W_t1), (id6_W_t2, id4_W_t1), (id6_W_t2, id5_W_t2), (id6_W_t2, id7_W_t2), (id6_W_t2, id8_R_t3), (id6_W_t2, id9_R_t3), (id7_W_t2, id1_W_main), (id7_W_t2, id2_W_t1), (id7_W_t2, id3_W_t1), (id7_W_t2, id4_W_t1), (id7_W_t2, id5_W_t2), (id7_W_t2, id6_W_t2), (id7_W_t2, id8_R_t3), (id7_W_t2, id9_R_t3), (id8_R_t3, id1_W_main), (id8_R_t3, id2_W_t1), (id8_R_t3, id3_W_t1), (id8_R_t3, id4_W_t1), (id8_R_t3, id5_W_t2), (id8_R_t3, id6_W_t2), (id8_R_t3, id7_W_t2), (id8_R_t3, id9_R_t3), (id9_R_t3, id1_W_main), (id9_R_t3, id2_W_t1), (id9_R_t3, id3_W_t1), (id9_R_t3, id4_W_t1), (id9_R_t3, id5_W_t2), (id9_R_t3, id6_W_t2), (id9_R_t3, id7_W_t2), (id9_R_t3, id8_R_t3)};
 
-ASSERT AO = main.PO | t1.PO | t2.PO;
-ASSERT locs = {Int(0), Int(1), Int(2), Int(3), Int(4), Int(5), Int(6), Int(7)};
-ASSERT comp_RF = {(id3_R_t2, id1_W_main), (id3_R_t2, id2_W_t1_0), (id3_R_t2, id2_W_t1_1)};
-ASSERT comp_RBF = {((id3_R_t2, id1_W_main), Int(0)), ((id3_R_t2, id1_W_main), Int(1)), ((id3_R_t2, id1_W_main), Int(2)), ((id3_R_t2, id1_W_main), Int(3)), ((id3_R_t2, id1_W_main), Int(4)), ((id3_R_t2, id1_W_main), Int(5)), ((id3_R_t2, id1_W_main), Int(6)), ((id3_R_t2, id1_W_main), Int(7)), ((id3_R_t2, id2_W_t1_0), Int(0)), ((id3_R_t2, id2_W_t1_0), Int(1)), ((id3_R_t2, id2_W_t1_0), Int(2)), ((id3_R_t2, id2_W_t1_0), Int(3)), ((id3_R_t2, id2_W_t1_1), Int(4)), ((id3_R_t2, id2_W_t1_1), Int(5)), ((id3_R_t2, id2_W_t1_1), Int(6)), ((id3_R_t2, id2_W_t1_1), Int(7))};
+ASSERT AO = main.PO | t1.PO | t2.PO | t3.PO;
+ASSERT locs = {Int(0), Int(1), Int(2), Int(3)};
+ASSERT comp_RF = {(id8_R_t3, id1_W_main), (id8_R_t3, id2_W_t1), (id8_R_t3, id3_W_t1), (id8_R_t3, id4_W_t1), (id8_R_t3, id5_W_t2), (id8_R_t3, id6_W_t2), (id8_R_t3, id7_W_t2), (id9_R_t3, id1_W_main), (id9_R_t3, id4_W_t1), (id9_R_t3, id6_W_t2), (id9_R_t3, id7_W_t2)};
+ASSERT comp_RBF = {((id8_R_t3, id1_W_main), Int(0)), ((id8_R_t3, id1_W_main), Int(1)), ((id8_R_t3, id1_W_main), Int(2)), ((id8_R_t3, id1_W_main), Int(3)), ((id8_R_t3, id2_W_t1), Int(0)), ((id8_R_t3, id3_W_t1), Int(1)), ((id8_R_t3, id4_W_t1), Int(2)), ((id8_R_t3, id5_W_t2), Int(1)), ((id8_R_t3, id6_W_t2), Int(2)), ((id8_R_t3, id7_W_t2), Int(3)), ((id9_R_t3, id1_W_main), Int(2)), ((id9_R_t3, id1_W_main), Int(3)), ((id9_R_t3, id4_W_t1), Int(2)), ((id9_R_t3, id6_W_t2), Int(2)), ((id9_R_t3, id7_W_t2), Int(3))};

@@ -2,17 +2,18 @@ if (this.Worker) {
 (function execution() {
 var t1 =
 `onmessage = function(data) {
-var x = new Int8Array(data.x_sab); x[0] = 1;
-var x = new Int8Array(data.x_sab); x[1] = 1;
+var x = new Int8Array(data.x_sab); Atomics.store(x, 0, 1);
+var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 1);
 };`;
 var t2 =
 `onmessage = function(data) {
-var x = new Int8Array(data.x_sab); x[1] = 2;
-var x = new Int8Array(data.x_sab); x[2] = 2;
+var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 2);
+var x = new Int8Array(data.x_sab); Atomics.store(x, 2, 2);
 };`;
 var t3 =
 `onmessage = function(data) {
-var x = new Int32Array(data.x_sab); id6_R_t3 = x[0]; print("id6_R_t3: "+id6_R_t3);
+var x = new Int32Array(data.x_sab); id6_R_t3 = Atomics.load(x, 0); print("id6_R_t3: "+id6_R_t3);
+var x = new Int16Array(data.x_sab); id7_R_t3 = Atomics.load(x, 1); print("id7_R_t3: "+id7_R_t3);
 };`;
 var data = {
 x_sab : new SharedArrayBuffer(8),

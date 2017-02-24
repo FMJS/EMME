@@ -1,3 +1,4 @@
+// Single Variable Simple 14
 var x = new SharedArrayBuffer();
 
 Thread t1 {

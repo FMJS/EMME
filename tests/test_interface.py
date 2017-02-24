@@ -17,7 +17,7 @@ import os
 
 from ecmasab.printers import JSV8Printer
 from emme import Config, main
-from tests.input_tests import examples, ex_sv_s
+from tests.input_tests import examples, ex_fast
 
 tmp_dir = ".tmp_examples/"
 
@@ -60,20 +60,20 @@ def test_generation():
     for example in examples:
         yield run_existing, example, True
 
-    for example in ex_sv_s:
+    for example in ex_fast:
         yield run_existing, example, False
         
 def test_verification():
-    for example in ex_sv_s:
+    for example in ex_fast:
         yield run_fresh, example, False, True
 
-    for example in ex_sv_s:
+    for example in ex_fast:
         yield run_fresh, example, False, False
         
 
 if __name__ == "__main__":
-    for example in ex_sv_s:
+    for example in ex_fast:
         run_existing(example, True)
-    for example in ex_sv_s:
+    for example in ex_fast:
         run_fresh(example, False, True)
         

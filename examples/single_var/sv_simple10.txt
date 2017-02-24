@@ -1,9 +1,12 @@
+// Single variable, Simple10
 var x = new SharedArrayBuffer();
 
 Thread t1 {
-  x-F32[0] = 1.1;
+  for(i=0..1) {
+    x-F32[i] = i;
+  }
 }
 
 Thread t2 {
-  print(x-F32[0]);
+  print(x-F64[0]);
 }

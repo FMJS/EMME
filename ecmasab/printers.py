@@ -280,7 +280,7 @@ class JSV8Printer(JSPrinter):
         reads = []
         for el in interp.reads_values:
             value = el.get_correct_value()
-            if el.tear == WTEAR:
+            if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
                 reads.append(("%s: "+self.float_pri_js)%(el.name, value))
@@ -366,7 +366,7 @@ class JSV8Printer(JSPrinter):
         event_address = event.address
         tear = event.tear
         block_size = event.get_size()
-        is_float = tear == WTEAR
+        is_float = event.is_wtear()
         var_def = ""
         
         if (ordering != INIT):
@@ -545,7 +545,7 @@ class BePrinter():
         event_address = event.address
         tear = event.tear
         block_size = event.get_size()
-        is_float = tear == WTEAR
+        is_float = event.is_wtear()
 
         if (ordering == INIT):
             return ""

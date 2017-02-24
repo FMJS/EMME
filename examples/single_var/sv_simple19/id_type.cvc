@@ -1,1 +1,1 @@
-DATATYPE ID_TYPE = id1_W_main_Type | id2_W_t1_Type | id3_W_t1_0_Type | id3_W_t1_1_Type | id3_W_t1_2_Type | id4_R_t2_0_Type | id4_R_t2_1_Type END;
+DATATYPE ID_TYPE = id1_W_main_Type | id2_W_t1_Type | id3_W_t1_Type | id4_W_t1_Type | id5_W_t2_Type | id6_W_t2_Type | id7_W_t2_Type | id8_R_t3_Type | id9_R_t3_Type END;

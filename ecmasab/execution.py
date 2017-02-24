@@ -159,8 +159,6 @@ class Execution():
             return self.get_HB()
         else:
             return None
-
-        return None
     
 class Relation():
     name = None
@@ -444,9 +442,9 @@ class Memory_Event():
     def get_correct_value(self):
         if not self.values:
             return None
-        if self.tear == NTEAR:
+        if self.is_ntear():
             return self.get_int_value()
-        if self.tear == WTEAR:
+        if self.is_wtear():
             return self.get_float_value()
         return None
         

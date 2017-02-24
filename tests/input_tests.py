@@ -3,19 +3,19 @@ dv = "examples/double_vars/dv_simple%s"
 tv = "examples/triple_vars/tv_simple%s"
 
 examples = []
-ex_sv_s = []
-ex_sv_h = []
+ex_fast = []
+ex_slow = []
 ex_dv = []
 ex_tv = []
 
 # Single variable examples
-for f in ["%02d"%x for x in range(1, 6)]:
-    ex_sv_s.append(sv%f)
+for f in ["%02d"%x for x in range(1, 11)]:
+    ex_fast.append(sv%f)
 
-for f in ["%02d"%x for x in range(6, 21)]:
-    ex_sv_h.append(sv%f)
+for f in ["%02d"%x for x in range(11, 21)]:
+    ex_slow.append(sv%f)
 
-ex_sv = ex_sv_s + ex_sv_h
+ex_sv = ex_fast + ex_slow
 
 # Double variables examples
 ex_dv.append(dv%"01")

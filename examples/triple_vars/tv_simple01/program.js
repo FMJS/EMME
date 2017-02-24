@@ -14,15 +14,15 @@ var z = new Int8Array(data.z_sab); id9_R_t2 = Atomics.load(z, 0); print("id9_R_t
 };`;
 var data = {
 x_sab : new SharedArrayBuffer(8),
-z_sab : new SharedArrayBuffer(8),
 y_sab : new SharedArrayBuffer(8),
+z_sab : new SharedArrayBuffer(8),
 }
  
  
  
 var wt1 = new Worker(t1);
 var wt2 = new Worker(t2);
-wt1.postMessage(data, [data.x_sab, data.z_sab, data.y_sab]);
-wt2.postMessage(data, [data.x_sab, data.z_sab, data.y_sab]);
+wt1.postMessage(data, [data.x_sab, data.y_sab, data.z_sab]);
+wt2.postMessage(data, [data.x_sab, data.y_sab, data.z_sab]);
 })();
 }
