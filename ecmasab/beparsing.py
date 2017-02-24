@@ -74,7 +74,6 @@ P_STORE = "store"
 P_TRDB = "thread-begin"
 P_TYPEOP = "typeop"
 P_VALUE = "value"
-P_VARASS = "var-assign"
 P_VNAME = "varname"
 P_WRITE = "write"
 
@@ -151,10 +150,7 @@ class BeParser():
         data = (T_OSB + Word(nums+T_CM) + T_CSB)(P_DATA)
         addrfix = (T_OSB + Word(nums) + T_CSB)(P_ADDR)
         nrange = (Word(nums) + T_DOTS + Word(nums))(P_RANGE)
-        addrrange = (T_OSB + nrange + T_CSB)(P_ADDR)
-        addrparam = (T_OSB + expr + T_CSB)(P_ADDR)
-        
-        addr = addrparam | addrrange
+        addr = (T_OSB + expr + T_CSB)(P_ADDR)
         
         emptyline = (restOfLine+LineEnd())(P_EMPTY)
         comment = (T_COM + restOfLine + LineEnd())(P_COMMENT)
@@ -172,10 +168,6 @@ class BeParser():
 
         value = (expr)(P_VALUE)
         sabassign = (sabaccess + T_EQ + value + T_SEMI)(P_SABASS)
-        varassign = (varname + T_EQ + sabread + T_SEMI)(P_VARASS)
-
-        assign = varassign | sabassign
-
         printv = (T_PR + T_OP + sabread + T_CP + T_SEMI)(P_PRINT)
 
         threaddef = (T_THREAD + varname + Literal(T_OCB))(P_TRDB)
@@ -183,7 +175,7 @@ class BeParser():
 
         floop = (T_FOR + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
 
-        command = sab_def | sabstore | assign | threaddef | printv | floop | closescope
+        command = sab_def | sabstore | sabassign | threaddef | printv | floop | closescope
 
         return ZeroOrMore(command)
 
@@ -415,17 +407,6 @@ class BeParser():
                 if floop:
                     address = None
                     offset = "".join(list(command.address.asList())[1:-1][0])
-                elif command.address[2] == T_DOTS:
-                    brange = int(command.address[1])
-                    erange = int(command.address[3])
-
-                    address = []
-                    
-                    for addr in range(brange, erange+1, 1):
-                        baddr = varsize*addr
-                        eaddr = (varsize*(addr+1))-1
-                        address.append(range(baddr, eaddr+1, 1))
-                    varsize = eaddr+1
                 else:
                     addr = int(command.address[1])
 
@@ -565,15 +546,6 @@ class BeParser():
                     self.commands.insert(0, command.load)
                     continue
                 
-            elif command_name == P_VARASS:
-                if command.access:
-                    self.commands.insert(0, command.access)
-                    continue
-
-                if command.load:
-                    self.commands.insert(0, command.load)
-                    continue
-
             elif command_name == P_CSCOPE:
                 if floop:
                     floop.get_uevents()
