@@ -14,78 +14,57 @@ import sys
 import unittest
 import re
 
-from ecmasab.beparsing import BeParser
+from ecmasab.beparsing import BeParser, ParsingErrorException
+from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, JSV8Printer, BePrinter
+from tests.input_tests import examples, invalids
 
-sv = "examples/single_var/sv_simple%s"
-dv = "examples/double_vars/dv_simple%s"
-tv = "examples/triple_vars/tv_simple%s"
+def parse_and_generate(example, valid):
+    try:
+        strp = open("%s.txt"%example,"r").read()
 
-examples = []
+        printers = PrintersFactory.get_printers()
 
-# Single variable examples
-examples.append(sv%"01")
-examples.append(sv%"02")
-examples.append(sv%"03")
-examples.append(sv%"04")
-examples.append(sv%"05")
-examples.append(sv%"06")
-examples.append(sv%"07")
-examples.append(sv%"08")
-examples.append(sv%"09")
-examples.append(sv%"10")
-examples.append(sv%"11")
-examples.append(sv%"12")
-examples.append(sv%"13")
-examples.append(sv%"14")
-examples.append(sv%"15")
-examples.append(sv%"16")
-examples.append(sv%"17")
-examples.append(sv%"18")
-examples.append(sv%"19")
+        parser = BeParser()
+        program = parser.program_from_string(strp)
 
-# Double variables examples
-examples.append(dv%"01")
+        c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
+        cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
+        assert(c4printer in cprinters)
 
-# Triple variables examples
-examples.append(tv%"01")
+        c4printer.print_program(program)
+        c4printer.print_data_type(program)
+        c4printer.print_block_type(program)
 
-def parse_and_generate(example):
+        jprinter = PrintersFactory.printer_by_name(JSV8Printer().NAME)
+        jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
+        assert(jprinter in jprinters)
 
-    strp = open("%s.txt"%example,"r").read()
+        jprog = jprinter.print_program(program)
+    except (ParsingErrorException, UnreachableCodeException) as e:
+        if not valid:
+            print(e)
+            return
+        else:
+            raise e
 
-    printers = PrintersFactory.get_printers()
-    
-    parser = BeParser()
-    program = parser.program_from_string(strp)
+    if not valid:
+        assert(False)
+        
+    if valid:
+        with open("%s/program.js"%example,"r") as f:
+            a = f.read()
+            b = jprog
+            assert a == b
 
-    c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
-    cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
-    assert(c4printer in cprinters)
+        execsstr = open("%s/models.txt"%example,"r").read()
+        execs = parser.executions_from_string(execsstr)
+        eprint = c4printer.print_executions(execs)
 
-    c4printer.print_program(program)
-    c4printer.print_data_type(program)
-    c4printer.print_block_type(program)
-
-    jprinter = PrintersFactory.printer_by_name(JSV8Printer().NAME)
-    jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
-    assert(jprinter in jprinters)
-    
-    jprog = jprinter.print_program(program)
-
-    with open("%s/program.js"%example,"r") as f:
-        a = f.read()
-        b = jprog
-        assert a == b
-    
-    execsstr = open("%s/models.txt"%example,"r").read()
-    execs = parser.executions_from_string(execsstr)
-    eprint = c4printer.print_executions(execs)
-    
-    with open("%s/outputs.txt"%example,"r") as f:
-        a = f.read()
-        b = jprinter.print_executions(program, execs)
-        assert a == b
+        with open("%s/outputs.txt"%example,"r") as f:
+            a = f.read()
+            b = jprinter.print_executions(program, execs)
+            assert a == b
     
     assert True
 
@@ -98,18 +77,28 @@ def be_parsing(example):
     beprinter = PrintersFactory.printer_by_name(BePrinter().NAME)
     beprogram = beprinter.print_program(program)
     strp = re.sub("\n+","\n",strp)
+    strp = re.sub("//.*\n","",strp)
 
     strp = strp.replace(" ","")
     beprogram = beprogram.replace(" ", "")
-    
+
     assert(strp == beprogram)
     
 def test_parsing():
     for example in examples:
-        yield parse_and_generate, example
+        yield parse_and_generate, example, True
         yield be_parsing, example
 
+    for invalid in invalids:
+        yield parse_and_generate, invalid, False
+        
 if __name__ == "__main__":
-    for example in examples:
-        be_parsing(example)
-    
+    # for example in examples:
+    #     be_parsing(example)
+
+    # for example in examples:
+    #     parse_and_generate(example, True)
+
+    for invalid in invalids:
+        parse_and_generate(invalid, False)
+        

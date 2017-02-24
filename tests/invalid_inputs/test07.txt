@@ -1,0 +1,9 @@
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  Atomics.store(y-I8, 0, 1);
+}
+
+Thread t2 {
+  print(Atomics.load(x-I8, 0));
+}

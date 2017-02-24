@@ -18,7 +18,8 @@ from ecmasab.execution import HB, RF, RBF, MO, AO, SW
 from ecmasab.execution import OP_PRINT
 from ecmasab.exceptions import UnreachableCodeException
 
-from pyparsing import Word, nums, alphas, Suppress, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, oneOf, operatorPrecedence, opAssoc, Combine, Optional
+from pyparsing import ParseException, Word, nums, alphas, Suppress, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
+    oneOf, operatorPrecedence, opAssoc, Combine, Optional, LineStart, White
 
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
@@ -152,7 +153,7 @@ class BeParser():
         nrange = (Word(nums) + T_DOTS + Word(nums))(P_RANGE)
         addr = (T_OSB + expr + T_CSB)(P_ADDR)
         
-        emptyline = (restOfLine+LineEnd())(P_EMPTY)
+        emptyline = (ZeroOrMore(White(' \t')) + LineEnd())(P_EMPTY)
         comment = (T_COM + restOfLine + LineEnd())(P_COMMENT)
 
         sab_def = (T_VAR + varname + T_EQ + T_NEW + T_SAB + T_OP + T_CP + T_SEMI)(P_SABDEF)
@@ -175,7 +176,7 @@ class BeParser():
 
         floop = (T_FOR + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
 
-        command = sab_def | sabstore | sabassign | threaddef | printv | floop | closescope
+        command = sabstore | sab_def | sabassign | threaddef | printv | floop | closescope | comment | emptyline
 
         return ZeroOrMore(command)
 
@@ -250,8 +251,6 @@ class BeParser():
             exe.set_HB(rel)
         elif rel.name == MO:
             exe.set_MO(rel)
-        elif rel.name == AO:
-            pass
         elif rel.name == RBF:
             exe.set_RBF(rel)
         elif rel.name == RF:
@@ -276,13 +275,11 @@ class BeParser():
             
                 
     def __parse_program(self, strinput):
-        strinput = strinput.replace(T_SEMI, T_NL)
         for line in strinput.split(T_NL):
-            if line.strip() == "": continue
-            line = line+T_SEMI
-            pline = self.program_parser.parseString(line)
-            if not pline:
-                raise ParsingErrorException("ERROR: not well formed command \"%s\""%line)
+            try:
+                pline = self.program_parser.parseString(line, parseAll=True)
+            except ParseException as e:
+                raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(self.commands)+1, line.strip()))
             self.commands.append(pline)
 
         return self
@@ -318,7 +315,10 @@ class BeParser():
         blocks = {}
         op_purpose = None
         sab_defs = []
+        linenum = 0
+        name = ""
         while len(self.commands):
+            linenum += 1
             command = self.commands[0]
             self.commands = self.commands[1:]
             command_name = command.getName()
@@ -351,11 +351,10 @@ class BeParser():
             elif command_name == P_STORE:
                 block_name = command[1]
                 if not block_name in blocks:
-                    raise ParsingErrorException("ERROR: SAB \"%s\" not defined"%block_name)
+                    raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 if self.__var_type_is_float(command.typeop):
-                    raise ParsingErrorException("ERROR: Atomics.store not supports float type")
-
+                    raise ParsingErrorException("ERROR (L%s): Atomics.store not supports float type"% linenum)
                 
                 varsize = self.__get_var_size(command.typeop)
 
@@ -383,19 +382,15 @@ class BeParser():
 
                 if not floop:
                     try:
-                        if self.__var_type_is_float(command.typeop):
-                            me.set_values_from_float(float("".join(value)), baddr, eaddr)
-                        elif self.__var_type_is_int(command.typeop):
-                            me.set_values_from_int(int(value), baddr, eaddr)
-                        else:
-                            raise UnreachableCodeException("Invalid type")
+                        me.set_values_from_int(int(value), baddr, eaddr)
                     except:
-                        raise ParsingErrorException("ERROR: value %s cannot be encoded into %s bytes"%(value, eaddr))
+                        raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
 
                     thread.append(me)
                 else:
                     me.set_param_value(varsize, value)
-                    me.offset = offset 
+                    me.offset = offset
+                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
 
             elif command_name == P_SABASS:
@@ -403,7 +398,7 @@ class BeParser():
                 varsize = self.__get_var_size(command.typeop)
 
                 if not block_name in blocks:
-                    raise ParsingErrorException("ERROR: SAB \"%s\" not defined"%block_name)
+                    raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
                 if floop:
                     address = None
                     offset = "".join(list(command.address.asList())[1:-1][0])
@@ -433,24 +428,23 @@ class BeParser():
                     try:
                         if self.__var_type_is_float(command.typeop):
                             me.set_values_from_float(float(value), baddr, eaddr)
-                        elif self.__var_type_is_int(command.typeop):
+                        if self.__var_type_is_int(command.typeop):
                             me.set_values_from_int(int(value), baddr, eaddr)
-                        else:
-                            raise UnreachableCodeException("Invalid type")
                     except:
-                        raise ParsingErrorException("ERROR: value %s cannot be encoded into %s bytes"%(value, eaddr))
+                        raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
 
                     thread.append(me)
                 else:
                     value = "".join(value)
                     me.set_param_value(varsize, value)
                     me.offset = offset
+                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
 
             elif command_name == P_ACCESS:
                 block_name = command.varname
                 if not block_name in blocks:
-                    raise ParsingErrorException("ERROR: SAB \"%s\" not defined"%block_name)
+                    raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 values = None
                 varsize = self.__get_var_size(command.typeop)
@@ -486,15 +480,16 @@ class BeParser():
                 else:
                     me.set_param_value(varsize, None)
                     me.offset = offset
+                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
 
             elif command_name == P_LOAD:
                 block_name = command.varname
                 if not block_name in blocks:
-                    raise ParsingErrorException("ERROR: SAB \"%s\" not defined"%block_name)
+                    raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 if self.__var_type_is_float(command.typeop):
-                    raise ParsingErrorException("ERROR: Atomics.load not supports float type")
+                    raise ParsingErrorException("ERROR (L%s): Atomics.load not supports float type"%linenum)
 
                 values = None
                 
@@ -532,8 +527,8 @@ class BeParser():
                     value = "".join(command.value)
                     me.set_param_value(varsize, value)
                     me.offset = offset
+                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
-                    
 
 
             elif command_name == P_PRINT:
@@ -561,10 +556,10 @@ class BeParser():
                 cname = command.varname
                 floop.set_values(cname, frind, toind)
                 continue
-            elif command_name == P_COMMENT:
+            elif (command_name == P_COMMENT) or (command_name == P_EMPTY):
                 continue
             else:
-                raise UnreachableCodeException("Unhandled command: %s (%s)"%(" ".join(command), name))
+                raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\" (%s)"%(linenum, " ".join(command), name))
 
 
         for sdef in sab_defs:
@@ -573,8 +568,4 @@ class BeParser():
         self.program = program
 
         return program
-
-            
-    def get_commands(self):
-        return self.commands
 

@@ -17,49 +17,9 @@ import os
 
 from ecmasab.printers import JSV8Printer
 from emme import Config, main
+from tests.input_tests import examples, ex_sv_s
 
 tmp_dir = ".tmp_examples/"
-
-sv = "examples/single_var/sv_simple%s"
-dv = "examples/double_vars/dv_simple%s"
-tv = "examples/triple_vars/tv_simple%s"
-
-examples = []
-ex_sv_s = []
-ex_sv_h = []
-ex_dv = []
-ex_tv = []
-
-# Single variable examples
-ex_sv_s.append(sv%"01")
-ex_sv_s.append(sv%"02")
-ex_sv_s.append(sv%"03")
-ex_sv_s.append(sv%"04")
-ex_sv_s.append(sv%"05")
-ex_sv_h.append(sv%"06")
-ex_sv_h.append(sv%"07")
-ex_sv_h.append(sv%"08")
-ex_sv_h.append(sv%"09")
-ex_sv_h.append(sv%"10")
-ex_sv_h.append(sv%"11")
-ex_sv_h.append(sv%"12")
-ex_sv_h.append(sv%"13")
-ex_sv_h.append(sv%"14")
-ex_sv_h.append(sv%"15")
-ex_sv_h.append(sv%"16")
-ex_sv_h.append(sv%"17")
-ex_sv_h.append(sv%"18")
-ex_sv_h.append(sv%"19")
-
-ex_sv = ex_sv_s + ex_sv_h
-
-# Double variables examples
-ex_dv.append(dv%"01")
-
-# Triple variables examples
-ex_tv.append(tv%"01")
-
-examples = ex_sv + ex_dv + ex_tv
 
 def run(config):
     config.verbosity = 3
@@ -99,7 +59,10 @@ def run_existing(example, skip_solving):
 def test_generation():
     for example in examples:
         yield run_existing, example, True
-    
+
+    for example in ex_sv_s:
+        yield run_existing, example, False
+        
 def test_verification():
     for example in ex_sv_s:
         yield run_fresh, example, False, True

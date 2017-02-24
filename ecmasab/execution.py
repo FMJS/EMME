@@ -471,8 +471,6 @@ class Memory_Event():
             return '<H'
         elif size <= 4:
             return '<I'
-        elif size <= 8:
-            return '<Q'
         else:
             raise UnreachableCodeException()
 

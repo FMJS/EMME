@@ -415,7 +415,7 @@ class JSV8Printer(JSPrinter):
                 event_values = event.get_correct_value()
                     
             if operation == WRITE:
-                if is_float:
+                if is_float and event_address:
                     event_values = self.float_pri_js%event_values
 
                 operation = ("%s[%s] = %s;")%(block_name, \
@@ -546,14 +546,10 @@ class BePrinter():
         tear = event.tear
         block_size = event.get_size()
         is_float = tear == WTEAR
-        
+
         if (ordering == INIT):
             return ""
         
-        if (operation == WRITE) and (ordering == INIT):
-            operation = ""
-
-
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
@@ -571,8 +567,8 @@ class BePrinter():
 
             if operation == READ:
                 operation = "print(Atomics.load(%s%s, %s));"%(block_name, \
-                                                        self.__get_block_size(block_size, False), \
-                                                        addr)
+                                                              self.__get_block_size(block_size, False), \
+                                                              addr)
 
         if (ordering == UNORD) or is_float:
             if not event_address:
@@ -583,7 +579,7 @@ class BePrinter():
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
-                if is_float:
+                if is_float and event_address:
                     event_values = self.float_pri_js%event_values
                     event_values = re.sub("0+\Z","", event_values)
                 
