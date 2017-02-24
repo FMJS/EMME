@@ -46,18 +46,6 @@ class CVC4Solver():
         self.assertions = []
         self.incremental = False
 
-    def set_models_file(self, models_file):
-        self.models_file = models_file
-
-    def get_models_file(self):
-        return self.models_file
-
-    def set_verbosity(self, verbosity):
-        self.verbosity = verbosity
-
-    def get_verbosity(self):
-        return self.verbosity
-
     def __add_execution(self, execution):
         if str(execution) in self.executions:
             raise UnreachableCodeException("Enumeration of not distincs models")

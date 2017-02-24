@@ -288,13 +288,6 @@ class JSV8Printer(JSPrinter):
                 reads.append("%s: %s"%(el.name, value))
         return ";".join(reads)
 
-    def __print_relation(self, relation):
-        tuples = relation.tuples
-        return "%s = {%s}"%(relation.name, ", ".join([self.__print_tuple(x) for x in tuples]))
-
-    def __print_tuple(self, tup):
-        return "(%s)"%(",".join([str(x) for x in tup]))
-    
     def print_program(self, program):
         program.sort_threads()
         
@@ -503,14 +496,6 @@ class DotPrinter():
                 
         return "\n".join(ret)
     
-    def print_program(self, program):
-        pass
-    
-    def print_event(self, event):
-        pass
-    
-    
-
 class BePrinter():
     NAME = "BE"
     TYPE = PrinterType.BEXEC

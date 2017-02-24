@@ -18,6 +18,8 @@ import os
 from ecmasab.printers import JSV8Printer
 from emme import Config, main
 
+tmp_dir = ".tmp_examples/"
+
 sv = "examples/single_var/sv_simple%s"
 dv = "examples/double_vars/dv_simple%s"
 tv = "examples/triple_vars/tv_simple%s"
@@ -59,39 +61,56 @@ ex_tv.append(tv%"01")
 
 examples = ex_sv + ex_dv + ex_tv
 
-
-def run_all(example, skip_solving, sat, expand):
-
-    config = Config()
-    config.inputfile = example+".txt"
-    config.prefix = example+"/"
-    if sat:
-        config.prefix = "/tmp/"+example+"/"
-        if os.path.exists(config.prefix):
-            shutil.rmtree(config.prefix)
-    config.sat = sat
+def run(config):
     config.verbosity = 3
     config.jsprinter = JSV8Printer().NAME
+    config.defines = "enc_RF=0,enc_RBF1=0,enc_RBF2=0"
+    
+    main(config)
+
+def run_fresh(example, skip_solving, expand):
+    config = Config()
+    config.inputfile = example+".txt"
+    
+    config.prefix = tmp_dir+example+"/"
+    config.sat = True
+    if os.path.exists(config.prefix):
+        shutil.rmtree(config.prefix)
+            
     config.skip_solving = skip_solving
     config.expand_bounded_sets = expand
 
-    main(config)
-        
-    assert True
+    run(config)
 
+    shutil.rmtree(tmp_dir)    
+
+def run_existing(example, skip_solving):
+    config = Config()
+    config.inputfile = example+".txt"
+    
+    config.prefix = example+"/"
+    config.sat = False
+    config.skip_solving = skip_solving
+    config.expand_bounded_sets = True
+
+    run(config)
+
+    
 def test_generation():
     for example in examples:
-        yield run_all, example, True, False, True
+        yield run_existing, example, True
     
-def test_all():
+def test_verification():
     for example in ex_sv_s:
-        yield run_all, example, False, True, True
+        yield run_fresh, example, False, True
 
     for example in ex_sv_s:
-        yield run_all, example, False, True, False
+        yield run_fresh, example, False, False
         
 
 if __name__ == "__main__":
     for example in ex_sv_s:
-        run_all(example, False, True, False)
+        run_existing(example, True)
+    for example in ex_sv_s:
+        run_fresh(example, False, True)
         

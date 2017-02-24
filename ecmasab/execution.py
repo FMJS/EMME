@@ -271,12 +271,6 @@ class Thread():
         self.events.append(event)
         return event
 
-    def add(self, events):
-        for event in events:
-            self.events.append(event)
-        return self.events
-
-
 class For_Loop():
     events = None
     uevents = None
@@ -443,10 +437,6 @@ class Memory_Event():
 
         self.block.update_size(end+1)
         
-    def set_int_values(self, int_value):
-        self.address = range(0, self.block.size, 1)
-        self.set_values_from_int(int_value, 0, self.block.size)
-
     def set_init_values(self):
         self.address = range(0, self.block.size, 1)
         self.values = [0]*self.block.size

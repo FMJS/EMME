@@ -15,7 +15,7 @@ import os
 import sys
 
 from ecmasab.beparsing import BeParser
-from ecmasab.printers import JSV8Printer, CVC4Printer, PrintersFactory, PrinterType, NotRegisteredPrinterException
+from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType, NotRegisteredPrinterException
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
@@ -105,7 +105,7 @@ def main(config):
         f.write(c4printer.print_data_type(program))
         
     # Preprocessing the model using cpp #
-    cpppre = ExtPreprocessor("cpp")
+    cpppre = ExtPreprocessor(CPP)
     cpppre.set_output_file(model_ex)
     cpppre.set_defines(config.defines)
     strmodel = cpppre.preprocess_from_file(model)
@@ -129,10 +129,10 @@ def main(config):
 
     # Running the solver to generate all sat models #
     c4solver = CVC4Solver()
-    c4solver.set_verbosity(verbosity)
+    c4solver.verbosity = verbosity
 
     if True: #not config.sat:
-        c4solver.set_models_file(models)
+        c4solver.models_file = models
 
     totmodels = c4solver.get_models_size()
         
@@ -165,7 +165,7 @@ def main(config):
         
     # Generation of the JS litmus test #
     jprinter = PrintersFactory.printer_by_name(config.jsprinter)
-    dprinter = PrintersFactory.printer_by_name("DOT")
+    dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
 
     with open(jsprogram, "w") as f:
         f.write(jprinter.print_program(program))

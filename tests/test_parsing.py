@@ -15,7 +15,7 @@ import unittest
 import re
 
 from ecmasab.beparsing import BeParser
-from ecmasab.printers import PrintersFactory, CVC4Printer, JSV8Printer, BePrinter
+from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, JSV8Printer, BePrinter
 
 sv = "examples/single_var/sv_simple%s"
 dv = "examples/double_vars/dv_simple%s"
@@ -60,12 +60,17 @@ def parse_and_generate(example):
     program = parser.program_from_string(strp)
 
     c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
+    cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
+    assert(c4printer in cprinters)
 
     c4printer.print_program(program)
     c4printer.print_data_type(program)
     c4printer.print_block_type(program)
 
     jprinter = PrintersFactory.printer_by_name(JSV8Printer().NAME)
+    jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
+    assert(jprinter in jprinters)
+    
     jprog = jprinter.print_program(program)
 
     with open("%s/program.js"%example,"r") as f:
@@ -99,7 +104,7 @@ def be_parsing(example):
     
     assert(strp == beprogram)
     
-def test_sv_parsing():
+def test_parsing():
     for example in examples:
         yield parse_and_generate, example
         yield be_parsing, example
