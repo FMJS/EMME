@@ -179,7 +179,7 @@ class QuantPreprocessor():
             return value
         else:
             if type(formula) == list:
-                for i in xrange(len(formula)):
+                for i in range(len(formula)):
                     formula[i] = self.__process_quantifier_int(formula[i], set_dict, set_type_dict, sup)
 
         return formula
@@ -262,7 +262,7 @@ class ExtPreprocessor():
 
         out = out.split(b"\n")
 
-        for x in xrange(len(out)):
+        for x in range(len(out)):
             if re.search("\A\s*\#", out[x]) != None:
                 out[x] = '\n'
 
