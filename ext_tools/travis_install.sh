@@ -9,9 +9,10 @@ if [ ! -f "$BINDINGS" ]; then
     make
     sudo make install
     cd ..
+    rm -fr CVC4
     wget https://github.com/CVC4/CVC4/archive/master.zip
     unzip master.zip
-    ls
+    rm -fr master.zip
     mv CVC4-master CVC4
     cd CVC4/contrib
     ./get-antlr-3.4
