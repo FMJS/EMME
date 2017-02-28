@@ -1,13 +1,15 @@
+// Single Variable Simple 16
 var x = new SharedArrayBuffer();
 
 Thread t1 {
-  x-F32[0] = 1.1;
+  x-I8[0] = 1;
+  for(i=0..2) {
+    Atomics.store(x-I8, i+1, i+1);
+  }
 }
 
 Thread t2 {
-  x-F32[1] = 2.2;
-}
-
-Thread t3 {
-  print(x-F64[0]);
+  for(i=0..1) {
+    print(Atomics.load(x-I16, i));
+  }
 }

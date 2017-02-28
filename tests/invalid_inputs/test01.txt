@@ -1,0 +1,9 @@
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  x-I8[0] = 99999999999999999;
+}
+
+Thread t2 {
+  print(x-I8[0]);
+}

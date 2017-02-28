@@ -17,49 +17,10 @@ import os
 
 from ecmasab.printers import JSV8Printer
 from emme import Config, main
+from tests.input_tests import examples, ex_fast
 
 tmp_dir = ".tmp_examples/"
-
-sv = "examples/single_var/sv_simple%s"
-dv = "examples/double_vars/dv_simple%s"
-tv = "examples/triple_vars/tv_simple%s"
-
-examples = []
-ex_sv_s = []
-ex_sv_h = []
-ex_dv = []
-ex_tv = []
-
-# Single variable examples
-ex_sv_s.append(sv%"01")
-ex_sv_s.append(sv%"02")
-ex_sv_s.append(sv%"03")
-ex_sv_s.append(sv%"04")
-ex_sv_s.append(sv%"05")
-ex_sv_h.append(sv%"06")
-ex_sv_h.append(sv%"07")
-ex_sv_h.append(sv%"08")
-ex_sv_h.append(sv%"09")
-ex_sv_h.append(sv%"10")
-ex_sv_h.append(sv%"11")
-ex_sv_h.append(sv%"12")
-ex_sv_h.append(sv%"13")
-ex_sv_h.append(sv%"14")
-ex_sv_h.append(sv%"15")
-ex_sv_h.append(sv%"16")
-ex_sv_h.append(sv%"17")
-ex_sv_h.append(sv%"18")
-ex_sv_h.append(sv%"19")
-
-ex_sv = ex_sv_s + ex_sv_h
-
-# Double variables examples
-ex_dv.append(dv%"01")
-
-# Triple variables examples
-ex_tv.append(tv%"01")
-
-examples = ex_sv + ex_dv + ex_tv
+outputs = "outputs.txt"
 
 def run(config):
     config.verbosity = 3
@@ -67,7 +28,7 @@ def run(config):
     config.defines = "enc_RF=0,enc_RBF1=0,enc_RBF2=0"
     
     main(config)
-
+    
 def run_fresh(example, skip_solving, expand):
     config = Config()
     config.inputfile = example+".txt"
@@ -80,8 +41,21 @@ def run_fresh(example, skip_solving, expand):
     config.skip_solving = skip_solving
     config.expand_bounded_sets = expand
 
+    #solving one instance
     run(config)
 
+    # generating the expected outputs
+    config.skip_solving = True
+    config.sat = False
+    run(config)
+    
+    # checking if the new model is correct
+    with open(config.prefix+outputs, "r") as new:
+        with open(example+"/"+outputs, "r") as old:
+            linesold = [x.strip() for x in old.readlines()]
+            for linenew in new.readlines():
+                assert(linenew in linesold)
+                
     shutil.rmtree(tmp_dir)    
 
 def run_existing(example, skip_solving):
@@ -99,18 +73,21 @@ def run_existing(example, skip_solving):
 def test_generation():
     for example in examples:
         yield run_existing, example, True
-    
+
+    for example in ex_fast:
+        yield run_existing, example, False
+        
 def test_verification():
-    for example in ex_sv_s:
+    for example in ex_fast:
         yield run_fresh, example, False, True
 
-    for example in ex_sv_s:
+    for example in ex_fast:
         yield run_fresh, example, False, False
         
 
 if __name__ == "__main__":
-    for example in ex_sv_s:
+    for example in ex_fast:
         run_existing(example, True)
-    for example in ex_sv_s:
+    for example in ex_fast:
         run_fresh(example, False, True)
         

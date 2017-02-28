@@ -1,13 +1,17 @@
+// Single Variable Simple 13
 var x = new SharedArrayBuffer();
 
 Thread t1 {
-  x-I16[0] = 1;
+  x-I8[0] = 1;
+  x-I8[1] = 1;
 }
 
 Thread t2 {
-  x-I8[0] = 2;
+  x-I8[1] = 2;
+  x-I8[2] = 2;
 }
 
 Thread t3 {
-  print(x-F32[0]);
+  print(x-I32[0]);
+  print(x-I16[1]);
 }
