@@ -388,7 +388,7 @@ class JSV8Printer(JSPrinter):
                 addr = event.offset
                 event_values = event.value
             else:
-                addr = event_address[0]/block_size
+                addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
@@ -411,7 +411,7 @@ class JSV8Printer(JSPrinter):
                 addr = event.offset
                 event_values = event.value
             else:
-                addr = event_address[0]/block_size
+                addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
                     
             if operation == WRITE:
@@ -555,7 +555,7 @@ class BePrinter():
                 addr = event.offset
                 event_values = event.value
             else:
-                addr = event_address[0]/block_size
+                addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
@@ -575,7 +575,7 @@ class BePrinter():
                 addr = event.offset
                 event_values = event.value
             else:
-                addr = event_address[0]/block_size
+                addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
