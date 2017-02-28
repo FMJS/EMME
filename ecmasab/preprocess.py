@@ -39,7 +39,7 @@ class QuantPreprocessor():
         self.expand_sets = value
 
     def __cleanup_model(self, model):
-        lines = [x for x in model.split("\n") if ((x != "") and (x[0] != '%'))]
+        lines = [x for x in model.split(b"\n") if ((x != "") and (x[0] != '%'))]
         return "\n".join(lines)
     
     def preprocess_from_string(self, strinput):
@@ -50,8 +50,8 @@ class QuantPreprocessor():
 
         for set_ass in re.findall("[a-zA-Z0-9_\.]* *= \{*[a-zA-Z0-9_, ]*\}(?=[;|\)])", strinput):
             set_ass = set_ass.replace(" ","")
-            set_ass = set_ass.split("=")
-            set_dict[set_ass[0]] = set_ass[1][1:-1].split(",")
+            set_ass = set_ass.split(b"=")
+            set_dict[set_ass[0]] = set_ass[1][1:-1].split(b",")
 
         for set_def in re.findall("(.*):(.*)(SET OF)(.*)(?=;)", strinput):
             set_name = set_def[0].replace(" ","")
@@ -125,9 +125,9 @@ class QuantPreprocessor():
         elements = formula[1][0]
         elements = elements.replace("(","")
         elements = elements.replace(")","")
-        elements = elements.split("IN")
+        elements = elements.split(b"IN")
         theset = elements[1].replace(" ", "")
-        elements = elements[0].replace(" ", "").split(",")
+        elements = elements[0].replace(" ", "").split(b",")
 
         new_formula = self.__print_formula(formula[3])
 
@@ -202,7 +202,7 @@ class QuantPreprocessor():
 
         variables = variables.group(0)
         variables = variables.replace(" ", "")
-        variables = variables.split(",")
+        variables = variables.split(b",")
 
         assert(set_range in set_dict)
 
@@ -253,14 +253,14 @@ class ExtPreprocessor():
         command = []
         command.append("%s"%self.pproc)
         if self.defines != None:
-            for define in self.defines.split(","):
+            for define in self.defines.split(b","):
                 command.append("-D %s" % define)
         command.append("%s" % filename)
 
         process = subprocess.Popen(command, stdout=subprocess.PIPE)
         out, err = process.communicate()
 
-        out = out.split("\n")
+        out = out.split(b"\n")
 
         for x in xrange(len(out)):
             if re.search("\A\s*\#", out[x]) != None:
