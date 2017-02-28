@@ -62,8 +62,10 @@ def parse_and_generate(example, valid):
         eprint = c4printer.print_executions(execs)
 
         with open("%s/outputs.txt"%example,"r") as f:
-            a = f.read()
-            b = jprinter.print_executions(program, execs)
+            a = f.read().split("\n")
+            b = jprinter.print_executions(program, execs).split("\n")
+            a.sort()
+            b.sort()
             assert a == b
     
     assert True

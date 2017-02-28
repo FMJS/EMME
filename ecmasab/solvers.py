@@ -58,7 +58,7 @@ class CVC4Solver():
         tuples = self.__get_all_tuples(expression, [])
         for tup in tuples:
             el = []
-            for i in xrange(len(tup.getChildren())):
+            for i in range(len(tup.getChildren())):
                 if tup.getChild(i).getType().isTuple():
                     el.append(self.__gen_memory_event(tup.getChild(i).getChild(0)).name)
                     el.append(self.__gen_memory_event(tup.getChild(i).getChild(1)).name)

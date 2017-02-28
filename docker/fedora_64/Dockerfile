@@ -2,7 +2,7 @@ FROM fedora
 WORKDIR /tmp
 RUN pwd
 
-RUN yum install -y wget unzip @development-tools swig python automake libtool gmp-devel gmp-*  curl which nano python-devel boost-devel gcc-c++ java
+RUN yum install -y wget unzip @development-tools python-pip swig python automake libtool gmp-devel gmp-*  curl which nano python-devel boost-devel gcc-c++ java
 RUN wget https://github.com/FMJS/EMME/archive/master.zip
 RUN unzip master.zip
 RUN cd EMME-master/ext_tools && bash ./get_CVC4.sh

@@ -215,7 +215,7 @@ class Program():
             self.threads.append(threads_map[MAIN])
             del(threads_map[MAIN])
             
-        keys = threads_map.keys()
+        keys = list(threads_map.keys())
         keys.sort()
         for key in keys:
             self.threads.append(threads_map[key])
@@ -226,6 +226,7 @@ class Block():
 
     def __init__(self, name):
         self.name = name
+        self.size = 1
 
     def __repr__(self):
         return self.name

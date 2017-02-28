@@ -63,8 +63,6 @@ def main(config):
     execs = config.prefix+"outputs.txt"
     mm = ("/".join(abspath.split("/")[:-1]))+"/model/memory_model.cvc"
 
-    print config.prefix
-    
     if verbosity > 0:
         print("** Running with path \"%s\" **\n"%(config.prefix))
 
@@ -141,13 +139,10 @@ def main(config):
             sys.stdout.write("Solving... ")
             sys.stdout.flush()
         
-        try:
-            if config.sat:
-                totmodels = c4solver.solve_n(strmodel, 1)
-            else:
-                totmodels = c4solver.solve_all(strmodel)
-        except KeyboardInterrupt:
-            pass
+        if config.sat:
+            totmodels = c4solver.solve_n(strmodel, 1)
+        else:
+            totmodels = c4solver.solve_all(strmodel)
 
         if verbosity > 0:
             sys.stdout.write("DONE\n")
