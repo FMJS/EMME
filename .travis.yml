@@ -1,0 +1,40 @@
+dist: trusty
+language: python
+python:
+  - "2.7"
+
+sudo: required
+
+cache:
+  directories:
+  - ${TRAVIS_BUILD_DIR}/ext_tools/CVC4
+
+addons:
+  apt:
+    packages:
+     - wget
+     - unzip
+     - build-essential
+     - python
+     - automake
+     - libgmp-dev
+     - curl
+     - nano
+     - python-dev
+     - libboost-dev
+     - default-jdk
+     - libclang-dev
+     - llvm
+     - llvm-dev
+     - lbzip2
+     - libncurses5-dev
+
+install:
+  - pip install -r requirements.txt
+  - cd ext_tools && bash ./travis_install.sh && cd ..
+  
+
+env:
+ - PYTHONPATH=${TRAVIS_BUILD_DIR}/ext_tools/CVC4/python_bindings:$PYTHONPATH LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/ext_tools/CVC4/python_bindings:$LD_LIBRARY_PATH
+
+script: nosetests tests -v
