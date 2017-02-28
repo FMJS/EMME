@@ -263,7 +263,8 @@ class ExtPreprocessor():
         out = out.split(b"\n")
 
         for x in range(len(out)):
-            if re.search("\A\s*\#", out[x].decode('utf-8')) != None:
+            out[x] = str(out[x].decode('utf-8'))
+            if re.search("\A\s*\#", out[x]) != None:
                 out[x] = '\n'
 
         return "\n".join(out)

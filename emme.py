@@ -139,13 +139,10 @@ def main(config):
             sys.stdout.write("Solving... ")
             sys.stdout.flush()
         
-        try:
-            if config.sat:
-                totmodels = c4solver.solve_n(strmodel, 1)
-            else:
-                totmodels = c4solver.solve_all(strmodel)
-        except KeyboardInterrupt:
-            pass
+        if config.sat:
+            totmodels = c4solver.solve_n(strmodel, 1)
+        else:
+            totmodels = c4solver.solve_all(strmodel)
 
         if verbosity > 0:
             sys.stdout.write("DONE\n")
