@@ -226,6 +226,7 @@ class Block():
 
     def __init__(self, name):
         self.name = name
+        self.size = 1
 
     def __repr__(self):
         return self.name
