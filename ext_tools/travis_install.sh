@@ -11,7 +11,6 @@ if [ ! -f "$BINDINGS" ]; then
     cd ..
     wget https://github.com/CVC4/CVC4/archive/master.zip
     unzip master.zip
-    rm -fr master.zip
     mv CVC4-master CVC4
     cd CVC4/contrib
     ./get-antlr-3.4
