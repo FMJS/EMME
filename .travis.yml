@@ -38,4 +38,4 @@ install:
 env:
  - PYTHONPATH=${TRAVIS_BUILD_DIR}/ext_tools/CVC4/python_bindings:$PYTHONPATH LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/ext_tools/CVC4/python_bindings:$LD_LIBRARY_PATH
 
-script: nosetests tests -vv
+script: nosetests tests -v
