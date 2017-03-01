@@ -8,7 +8,7 @@ sudo: required
 
 cache:
   directories:
-  - ${TRAVIS_BUILD_DIR}/ext_tools/CVC4/python_bindings
+  - ${TRAVIS_BUILD_DIR}/ext_tools/CVC4
 
 addons:
   apt:
