@@ -13,7 +13,7 @@ import re
 from six.moves import range
 
 from ecmasab.execution import BLOCKING_RELATIONS, For_Loop
-from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, MAIN, TYPE
+from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
 
@@ -540,7 +540,6 @@ class BePrinter(object):
         operation = event.operation
         ordering = event.ordering
         block_name = event.block.name
-        event_name = event.name
         event_address = event.address
         block_size = event.get_size()
         is_float = event.is_wtear()
