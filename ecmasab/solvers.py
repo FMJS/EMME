@@ -10,13 +10,15 @@
 
 import CVC4
 import sys
-import argparse
 import re
-import six
-import copy
+from six.moves import range
 import os
 
-from ecmasab.execution import Executions, Execution, Relation, Memory_Event, RF, RELATIONS, BLOCKING_RELATIONS
+from ecmasab.execution import Execution, \
+    Relation, \
+    Memory_Event, \
+    RELATIONS, \
+    BLOCKING_RELATIONS
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import CVC4Printer
 from ecmasab.exceptions import UnreachableCodeException
@@ -25,13 +27,11 @@ from CVC4 import Options, \
     ExprManager, \
     ParserBuilder, \
     SmtEngine, \
-    Command, \
     SExpr, \
     CheckSatCommand, \
-    AssertCommand, \
-    ResetCommand
+    AssertCommand
 
-class CVC4Solver():
+class CVC4Solver(object):
     verbosity = None
     models_file = None
 
@@ -76,8 +76,6 @@ class CVC4Solver():
         OCP = "\(|\)"
         OCS = "{|}"
         ES = ""
-        OP = "("
-        CP = ")"
         SP = " "
 
         name = re.sub(TYPE+"|"+OCP, ES, expression.getChild(0).toString())
@@ -90,7 +88,7 @@ class CVC4Solver():
 
         return Memory_Event(name, operation, tear, ordering, address, block, values)
 
-    def __get_all_tuples(self, expression, tuples=[]):
+    def __get_all_tuples(self, expression, tuples):
         if expression.isNull():
             return
 
@@ -188,8 +186,6 @@ class CVC4Solver():
                 return [ind+pre_ind, 0]
 
             assigns = exprmgr.mkBoolConst(True)
-
-            modelstr = []
 
             exe = Execution()
             for relation in RELATIONS:

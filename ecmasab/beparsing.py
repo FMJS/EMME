@@ -9,17 +9,16 @@
 # limitations under the License.
 
 import copy
-import sys
-import six
+from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
-from ecmasab.execution import HB, RF, RBF, MO, AO, SW
+from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.execution import OP_PRINT
 from ecmasab.exceptions import UnreachableCodeException
 
-from pyparsing import ParseException, Word, nums, alphas, Suppress, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
-    oneOf, operatorPrecedence, opAssoc, Combine, Optional, LineStart, White
+from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
+    operatorPrecedence, opAssoc, Combine, Optional, White
 
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
@@ -59,7 +58,6 @@ P_ADDR = "address"
 P_ADDRSET = "address-set"
 P_COMMENT = "comment"
 P_CSCOPE = "closescope"
-P_DATA = "data"
 P_EMPTY = "empty"
 P_EXPR = "expr"
 P_FLOOP = "floop"
@@ -85,7 +83,7 @@ P_EMREL = "em-relation"
 class ParsingErrorException(Exception):
     pass
 
-class BeParser():
+class BeParser(object):
     program = None
     program_parser = None
 
@@ -148,8 +146,6 @@ class BeParser():
                                     (plusop, 2, opAssoc.LEFT),]
         )
         
-        data = (T_OSB + Word(nums+T_CM) + T_CSB)(P_DATA)
-        addrfix = (T_OSB + Word(nums) + T_CSB)(P_ADDR)
         nrange = (Word(nums) + T_DOTS + Word(nums))(P_RANGE)
         addr = (T_OSB + expr + T_CSB)(P_ADDR)
         
@@ -278,7 +274,7 @@ class BeParser():
         for line in strinput.split(T_NL):
             try:
                 pline = self.program_parser.parseString(line, parseAll=True)
-            except ParseException as e:
+            except ParseException:
                 raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(self.commands)+1, line.strip()))
             self.commands.append(pline)
 
@@ -350,7 +346,7 @@ class BeParser():
                 
             elif command_name == P_STORE:
                 block_name = command[1]
-                if not block_name in blocks:
+                if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 if self.__var_type_is_float(command.typeop):
@@ -397,7 +393,7 @@ class BeParser():
                 block_name = command.varname
                 varsize = self.__get_var_size(command.typeop)
 
-                if not block_name in blocks:
+                if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
                 if floop:
                     address = None
@@ -443,7 +439,7 @@ class BeParser():
 
             elif command_name == P_ACCESS:
                 block_name = command.varname
-                if not block_name in blocks:
+                if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 values = None
@@ -485,7 +481,7 @@ class BeParser():
 
             elif command_name == P_LOAD:
                 block_name = command.varname
-                if not block_name in blocks:
+                if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 if self.__var_type_is_float(command.typeop):

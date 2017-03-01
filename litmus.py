@@ -10,23 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
 import commands
 import argparse
 import sys
 import multiprocessing
 import signal
 import time
+from six.moves import range
 
 K = "k"
 M = "M"
 
-def run_command(ind, command, number):
+def run_command(command, number):
 
     try:
         outputs_dic = {}
 
-        for i in xrange(number):
+        for i in range(number):
 
             out = commands.getoutput(" ".join(command))
             # process = subprocess.Popen(command, stdout=subprocess.PIPE)
@@ -56,7 +56,7 @@ def run_command(ind, command, number):
         return outputs_dic
 
     except KeyboardInterrupt:
-        raise KeyboardInterruptError()
+        raise KeyboardInterrupt()
 
 def main(command, outputs, number, threads, percent):
 
@@ -75,7 +75,7 @@ def main(command, outputs, number, threads, percent):
 
     try:
         number = int(number)
-    except:
+    except Exception:
         number = 1
         
     number = int(number)*factor
@@ -88,7 +88,7 @@ def main(command, outputs, number, threads, percent):
                 line.sort()
                 line = ";".join(line)
                 outputs_dic[line] = 0
-    except:
+    except Exception:
         print("File not found \"%s\""%outputs)
         sys.exit(1)
 
@@ -102,8 +102,8 @@ def main(command, outputs, number, threads, percent):
     signal.signal(signal.SIGINT, original_sigint_handler)
     
         
-    for i in xrange(num_t):
-        async_results.append(pool.apply_async(run_command, (i+1, command, number/num_t)))
+    for i in range(num_t):
+        async_results.append(pool.apply_async(run_command, (command, number/num_t)))
 
     try:
         print("Running...")
@@ -115,7 +115,7 @@ def main(command, outputs, number, threads, percent):
         sys.exit(1)
 
 
-    for i in xrange(num_t):
+    for i in range(num_t):
         outputs_t.append(async_results[i].get())
 
         
