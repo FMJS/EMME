@@ -18,7 +18,7 @@ from ecmasab.execution import OP_PRINT
 from ecmasab.exceptions import UnreachableCodeException
 
 from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
-    operatorPrecedence, opAssoc, Combine, Optional, LineStart, White
+    operatorPrecedence, opAssoc, Combine, Optional, White
 
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
