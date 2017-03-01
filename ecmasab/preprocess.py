@@ -9,17 +9,14 @@
 # limitations under the License.
 
 import re
-import sys
 import itertools
-import os
 import ast
 import subprocess
-import argparse
 from six.moves import range
 
 CPP = "cpp"
 
-class QuantPreprocessor():
+class QuantPreprocessor(object):
     expand_sets = None
     verbosity = None
 
@@ -121,7 +118,7 @@ class QuantPreprocessor():
         new_formula = operation.join(new_formula)
         return "(%s)"%new_formula
 
-    def __sub_quantifier(self, formula, quantifier, set_dict, set_type_dict):
+    def __sub_quantifier(self, formula, quantifier, set_type_dict):
         elements = formula[1][0]
         elements = elements.replace("(","")
         elements = elements.replace(")","")
@@ -166,7 +163,7 @@ class QuantPreprocessor():
             cond1 = quantifier != None
             if (len(formula) > 1):
                 cond2 = ((len(formula[1])> 0) and (" IN " in formula[1][0]))
-                cond3 = (not " IN " in self.__print_formula(formula[2:]))
+                cond3 = (" IN " not in self.__print_formula(formula[2:]))
 
         if cond1 and cond2 and cond3:
             if self.verbosity > 1:
@@ -174,7 +171,7 @@ class QuantPreprocessor():
             if self.expand_sets or (quantifier == self.BIGUNION) or (quantifier == self.BIGSUM):
                 value = self.__sub_quantifier_expand(formula, quantifier, set_dict)
             else:
-                value = self.__sub_quantifier(formula, quantifier, set_dict, set_type_dict)
+                value = self.__sub_quantifier(formula, quantifier, set_type_dict)
             sup[0] = True
             return value
         else:
@@ -186,7 +183,6 @@ class QuantPreprocessor():
 
     def __process_quantifier(self, formula, set_dict, set_type_dict):
         sup = [True]
-        value = True
         while sup[0]:
             sup = [False]
             formula = self.__process_quantifier_int(formula, set_dict, set_type_dict, sup)
@@ -227,7 +223,7 @@ class QuantPreprocessor():
 
 
 
-class ExtPreprocessor():
+class ExtPreprocessor(object):
     pproc = None
     output_file = None
     defines = None
@@ -252,19 +248,19 @@ class ExtPreprocessor():
     def preprocess_from_file(self, filename):
         command = []
         command.append("%s"%self.pproc)
-        if self.defines != None:
+        if self.defines is not None:
             for define in self.defines.split(","):
                 command.append("-D %s" % define)
         command.append("%s" % filename)
 
         process = subprocess.Popen(command, stdout=subprocess.PIPE)
-        out, err = process.communicate()
+        out = process.communicate()[0]
 
         out = out.split(b"\n")
 
         for x in range(len(out)):
             out[x] = str(out[x].decode('utf-8'))
-            if re.search("\A\s*\#", out[x]) != None:
+            if re.search("\A\s*\#", out[x]) is not None:
                 out[x] = '\n'
 
         return "\n".join(out)
