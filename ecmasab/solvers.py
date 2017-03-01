@@ -17,7 +17,6 @@ import os
 from ecmasab.execution import Execution, \
     Relation, \
     Memory_Event, \
-    RF, \
     RELATIONS, \
     BLOCKING_RELATIONS
 from ecmasab.beparsing import BeParser
@@ -28,12 +27,11 @@ from CVC4 import Options, \
     ExprManager, \
     ParserBuilder, \
     SmtEngine, \
-    Command, \
     SExpr, \
     CheckSatCommand, \
     AssertCommand
 
-class CVC4Solver():
+class CVC4Solver(object):
     verbosity = None
     models_file = None
 

@@ -160,7 +160,7 @@ class QuantPreprocessor(object):
                          self.EXISTS if (self.EXISTS in formula[0]) else \
                          self.BIGUNION if (self.BIGUNION in formula[0]) else \
                          self.BIGSUM if (self.BIGSUM in formula[0]) else None
-            cond1 = quantifier != None
+            cond1 = quantifier is not None
             if (len(formula) > 1):
                 cond2 = ((len(formula[1])> 0) and (" IN " in formula[1][0]))
                 cond3 = (" IN " not in self.__print_formula(formula[2:]))

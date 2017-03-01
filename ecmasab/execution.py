@@ -51,7 +51,7 @@ BLOCKING_RELATIONS.append(RF)
 # BLOCKING_RELATIONS.append(MO)
 # BLOCKING_RELATIONS.append(SW)
 
-class Executions():
+class Executions(object):
     program = None
     executions = None
 
@@ -68,7 +68,7 @@ class Executions():
     def get_size(self):
         return len(self.executions)
     
-class Execution():
+class Execution(object):
     happens_before = None
     memory_order = None
     reads_bytes_from = None
@@ -160,7 +160,7 @@ class Execution():
         else:
             return None
     
-class Relation():
+class Relation(object):
     name = None
     tuples = None
 
@@ -182,7 +182,7 @@ class Relation():
     def get_tr_tuple(ev1, ev2, addr):
         return (ev1, ev2, addr)
         
-class Program():
+class Program(object):
     threads = []
     blocks = []
     
@@ -220,7 +220,7 @@ class Program():
         for key in keys:
             self.threads.append(threads_map[key])
     
-class Block():
+class Block(object):
     name = None
     size = None
 
@@ -235,7 +235,7 @@ class Block():
         if size > self.size:
             self.size = size
         
-class Thread():
+class Thread(object):
     events = None
     uevents = None
     name = None
@@ -270,7 +270,7 @@ class Thread():
         self.events.append(event)
         return event
 
-class For_Loop():
+class For_Loop(object):
     events = None
     uevents = None
     fromind = None
@@ -333,7 +333,7 @@ class For_Loop():
                 self.uevents.append(me)
 
                 
-class Memory_Event():
+class Memory_Event(object):
     name = None
     operation = None
     tear = None

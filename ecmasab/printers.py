@@ -12,8 +12,8 @@ import itertools
 import re
 from six.moves import range
 
-from ecmasab.execution import Executions, BLOCKING_RELATIONS, For_Loop
-from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN, TYPE
+from ecmasab.execution import BLOCKING_RELATIONS, For_Loop
+from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
 
@@ -21,13 +21,13 @@ from ecmasab.exceptions import UnreachableCodeException
 class NotRegisteredPrinterException(Exception):
     pass
 
-class PrinterType():
+class PrinterType(object):
     SMT = 0
     JS = 1
     GRAPH = 2
     BEXEC = 3
 
-class PrintersFactory():
+class PrintersFactory(object):
     printers = {}
 
     # Additional printers should be registered here #
@@ -47,7 +47,7 @@ class PrintersFactory():
     @staticmethod    
     def printer_by_name(name):
         PrintersFactory.init_printers()
-        if not name in PrintersFactory.printers:
+        if name not in PrintersFactory.printers:
             raise NotRegisteredPrinterException
         return PrintersFactory.printers[name]
 
@@ -61,7 +61,7 @@ class PrintersFactory():
         PrintersFactory.init_printers()
         return [v for v in PrintersFactory.printers.values() if v.TYPE == printertype]
     
-class JSPrinter():
+class JSPrinter(object):
     NAME = "JS-PRINTER"
     TYPE = PrinterType.JS
 
@@ -80,7 +80,7 @@ class JSPrinter():
     def print_event(self, event):
         pass
         
-class CVC4Printer():
+class CVC4Printer(object):
     NAME = "CVC4"
     TYPE = PrinterType.SMT
 
@@ -364,7 +364,6 @@ class JSV8Printer(JSPrinter):
         block_name = event.block.name
         event_name = event.name
         event_address = event.address
-        tear = event.tear
         block_size = event.get_size()
         is_float = event.is_wtear()
         var_def = ""
@@ -454,7 +453,7 @@ class JSSMPrinter(JSPrinter):
         pass
     
 
-class DotPrinter():
+class DotPrinter(object):
     NAME = "DOT"
     TYPE = PrinterType.GRAPH
 
@@ -464,10 +463,10 @@ class DotPrinter():
     def print_executions(self, program, interps):
         graphs = []
         for interp in interps.executions:
-            graphs.append(self.print_execution(program, interp))
+            graphs.append(self.print_execution(interp))
         return graphs
 
-    def print_execution(self, program, interp):
+    def print_execution(self, interp):
         ret = []
         ret.append("digraph memory_model {")
         ret.append("rankdir=LR;")
@@ -496,7 +495,7 @@ class DotPrinter():
                 
         return "\n".join(ret)
     
-class BePrinter():
+class BePrinter(object):
     NAME = "BE"
     TYPE = PrinterType.BEXEC
 
@@ -505,7 +504,7 @@ class BePrinter():
     def __init__(self):
         pass
 
-    def print_execution(self, program, interp):
+    def print_execution(self, program):
         return self.print_program(program)
     
     def print_program(self, program):
@@ -537,13 +536,12 @@ class BePrinter():
                 
         return ret
 
-    def print_event(self, event, postfix=None):
+    def print_event(self, event):
         operation = event.operation
         ordering = event.ordering
         block_name = event.block.name
         event_name = event.name
         event_address = event.address
-        tear = event.tear
         block_size = event.get_size()
         is_float = event.is_wtear()
 
@@ -621,7 +619,7 @@ class BePrinter():
                                     floop.fromind, \
                                     floop.toind)
         for ev in floop.events:
-            ret += self.print_event(ev, floop.cname)
+            ret += self.print_event(ev)
 
         ret += "}\n"
 
