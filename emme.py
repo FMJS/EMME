@@ -21,6 +21,19 @@ from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFacto
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
 
+
+FORMAL_MODEL = "./model/memory_model.cvc"
+
+MEMORY_MODEL = "memory_model.cvc"
+MEMORY_MODEL_EX = "memory_model_expanded.cvc"
+INSTANCE = "instance.cvc"
+BLOCK_TYPE = "block_type.cvc"
+ID_TYPE = "id_type.cvc"
+MODELS = "models.txt"
+DOTS = "mm%s.dot"
+JSPROGRAM = "program.js"
+EXECS = "outputs.txt"
+
 class Config(object):
     inputfile = None
     preproc = None
@@ -33,7 +46,6 @@ class Config(object):
     skip_solving = None
     jsprinter = None
     
-    # Files name
     model = None
     model_ex = None
     instance = None
@@ -44,18 +56,6 @@ class Config(object):
     jsprogram = None
     execs = None
     mm = None
-
-    def __init_file_names(self):
-        self.model = "memory_model.cvc"
-        self.model_ex = "memory_model_expanded.cvc"
-        self.instance = "instance.cvc"
-        self.block_type = "block_type.cvc"
-        self.id_type = "id_type.cvc"
-        self.models = "models.txt"
-        self.dots = "mm%s.dot"
-        self.jsprogram = "program.js"
-        self.execs = "outputs.txt"
-        self.mm = "./model/memory_model.cvc"
     
     def __init__(self):
         self.inputfile = None
@@ -69,22 +69,21 @@ class Config(object):
         self.skip_solving = False
         self.jsprinter = None
         
-        self.__init_file_names()
-        
-    def populate_files(self):
+    def generate_filenames(self):
         if self.prefix:
-            self.model = self.prefix+self.model
-            self.model_ex = self.prefix+self.model_ex
-            self.instance = self.prefix+self.instance
-            self.block_type = self.prefix+self.block_type
-            self.id_type = self.prefix+self.id_type
-            self.models = self.prefix+self.models
-            self.dots = self.prefix+self.dots
-            self.jsprogram = self.prefix+self.jsprogram
-            self.execs = self.prefix+self.execs
+            self.model = self.prefix+MEMORY_MODEL
+            self.model_ex = self.prefix+MEMORY_MODEL_EX
+            self.instance = self.prefix+INSTANCE
+            self.block_type = self.prefix+BLOCK_TYPE
+            self.id_type = self.prefix+ID_TYPE
+            self.models = self.prefix+MODELS
+            self.dots = self.prefix+DOTS
+            self.jsprogram = self.prefix+JSPROGRAM
+            self.execs = self.prefix+EXECS
+            self.mm = FORMAL_MODEL
         
 def main(config):
-    config.populate_files()
+    config.generate_filenames()
 
     parser = BeParser()
     c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
