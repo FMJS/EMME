@@ -33,6 +33,30 @@ class Config(object):
     skip_solving = None
     jsprinter = None
     
+    # Files name
+    model = None
+    model_ex = None
+    instance = None
+    block_type = None
+    id_type = None
+    models = None
+    dots = None
+    jsprogram = None
+    execs = None
+    mm = None
+
+    def __init_file_names(self):
+        self.model = "memory_model.cvc"
+        self.model_ex = "memory_model_expanded.cvc"
+        self.instance = "instance.cvc"
+        self.block_type = "block_type.cvc"
+        self.id_type = "id_type.cvc"
+        self.models = "models.txt"
+        self.dots = "mm%s.dot"
+        self.jsprogram = "program.js"
+        self.execs = "outputs.txt"
+        self.mm = "./model/memory_model.cvc"
+    
     def __init__(self):
         self.inputfile = None
         self.preproc = CPP
@@ -44,70 +68,74 @@ class Config(object):
         self.only_model = False
         self.skip_solving = False
         self.jsprinter = None
-
-def main(config):
-    verbosity = config.verbosity
         
+        self.__init_file_names()
+        
+    def populate_files(self):
+        if self.prefix:
+            self.model = self.prefix+self.model
+            self.model_ex = self.prefix+self.model_ex
+            self.instance = self.prefix+self.instance
+            self.block_type = self.prefix+self.block_type
+            self.id_type = self.prefix+self.id_type
+            self.models = self.prefix+self.models
+            self.dots = self.prefix+self.dots
+            self.jsprogram = self.prefix+self.jsprogram
+            self.execs = self.prefix+self.execs
+        
+def main(config):
+    config.populate_files()
+
     parser = BeParser()
     c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
 
     abspath = os.path.abspath(__file__)
-        
-    model = config.prefix+"memory_model.cvc"
-    model_ex = config.prefix+"memory_model_expanded.cvc"
-    instance = config.prefix+"instance.cvc"
-    block_type = config.prefix+"block_type.cvc"
-    id_type = config.prefix+"id_type.cvc"
-    models = config.prefix+"models.txt"
-    dots = config.prefix+"mm%s.dot"
-    jsprogram = config.prefix+"program.js"
-    execs = config.prefix+"outputs.txt"
-    mm = ("/".join(abspath.split("/")[:-1]))+"/model/memory_model.cvc"
+    mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
 
-    if verbosity > 0:
+    if config.verbosity > 0:
         print("** Running with path \"%s\" **\n"%(config.prefix))
 
     # Parsing of the bounded execution #
     with open(config.inputfile, "r") as f:
         program = parser.program_from_string(f.read())
 
-    if verbosity > 0:
+    if config.verbosity > 0:
         sys.stdout.write("Generating bounded execution... ")
         sys.stdout.flush()
         
     if not os.path.exists(config.prefix):
         os.makedirs(config.prefix)
         
-    if verbosity > 0:
+    if config.verbosity > 0:
         sys.stdout.write("DONE\n")
         sys.stdout.flush()
         
-    if verbosity > 0:
+    if config.verbosity > 0:
         sys.stdout.write("Generating SMT model... ")
         sys.stdout.flush()
 
     # Copy of Memory Model (CVC4) into the directory #
     with open(mm, "r") as inmm:
-        with open(model, "w") as outmm:
+        with open(config.model, "w") as outmm:
             outmm.write(inmm.read())
 
     # Generation of the CVC4 bounded execution #
-    with open(instance, "w") as f:
+    with open(config.instance, "w") as f:
         f.write(c4printer.print_program(program))
 
     # Generation of the CVC4 memory blocks #
-    with open(block_type, "w") as f:
+    with open(config.block_type, "w") as f:
         f.write(c4printer.print_block_type(program))
 
     # Generation of the CVC4 memory events #
-    with open(id_type, "w") as f:
+    with open(config.id_type, "w") as f:
         f.write(c4printer.print_data_type(program))
         
     # Preprocessing the model using cpp #
     cpppre = ExtPreprocessor(CPP)
-    cpppre.set_output_file(model_ex)
+    cpppre.set_output_file(config.model_ex)
     cpppre.set_defines(config.defines)
-    strmodel = cpppre.preprocess_from_file(model)
+    strmodel = cpppre.preprocess_from_file(config.model)
 
     # Preprocessing the quantifiers #
     qupre = QuantPreprocessor()
@@ -116,10 +144,10 @@ def main(config):
     strmodel = qupre.preprocess_from_string(strmodel)
 
     # Generation of the expanded CVC4 model into the directory #
-    with open(model_ex, "w") as f:
+    with open(config.model_ex, "w") as f:
         f.write(strmodel)
 
-    if verbosity > 0:
+    if config.verbosity > 0:
         sys.stdout.write("DONE\n")
         sys.stdout.flush()
 
@@ -128,15 +156,15 @@ def main(config):
 
     # Running the solver to generate all sat models #
     c4solver = CVC4Solver()
-    c4solver.verbosity = verbosity
+    c4solver.verbosity = config.verbosity
 
     if True: #not config.sat:
-        c4solver.models_file = models
+        c4solver.models_file = config.models
 
     totmodels = c4solver.get_models_size()
         
     if not config.skip_solving:
-        if verbosity > 0:
+        if config.verbosity > 0:
             sys.stdout.write("Solving... ")
             sys.stdout.flush()
         
@@ -145,17 +173,17 @@ def main(config):
         else:
             totmodels = c4solver.solve_all(strmodel)
 
-        if verbosity > 0:
+        if config.verbosity > 0:
             sys.stdout.write("DONE\n")
             sys.stdout.flush()
 
-    if verbosity > 0:
+    if config.verbosity > 0:
         if totmodels > 0:
             print(" -> Found %s total models"%(totmodels))
         else:
             print(" -> No viable executions found")
 
-    if verbosity > 0:
+    if config.verbosity > 0:
         sys.stdout.write("Generating JS program... ")
         sys.stdout.flush()
         
@@ -163,47 +191,47 @@ def main(config):
     jprinter = PrintersFactory.printer_by_name(config.jsprinter)
     dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
 
-    with open(jsprogram, "w") as f:
+    with open(config.jsprogram, "w") as f:
         f.write(jprinter.print_program(program))
 
-    if verbosity > 0:
+    if config.verbosity > 0:
         sys.stdout.write("DONE\n")
         sys.stdout.flush()
     
     if (totmodels > 0) and (not config.sat):
-        if verbosity > 0:
+        if config.verbosity > 0:
             sys.stdout.write("Generating expected outputs... ")
             sys.stdout.flush()
 
         executions = None
         jsexecs = []
         
-        with open(models, "r") as modelfile:
+        with open(config.models, "r") as modelfile:
             executions = parser.executions_from_string(modelfile.read())
 
-        with open(execs, "w") as exefile:
+        with open(config.execs, "w") as exefile:
             jsexecs = jprinter.compute_possible_executions(program, executions)
             exefile.write("\n".join(jsexecs))
             
         # Generation of all possible outputs for the JS litmus test #
-        with open(execs, "w") as exefile:
+        with open(config.execs, "w") as exefile:
             jsexecs = jprinter.compute_possible_executions(program, executions)
             exefile.write("\n".join(jsexecs))
 
         # Generation of all possible MM interpretations #
         mms = dprinter.print_executions(program, executions)
         for i in range(len(mms)):
-            with open(dots%(str(i+1)), "w") as dot:
+            with open(config.dots%(str(i+1)), "w") as dot:
                 dot.write(mms[i])
 
-        if verbosity > 0:
+        if config.verbosity > 0:
             sys.stdout.write("DONE\n")
             sys.stdout.flush()
 
-        if verbosity > 0:
+        if config.verbosity > 0:
             print(" -> Found %s total possible outputs"%(len(jsexecs)))
             
-    if (verbosity > 0):
+    if (config.verbosity > 0):
         print("\nExiting...")
         
         
