@@ -88,7 +88,7 @@ class CVC4Solver(object):
 
         return Memory_Event(name, operation, tear, ordering, address, block, values)
 
-    def __get_all_tuples(self, expression, tuples=[]):
+    def __get_all_tuples(self, expression, tuples):
         if expression.isNull():
             return
 

@@ -16,12 +16,12 @@ import sys
 from six.moves import range
 
 from ecmasab.beparsing import BeParser
-from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType, NotRegisteredPrinterException
+from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
 
-class Config():
+class Config(object):
     inputfile = None
     preproc = None
     expand_bounded_sets = None
