@@ -1,0 +1,5 @@
+strictness: medium
+
+pylint:
+  disable:
+    - redefined-builtin
