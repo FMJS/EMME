@@ -17,6 +17,7 @@ import sys
 import multiprocessing
 import signal
 import time
+from six.moves import range
 
 K = "k"
 M = "M"
@@ -26,7 +27,7 @@ def run_command(ind, command, number):
     try:
         outputs_dic = {}
 
-        for i in xrange(number):
+        for i in range(number):
 
             out = commands.getoutput(" ".join(command))
             # process = subprocess.Popen(command, stdout=subprocess.PIPE)
@@ -102,7 +103,7 @@ def main(command, outputs, number, threads, percent):
     signal.signal(signal.SIGINT, original_sigint_handler)
     
         
-    for i in xrange(num_t):
+    for i in range(num_t):
         async_results.append(pool.apply_async(run_command, (i+1, command, number/num_t)))
 
     try:
@@ -115,7 +116,7 @@ def main(command, outputs, number, threads, percent):
         sys.exit(1)
 
 
-    for i in xrange(num_t):
+    for i in range(num_t):
         outputs_t.append(async_results[i].get())
 
         

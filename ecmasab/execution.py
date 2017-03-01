@@ -9,7 +9,7 @@
 # limitations under the License.
 
 import struct
-import six
+from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
 

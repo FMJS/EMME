@@ -13,6 +13,7 @@
 import argparse
 import os
 import sys
+from six.moves import range
 
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType, NotRegisteredPrinterException

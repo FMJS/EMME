@@ -8,9 +8,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 import itertools
 import re
+from six.moves import range
 
 from ecmasab.execution import Executions, BLOCKING_RELATIONS, For_Loop
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN, TYPE

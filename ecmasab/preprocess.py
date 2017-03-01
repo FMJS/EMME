@@ -15,7 +15,7 @@ import os
 import ast
 import subprocess
 import argparse
-import six
+from six.moves import range
 
 CPP = "cpp"
 

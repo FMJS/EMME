@@ -1,3 +1,5 @@
+from six.moves import range
+
 sv = "examples/single_var/sv_simple%s"
 dv = "examples/double_vars/dv_simple%s"
 tv = "examples/triple_vars/tv_simple%s"

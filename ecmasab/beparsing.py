@@ -10,7 +10,7 @@
 
 import copy
 import sys
-import six
+from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
