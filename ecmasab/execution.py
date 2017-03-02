@@ -142,7 +142,7 @@ class Execution(object):
         elif name == HB:
             self.set_HB(rel)
         else:
-            return None
+            raise UnreachableCodeException("Not found relation \"%s\""%(name))
 
         return rel
 
@@ -158,7 +158,7 @@ class Execution(object):
         elif name == HB:
             return self.get_HB()
         else:
-            return None
+            raise UnreachableCodeException("Not found relation \"%s\""%(name))
     
 class Relation(object):
     name = None

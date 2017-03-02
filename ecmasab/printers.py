@@ -13,7 +13,7 @@ import re
 from six.moves import range
 
 from ecmasab.execution import BLOCKING_RELATIONS, For_Loop
-from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
+from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE, RF, MO, SW, HB
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
 
@@ -458,39 +458,87 @@ class DotPrinter(object):
     TYPE = PrinterType.GRAPH
 
     def __init__(self):
+        self.printing_relations = []
+        self.printing_relations.append(RF)
+        self.printing_relations.append(HB)
+        self.printing_relations.append(SW)
         pass
 
     def print_executions(self, program, interps):
         graphs = []
         for interp in interps.executions:
-            graphs.append(self.print_execution(interp))
+            graphs.append(self.print_execution(program, interp))
         return graphs
 
-    def print_execution(self, interp):
+    def add_printing_relation(self, relation):
+        if relation not in self.printing_relations:
+            self.printing_relations.append(relation)
+
+    def set_printing_relations(self, relations):
+        self.printing_relations = []
+        for relation in relations.split(","):
+            self.add_printing_relation(relation)
+            
+    def print_execution(self, program, interp):
+
+        reads_dic = dict([(x.name, x) for x in interp.reads_values])
+
         ret = []
         ret.append("digraph memory_model {")
         ret.append("rankdir=LR;")
-        
-        color = "red"
-        for tup in interp.get_RBF().tuples:
-            label = "%s[%s]"%(interp.get_RBF().name, tup[2])
-            ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
 
-        for tup in interp.get_RF().tuples:
-            label = interp.get_RF().name
-            ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
+        ret.append("splines=true; esep=0.5;")
+
+        color = "red"
+        if interp.get_RBF().name in self.printing_relations:
+            for tup in interp.get_RBF().tuples:
+                label = "%s[%s]"%(interp.get_RBF().name, tup[2])
+                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
+
+        
+        if interp.get_RF().name in self.printing_relations:
+            for tup in interp.get_RF().tuples:
+                label = "%s (%s)"%(interp.get_RF().name, reads_dic[tup[0]].get_correct_value())
+                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
         
         relations = []
-        relations.append(interp.get_HB())
-        relations.append(interp.get_MO())
-        relations.append(interp.get_SW())
 
+        for relation in self.printing_relations:
+            if (relation != interp.get_RF().name) and (relation != interp.get_RBF().name):
+                relations.append(interp.get_relation_by_name(relation))
+            
         color = "black"
         for relation in relations:
             label = relation.name
             for tup in relation.tuples:
                 ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
+                
+
+        sepx = 5
+        sepy = 2
         
+        posx = ((len(program.threads)-2)*sepx)/2.0
+        maxy = max([len(x.get_events(True)) for x in program.threads])*sepy
+        posy = maxy
+        
+        for thread in program.threads:
+            if thread.name == MAIN:
+                for event in thread.get_events(True):
+                    node = "%s [pos=\"%s,%s!\"]"%(event.name, posx, posy)
+                    ret.append(node)
+                    posy -= sepy
+
+        posx = 0
+        sposy = posy
+                    
+        for thread in program.threads:
+            posy  = sposy
+            if thread.name != MAIN:
+                for event in thread.get_events(True):
+                    node = "%s [pos=\"%s,%s!\"]"%(event.name, posx, posy)
+                    ret.append(node)
+                    posy -= sepy
+                posx += sepx
         ret.append("}")
                 
         return "\n".join(ret)

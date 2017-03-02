@@ -17,6 +17,7 @@ from six.moves import range
 
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
+from ecmasab.execution import RF, HB
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
@@ -45,6 +46,7 @@ class Config(object):
     only_model = None
     skip_solving = None
     jsprinter = None
+    printing_relations = None
     
     model = None
     model_ex = None
@@ -68,6 +70,7 @@ class Config(object):
         self.only_model = False
         self.skip_solving = False
         self.jsprinter = None
+        self.printing_relations = None
         
     def generate_filenames(self):
         if self.prefix:
@@ -189,6 +192,7 @@ def main(config):
     # Generation of the JS litmus test #
     jprinter = PrintersFactory.printer_by_name(config.jsprinter)
     dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
+    dprinter.set_printing_relations(config.printing_relations)
 
     with open(config.jsprogram, "w") as f:
         f.write(jprinter.print_program(program))
@@ -284,6 +288,9 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. If none, it will be the same as the input file')
 
+    parser.set_defaults(printing_relations="%s,%s"%(RF,HB))
+    parser.add_argument('--printing-relations', metavar='printing_relations', type=str, nargs='?',
+                        help='the (comma separated) list of relations that have to be considered in the graphvis file')
     
     parser.set_defaults(preproc=None)
     parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
@@ -311,6 +318,7 @@ if __name__ == "__main__":
     check_sat = args.check_sat
     skip_solving = args.skip_solving
     jsprinter = args.jsprinter
+    printing_relations = args.printing_relations
     
     if cpp_preproc and (not preproc):
         preproc = CPP
@@ -337,6 +345,7 @@ if __name__ == "__main__":
     config.only_model = only_model
     config.skip_solving = skip_solving
     config.jsprinter = jsprinter
+    config.printing_relations = printing_relations
 
     try:
         main(config)
