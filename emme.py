@@ -34,6 +34,8 @@ DOTS = "mm%s.dot"
 JSPROGRAM = "program.js"
 EXECS = "outputs.txt"
 
+DEBUG = True
+
 class Config(object):
     inputfile = None
     preproc = None
@@ -338,9 +340,12 @@ if __name__ == "__main__":
     config.skip_solving = skip_solving
     config.jsprinter = jsprinter
 
-    try:
+    if DEBUG:
         main(config)
-    except Exception as e:
-        print(e)
-        sys.exit(1)
+    else:
+        try:
+            main(config)
+        except Exception as e:
+            print(e)
+            sys.exit(1)
 

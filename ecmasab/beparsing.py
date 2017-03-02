@@ -32,6 +32,7 @@ T_DIV = "/"
 T_DOT = "."
 T_DOTS = ".."
 T_EQ = "="
+T_BEQ = "=="
 T_FLO32 = "-F32"
 T_FLO64 = "-F64"
 T_FOR = "for"
@@ -52,6 +53,8 @@ T_SUM = "+"
 T_THREAD = "Thread"
 T_US = "_"
 T_VAR = "var"
+T_IF = "if"
+T_ELSE = "else"
 
 P_ACCESS = "access"
 P_ADDR = "address"
@@ -61,6 +64,8 @@ P_CSCOPE = "closescope"
 P_EMPTY = "empty"
 P_EXPR = "expr"
 P_FLOOP = "floop"
+P_IF = "if"
+P_ELSE = "else"
 P_INIT = "init"
 P_LOAD = "load"
 P_PRINT = "print"
@@ -171,8 +176,10 @@ class BeParser(object):
         closescope = (Literal(T_CCB))(P_CSCOPE)
 
         floop = (T_FOR + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
+        ite = (T_IF + T_OP + sabread + T_BEQ + value + T_CP + T_OCB)(P_IF)
+        els = (Literal(T_ELSE) + T_OCB)(P_ELSE)
 
-        command = sabstore | sab_def | sabassign | threaddef | printv | floop | closescope | comment | emptyline
+        command = sabstore | sab_def | sabassign | threaddef | printv | floop | ite | els | closescope | comment | emptyline
 
         return ZeroOrMore(command)
 
@@ -308,6 +315,7 @@ class BeParser(object):
         program = Program()
         thread = Thread(MAIN)
         floop = None
+        ite = None
         blocks = {}
         op_purpose = None
         sab_defs = []

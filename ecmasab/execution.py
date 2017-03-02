@@ -332,6 +332,26 @@ class For_Loop(object):
 
                 self.uevents.append(me)
 
+class ITE_Stament(object):
+    conditions = None
+    then_events = None
+    else_events = None
+    
+    def __init__(self):
+        self.conditions = []
+        self.then_events = []
+        self.else_events = []
+
+    
+    def append_condition(self, condition):
+        self.conditions.append(condition)
+    
+    def append_then(self, event):
+        self.then_events.append(event)
+
+    def append_else(self, event):
+        self.else_events.append(event)
+        
                 
 class Memory_Event(object):
     name = None
