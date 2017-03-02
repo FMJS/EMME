@@ -460,7 +460,7 @@ class DotPrinter(object):
     printing_relations = None
 
     def __init__(self):
-        self.printing_relations = None
+        self.printing_relations = []
 
     def print_executions(self, program, interps):
         graphs = []
@@ -469,19 +469,18 @@ class DotPrinter(object):
         return graphs
 
     def add_printing_relation(self, relation):
-        if not self.printing_relations:
-            self.printing_relations = []
         if relation not in self.printing_relations:
             self.printing_relations.append(relation)
 
     def set_printing_relations(self, relations):
         if relations:
-            self.printing_relations = []
             for relation in relations.split(","):
+                if relation not in RELATIONS:
+                    raise UnreachableCodeException("Not found relation \"%s\""%(relation))
                 self.add_printing_relation(relation)
 
     def __should_print(self, relation):
-        if not self.printing_relations:
+        if not len(self.printing_relations):
             return True
         return relation in self.printing_relations
 
@@ -528,7 +527,7 @@ class DotPrinter(object):
         for relation in relations:
             label = relation.name
             for tup in relation.tuples:
-                if self.printing_relations:
+                if len(self.printing_relations):
                     rel_HB = (relation.name == interp.get_HB().name)
                     rel_MO = (relation.name == interp.get_MO().name)
                     if rel_HB or rel_MO:
