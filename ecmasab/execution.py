@@ -258,6 +258,11 @@ class Thread(object):
             if isinstance(self.uevents[i], For_Loop):
                 self.uevents = self.uevents[:i] + self.uevents[i].get_uevents() + self.uevents[i+1:]
             i += 1
+
+        id_ev = 0
+        for event in self.uevents:
+            event.id_ev = id_ev
+            id_ev += 1
         return self.uevents
 
     def get_blocks(self):
@@ -341,11 +346,12 @@ class Memory_Event(object):
     address = None
     block = None
     values = None
-    id_ev = 1
+    global_id_ev = 1
     offset = None
     size = None
     value = None
-
+    id_ev = None
+    
     op_purpose = None
     
     def __init__(self, name, operation, tear, ordering, address, block, values):
@@ -363,6 +369,7 @@ class Memory_Event(object):
         self.op_purpose = None
         self.size = None
         self.value = None
+        self.id_ev = Memory_Event.global_id_ev
 
         if values:
             self.block.update_size(len(values))
@@ -372,12 +379,12 @@ class Memory_Event(object):
 
     @staticmethod        
     def reset_unique_names():
-        Memory_Event.id_ev = 1
+        Memory_Event.global_id_ev = 1
     
     @staticmethod        
     def get_unique_name():
-        ret = Memory_Event.id_ev
-        Memory_Event.id_ev = Memory_Event.id_ev + 1
+        ret = Memory_Event.global_id_ev
+        Memory_Event.global_id_ev = Memory_Event.global_id_ev + 1
         return "id%s"%ret
     
     def is_read(self):

@@ -1,12 +1,18 @@
 digraph memory_model {
 rankdir=LR;
 splines=true; esep=0.5;
-id7_R_t2 -> id1_W_main [label = "RF (I8 0)", color="red"];
-id8_R_t2 -> id2_W_main [label = "RF (I8 0)", color="red"];
-id9_R_t2 -> id6_W_t1 [label = "RF (I8 1)", color="red"];
+id7_R_t2 -> id1_W_main [label = "RF (0-I8)", color="red"];
+id8_R_t2 -> id2_W_main [label = "RF (0-I8)", color="red"];
+id9_R_t2 -> id6_W_t1 [label = "RF (1-I8)", color="red"];
+id1_W_main -> id2_W_main [label = "HB", color="black"];
+id2_W_main -> id3_W_main [label = "HB", color="black"];
+id4_W_t1 -> id5_W_t1 [label = "HB", color="black"];
+id5_W_t1 -> id6_W_t1 [label = "HB", color="black"];
+id7_R_t2 -> id8_R_t2 [label = "HB", color="black"];
+id8_R_t2 -> id9_R_t2 [label = "HB", color="black"];
+id1_W_main -> id4_W_t1 [label = "HB", color="black"];
 id4_W_t1 -> id9_R_t2 [label = "HB", color="black"];
 id5_W_t1 -> id9_R_t2 [label = "HB", color="black"];
-id6_W_t1 -> id9_R_t2 [label = "HB", color="black"];
 id1_W_main [pos="2.5,6!"]
 id2_W_main [pos="2.5,4!"]
 id3_W_main [pos="2.5,2!"]
