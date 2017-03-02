@@ -5,6 +5,7 @@ id4_R_t3 -> id3_W_t2 [label = "RF (2.20-F32)", color="red"];
 id1_W_main -> id2_W_t1 [label = "HB", color="black"];
 id1_W_main -> id3_W_t2 [label = "HB", color="black"];
 id1_W_main -> id4_R_t3 [label = "HB", color="black"];
+id3_W_t2 -> id4_R_t3 [label = "SW", color="black"];
 id1_W_main [pos="5.0,2!"]
 id2_W_t1 [pos="0,0!"]
 id3_W_t2 [pos="5,0!"]

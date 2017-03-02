@@ -8,6 +8,8 @@ id3_W_t1 -> id4_W_t1 [label = "HB", color="black"];
 id5_R_t2 -> id6_R_t2 [label = "HB", color="black"];
 id1_W_main -> id3_W_t1 [label = "HB", color="black"];
 id3_W_t1 -> id6_R_t2 [label = "HB", color="black"];
+id1_W_main -> id5_R_t2 [label = "SW", color="black"];
+id4_W_t1 -> id6_R_t2 [label = "SW", color="black"];
 id1_W_main [pos="2.5,4!"]
 id2_W_main [pos="2.5,2!"]
 id3_W_t1 [pos="0,0!"]

@@ -17,7 +17,7 @@ from six.moves import range
 
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
-from ecmasab.execution import RF, HB
+from ecmasab.execution import RF, HB, SW
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
@@ -34,6 +34,8 @@ MODELS = "models.txt"
 DOTS = "mm%s.dot"
 JSPROGRAM = "program.js"
 EXECS = "outputs.txt"
+
+ALL = "all"
 
 class Config(object):
     inputfile = None
@@ -70,7 +72,7 @@ class Config(object):
         self.only_model = False
         self.skip_solving = False
         self.jsprinter = None
-        self.printing_relations = "%s,%s"%(RF,HB)
+        self.printing_relations = ",".join([RF,HB,SW])
         
     def generate_filenames(self):
         if self.prefix:
@@ -288,7 +290,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. If none, it will be the same as the input file')
 
-    parser.set_defaults(printing_relations="%s,%s"%(RF,HB))
+    parser.set_defaults(printing_relations=",".join([RF,HB,SW]))
     parser.add_argument('--printing-relations', metavar='printing_relations', type=str, nargs='?',
                         help='the (comma separated) list of relations that have to be considered in the graphvis file')
     
@@ -346,6 +348,8 @@ if __name__ == "__main__":
     config.skip_solving = skip_solving
     config.jsprinter = jsprinter
     config.printing_relations = printing_relations
+    if printing_relations == ALL:
+        config.printing_relations = None
 
     try:
         main(config)

@@ -11,6 +11,7 @@ id1_W_main -> id2_W_t1 [label = "HB", color="black"];
 id1_W_main -> id4_W_t2 [label = "HB", color="black"];
 id1_W_main -> id6_R_t3 [label = "HB", color="black"];
 id4_W_t2 -> id7_R_t3 [label = "HB", color="black"];
+id2_W_t1 -> id7_R_t3 [label = "SW", color="black"];
 id1_W_main [pos="5.0,4!"]
 id2_W_t1 [pos="0,2!"]
 id3_W_t1 [pos="0,0!"]
