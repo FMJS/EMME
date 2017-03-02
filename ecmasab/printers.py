@@ -12,7 +12,7 @@ import itertools
 import re
 from six.moves import range
 
-from ecmasab.execution import BLOCKING_RELATIONS, For_Loop
+from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
@@ -456,6 +456,7 @@ class JSSMPrinter(JSPrinter):
 class DotPrinter(object):
     NAME = "DOT"
     TYPE = PrinterType.GRAPH
+    float_pri_js = "%.2f"
 
     def __init__(self):
         self.printing_relations = []
@@ -475,6 +476,12 @@ class DotPrinter(object):
         self.printing_relations = []
         for relation in relations.split(","):
             self.add_printing_relation(relation)
+
+    def __should_print(self, relation):
+        if self.printing_relations == []:
+            return True
+        return relation in self.printing_relations
+
             
     def print_execution(self, program, interp):
 
@@ -487,27 +494,43 @@ class DotPrinter(object):
         ret.append("splines=true; esep=0.5;")
 
         color = "red"
-        if interp.get_RBF().name in self.printing_relations:
+        if self.__should_print(interp.get_RBF().name):
             for tup in interp.get_RBF().tuples:
                 label = "%s[%s]"%(interp.get_RBF().name, tup[2])
                 ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
 
         
-        if interp.get_RF().name in self.printing_relations:
+        if self.__should_print(interp.get_RF().name):
             for tup in interp.get_RF().tuples:
-                label = "%s (%s)"%(interp.get_RF().name, reads_dic[tup[0]].get_correct_value())
+                ev0 = reads_dic[tup[0]]
+                value = ev0.get_correct_value()
+                value = self.float_pri_js%value if ev0.is_wtear() else value
+                label = "%s (%s %s)"%(interp.get_RF().name, self.__get_block_size(ev0), value)
                 ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
         
         relations = []
 
-        for relation in self.printing_relations:
+        for relation in RELATIONS:
             if (relation != interp.get_RF().name) and (relation != interp.get_RBF().name):
-                relations.append(interp.get_relation_by_name(relation))
-            
+                if self.__should_print(relation):
+                    relations.append(interp.get_relation_by_name(relation))
+
+        event_to_thread = []
+        for thread in program.threads:
+            event_to_thread += [(x.name, thread.name) for x in thread.get_events(True)]
+        event_to_thread = dict(event_to_thread)
+                    
         color = "black"
         for relation in relations:
             label = relation.name
             for tup in relation.tuples:
+                if self.printing_relations != []:
+                    cond1 = (relation.name == interp.get_HB().name)
+                    cond2 = (relation.name == interp.get_MO().name)
+                    cond3 = event_to_thread[tup[0]] == event_to_thread[tup[1]]
+                    cond4 = event_to_thread[tup[0]] == MAIN
+                    if (cond1 or cond2) and (cond3 or cond4):
+                        continue
                 ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
                 
 
@@ -539,6 +562,28 @@ class DotPrinter(object):
         ret.append("}")
                 
         return "\n".join(ret)
+
+    def __get_block_size(self, event):
+        size = event.get_size()
+        isfloat = event.is_wtear()
+        
+        if not isfloat:
+            if size == 1:
+                return T_INT8[1:]
+            elif size == 2:
+                return T_INT16[1:]
+            elif size == 4:
+                return T_INT32[1:]
+            else:
+                raise UnreachableCodeException("Int size %s not valid"%str(size))
+            
+        if isfloat:
+            if size == 4:
+                return T_FLO32[1:]
+            elif size == 8:
+                return T_FLO64[1:]
+            else:
+                raise UnreachableCodeException("Float size %s not valid"%str(size))
     
 class BePrinter(object):
     NAME = "BE"
