@@ -70,7 +70,7 @@ class Config(object):
         self.only_model = False
         self.skip_solving = False
         self.jsprinter = None
-        self.printing_relations = None
+        self.printing_relations = "%s,%s"%(RF,HB)
         
     def generate_filenames(self):
         if self.prefix:
