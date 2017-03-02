@@ -13,7 +13,7 @@ import re
 from six.moves import range
 
 from ecmasab.execution import BLOCKING_RELATIONS, For_Loop
-from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE, RF, MO, SW, HB
+from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
 
@@ -459,9 +459,6 @@ class DotPrinter(object):
 
     def __init__(self):
         self.printing_relations = []
-        self.printing_relations.append(RF)
-        self.printing_relations.append(HB)
-        self.printing_relations.append(SW)
         pass
 
     def print_executions(self, program, interps):
