@@ -1,13 +1,14 @@
 digraph memory_model {
 rankdir=LR;
 splines=true; esep=0.5;
-id4_R_t3 -> id2_W_t1 [label = "RF (1.10-F32)", color="red"];
 id1_W_main -> id2_W_t1 [label = "HB", color="black"];
 id1_W_main -> id3_W_t2 [label = "HB", color="black"];
 id1_W_main -> id4_R_t3 [label = "HB", color="black"];
-id2_W_t1 -> id4_R_t3 [label = "SW", color="black"];
-id1_W_main [pos="5.0,2!"]
-id2_W_t1 [pos="0,0!"]
-id3_W_t2 [pos="5,0!"]
-id4_R_t3 [pos="10,0!"]
+id2_W_t1 -> id4_R_t3 [label = "HB", color="black"];
+id4_R_t3 -> id2_W_t1 [label = "RF", color="red"];
+id2_W_t1 -> id4_R_t3 [label = "SW", color="blue"];
+id1_W_main [label=<id1_W_main<br/><B>Init(0)</B>>, pos="5.0,2!"]
+id2_W_t1 [label=<id2_W_t1<br/><B>F32(1.10)</B>>, pos="0,0!"]
+id3_W_t2 [label=<id3_W_t2<br/><B>F32(2.20)</B>>, pos="5,0!"]
+id4_R_t3 [label=<id4_R_t3<br/><B>F32(1.10)</B>>, pos="10,0!"]
 }

@@ -408,6 +408,9 @@ class Memory_Event(object):
     def is_wtear(self):
         return self.tear == WTEAR
 
+    def is_init(self):
+        return self.ordering == INIT
+    
     def set_param_value(self, size, value):
         self.size = size
         self.value = value
@@ -478,7 +481,7 @@ class Memory_Event(object):
         elif size <= 4:
             return '<I'
         else:
-            raise UnreachableCodeException()
+            raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
 
     def __get_float_type(self, size):
         if size <= 4:
@@ -486,5 +489,5 @@ class Memory_Event(object):
         elif size <= 8:
             return '<d'
         else:
-            raise UnreachableCodeException()
+            raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
         

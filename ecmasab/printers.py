@@ -502,19 +502,13 @@ class DotPrinter(object):
                 label = "%s[%s]"%(interp.get_RBF().name, tup[2])
                 ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
 
-        
-        if self.__should_print(interp.get_RF().name):
-            for tup in interp.get_RF().tuples:
-                ev0 = reads_dic[tup[0]]
-                value = ev0.get_correct_value()
-                value = self.float_pri_js%value if ev0.is_wtear() else value
-                label = "%s (%s%s)"%(interp.get_RF().name, value, self.__get_block_size(ev0))
-                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
-        
         relations = []
-
+        defcolor = "black"
+        colors = dict([(interp.get_RF(), "red"),\
+                       (interp.get_SW(), "blue")])
+        
         for relation in RELATIONS:
-            if (relation != interp.get_RF().name) and (relation != interp.get_RBF().name):
+            if (relation != interp.get_RBF().name):
                 if self.__should_print(relation):
                     relations.append(interp.get_relation_by_name(relation))
 
@@ -523,7 +517,6 @@ class DotPrinter(object):
             event_to_thread += [(x.name, thread) for x in thread.get_events(True)]
         event_to_thread = dict(event_to_thread)
                     
-        color = "black"
         for relation in relations:
             label = relation.name
             for tup in relation.tuples:
@@ -531,19 +524,22 @@ class DotPrinter(object):
                     rel_HB = (relation.name == interp.get_HB().name)
                     rel_MO = (relation.name == interp.get_MO().name)
                     if rel_HB or rel_MO:
-                        cond2a = event_to_thread[tup[0]] == event_to_thread[tup[1]]
-                        cond2b = ev_dic[tup[1]].id_ev > (ev_dic[tup[0]].id_ev + 1)
+                        # not consequent events
+                        cond1a = event_to_thread[tup[0]] == event_to_thread[tup[1]]
+                        cond1b = ev_dic[tup[1]].id_ev > (ev_dic[tup[0]].id_ev + 1)
+                        cond1 = cond1a and cond1b
+
+                        # not init events
+                        cond2a = ev_dic[tup[0]].is_init() and not(ev_dic[tup[1]].is_init())
+                        cond2b = tup[1] != event_to_thread[tup[1]].get_events(True)[0].name
                         cond2 = cond2a and cond2b
 
-                        cond3a = (event_to_thread[tup[0]].name == MAIN) and (event_to_thread[tup[1]].name != MAIN)
-                        cond3c = tup[1] != event_to_thread[tup[1]].get_events(True)[0].name
-                        cond3 = cond3a and cond3c
-
-                        cond4 = ((tup[1], tup[0]) in interp.get_RF().tuples)
-
-                        if (cond2 or cond3 or cond4):
+                        if cond1 or cond2:
                             continue
-                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
+                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], \
+                                                                         tup[1], \
+                                                                         label, \
+                                                                         colors[relation] if relation in colors else defcolor))
                 
 
         sepx = 5
@@ -556,7 +552,7 @@ class DotPrinter(object):
         for thread in program.threads:
             if thread.name == MAIN:
                 for event in thread.get_events(True):
-                    node = "%s [pos=\"%s,%s!\"]"%(event.name, posx, posy)
+                    node = self.__print_event(event, reads_dic, posx, posy)
                     ret.append(node)
                     posy -= sepy
 
@@ -567,7 +563,7 @@ class DotPrinter(object):
             posy  = sposy
             if thread.name != MAIN:
                 for event in thread.get_events(True):
-                    node = "%s [pos=\"%s,%s!\"]"%(event.name, posx, posy)
+                    node = self.__print_event(event, reads_dic, posx, posy)
                     ret.append(node)
                     posy -= sepy
                 posx += sepx
@@ -575,25 +571,45 @@ class DotPrinter(object):
                 
         return "\n".join(ret)
 
+    def __print_event(self, event, reads_dic, posx, posy):
+        if event.name in reads_dic:
+            event = reads_dic[event.name]
+            value = event.get_correct_value()
+            bname = self.__get_block_size(event)
+        else:
+            if event.is_init():
+                value = 0
+                bname = "Init"
+            else:
+                value = event.get_correct_value()
+                bname = self.__get_block_size(event)
+            
+        value = self.float_pri_js%value if event.is_wtear() else value
+        label = "%s<br/><B>%s(%s)</B>"%(event.name, bname, value)
+        node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(event.name, label, posx, posy)
+
+        return node
+
+    
     def __get_block_size(self, event):
         size = event.get_size()
         isfloat = event.is_wtear()
         
         if not isfloat:
             if size == 1:
-                return T_INT8
+                return T_INT8[1:]
             elif size == 2:
-                return T_INT16
+                return T_INT16[1:]
             elif size == 4:
-                return T_INT32
+                return T_INT32[1:]
             else:
                 raise UnreachableCodeException("Int size %s not valid"%str(size))
             
         if isfloat:
             if size == 4:
-                return T_FLO32
+                return T_FLO32[1:]
             elif size == 8:
-                return T_FLO64
+                return T_FLO64[1:]
             else:
                 raise UnreachableCodeException("Float size %s not valid"%str(size))
     
