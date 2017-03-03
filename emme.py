@@ -14,10 +14,12 @@ import argparse
 import os
 import sys
 from six.moves import range
+import subprocess
 
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
 from ecmasab.execution import RF, HB, SW
+from ecmasab.exceptions import UnreachableCodeException
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
@@ -32,6 +34,7 @@ BLOCK_TYPE = "block_type.cvc"
 ID_TYPE = "id_type.cvc"
 MODELS = "models.txt"
 DOTS = "mm%s.dot"
+GRAP = "gmm%s.png"
 JSPROGRAM = "program.js"
 EXECS = "outputs.txt"
 
@@ -49,6 +52,7 @@ class Config(object):
     skip_solving = None
     jsprinter = None
     printing_relations = None
+    graphviz = None
     
     model = None
     model_ex = None
@@ -57,6 +61,7 @@ class Config(object):
     id_type = None
     models = None
     dots = None
+    grap = None
     jsprogram = None
     execs = None
     mm = None
@@ -72,6 +77,7 @@ class Config(object):
         self.only_model = False
         self.skip_solving = False
         self.jsprinter = None
+        self.graphviz = None
         self.printing_relations = ",".join([RF,HB,SW])
         
     def generate_filenames(self):
@@ -83,10 +89,19 @@ class Config(object):
             self.id_type = self.prefix+ID_TYPE
             self.models = self.prefix+MODELS
             self.dots = self.prefix+DOTS
+            self.grap = self.prefix+GRAP
             self.jsprogram = self.prefix+JSPROGRAM
             self.execs = self.prefix+EXECS
             self.mm = FORMAL_MODEL
-        
+
+def graphviz_gen(gfile, pngfile):
+    command = "neato -Tpng -o%s %s"%(pngfile, gfile)
+    try:
+        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    except:
+        raise UnreachableCodeException("ERROR: execution of \"%s\" failed"%(command))
+
+            
 def main(config):
     config.generate_filenames()
 
@@ -228,6 +243,9 @@ def main(config):
         for i in range(len(mms)):
             with open(config.dots%(str(i+1)), "w") as dot:
                 dot.write(mms[i])
+            if config.graphviz:
+                with open(config.grap%(str(i+1)), "w") as dot:
+                    graphviz_gen(config.dots%(str(i+1)), config.grap%(str(i+1)))
 
         if config.verbosity > 0:
             sys.stdout.write("DONE\n")
@@ -285,6 +303,9 @@ if __name__ == "__main__":
     parser.add_argument('-n','--no-exbounded', dest='expand_bounded_sets', action='store_false',
                         help="disables the bounded sets quantifier expansion")
 
+    parser.set_defaults(graphviz=False)
+    parser.add_argument('-g', '--graphvis', dest='graphviz', action='store_true',
+                        help="generates the png files of each execution (requires neato)")
     
     parser.set_defaults(prefix=None)
     parser.add_argument('-p', '--prefix', metavar='prefix', type=str, nargs='?',
@@ -321,6 +342,7 @@ if __name__ == "__main__":
     skip_solving = args.skip_solving
     jsprinter = args.jsprinter
     printing_relations = args.printing_relations
+    graphviz = args.graphviz
     
     if cpp_preproc and (not preproc):
         preproc = CPP
@@ -348,6 +370,7 @@ if __name__ == "__main__":
     config.skip_solving = skip_solving
     config.jsprinter = jsprinter
     config.printing_relations = printing_relations
+    config.graphviz = graphviz
     if printing_relations == ALL:
         config.printing_relations = None
 

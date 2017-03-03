@@ -11,11 +11,11 @@ id2_R_t1 -> id1_W_main [label = "RF", color="red"];
 id5_R_t2 -> id1_W_main [label = "RF", color="red"];
 id1_W_main -> id2_R_t1 [label = "SW", color="blue"];
 id1_W_main -> id5_R_t2 [label = "SW", color="blue"];
-id1_W_main [label=<id1_W_main<br/><B>Init(0)</B>>, pos="2.5,6!"]
-id2_R_t1 [label=<id2_R_t1<br/><B>F64(0.00)</B>>, pos="0,4!"]
-id3_W_t1 [label=<id3_W_t1<br/><B>F32(1.00)</B>>, pos="0,2!"]
-id4_W_t1 [label=<id4_W_t1<br/><B>F32(1.00)</B>>, pos="0,0!"]
-id5_R_t2 [label=<id5_R_t2<br/><B>F64(0.00)</B>>, pos="5,4!"]
-id6_W_t2 [label=<id6_W_t2<br/><B>F32(2.00)</B>>, pos="5,2!"]
-id7_W_t2 [label=<id7_W_t2<br/><B>F32(2.00)</B>>, pos="5,0!"]
+id1_W_main [label=<id1_W_main<br/><B>x=Init(0)</B>>, pos="2.5,6!"]
+id2_R_t1 [label=<id2_R_t1<br/><B>x=F64(0.00)</B>>, pos="0,4!"]
+id3_W_t1 [label=<id3_W_t1<br/><B>x=F32(1.00)</B>>, pos="0,2!"]
+id4_W_t1 [label=<id4_W_t1<br/><B>x=F32(1.00)</B>>, pos="0,0!"]
+id5_R_t2 [label=<id5_R_t2<br/><B>x=F64(0.00)</B>>, pos="5,4!"]
+id6_W_t2 [label=<id6_W_t2<br/><B>x=F32(2.00)</B>>, pos="5,2!"]
+id7_W_t2 [label=<id7_W_t2<br/><B>x=F32(2.00)</B>>, pos="5,0!"]
 }

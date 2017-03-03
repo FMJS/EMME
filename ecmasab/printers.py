@@ -585,7 +585,7 @@ class DotPrinter(object):
                 bname = self.__get_block_size(event)
             
         value = self.float_pri_js%value if event.is_wtear() else value
-        label = "%s<br/><B>%s(%s)</B>"%(event.name, bname, value)
+        label = "%s<br/><B>%s=%s(%s)</B>"%(event.name, event.block.name, bname, value)
         node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(event.name, label, posx, posy)
 
         return node
