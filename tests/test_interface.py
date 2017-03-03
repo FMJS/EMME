@@ -16,7 +16,7 @@ import shutil
 import os
 
 from ecmasab.printers import JSV8Printer
-from emme import Config, main
+from emme import Config, main, ALL
 from tests.input_tests import examples, ex_fast
 
 tmp_dir = ".tmp_examples/"
@@ -58,7 +58,7 @@ def run_fresh(example, skip_solving, expand):
                 
     shutil.rmtree(tmp_dir)    
 
-def run_existing(example, skip_solving):
+def run_existing(example, skip_solving, print_all):
     config = Config()
     config.inputfile = example+".txt"
     
@@ -66,16 +66,21 @@ def run_existing(example, skip_solving):
     config.sat = False
     config.skip_solving = skip_solving
     config.expand_bounded_sets = True
+    if print_all:
+        config.printing_relations = None
 
     run(config)
 
     
 def test_generation():
     for example in examples:
-        yield run_existing, example, True
+        yield run_existing, example, True, True
+
+    for example in examples:
+        yield run_existing, example, True, False
 
     for example in ex_fast:
-        yield run_existing, example, False
+        yield run_existing, example, False, False
         
 def test_verification():
     for example in ex_fast:
@@ -87,7 +92,7 @@ def test_verification():
 
 if __name__ == "__main__":
     for example in ex_fast:
-        run_existing(example, True)
+        run_existing(example, True, True)
     for example in ex_fast:
         run_fresh(example, False, True)
         

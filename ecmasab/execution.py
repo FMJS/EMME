@@ -41,7 +41,7 @@ RELATIONS.append(HB)
 RELATIONS.append(RF)
 RELATIONS.append(RBF)
 RELATIONS.append(MO)
-RELATIONS.append(AO)
+# RELATIONS.append(AO)
 RELATIONS.append(SW)
 
 BLOCKING_RELATIONS = []
@@ -142,7 +142,7 @@ class Execution(object):
         elif name == HB:
             self.set_HB(rel)
         else:
-            return None
+            raise UnreachableCodeException("Not found relation \"%s\""%(name))
 
         return rel
 
@@ -158,7 +158,7 @@ class Execution(object):
         elif name == HB:
             return self.get_HB()
         else:
-            return None
+            raise UnreachableCodeException("Not found relation \"%s\""%(name))
     
 class Relation(object):
     name = None
@@ -258,6 +258,11 @@ class Thread(object):
             if isinstance(self.uevents[i], For_Loop):
                 self.uevents = self.uevents[:i] + self.uevents[i].get_uevents() + self.uevents[i+1:]
             i += 1
+
+        id_ev = 0
+        for event in self.uevents:
+            event.id_ev = id_ev
+            id_ev += 1
         return self.uevents
 
     def get_blocks(self):
@@ -361,11 +366,12 @@ class Memory_Event(object):
     address = None
     block = None
     values = None
-    id_ev = 1
+    global_id_ev = 1
     offset = None
     size = None
     value = None
-
+    id_ev = None
+    
     op_purpose = None
     
     def __init__(self, name, operation, tear, ordering, address, block, values):
@@ -383,6 +389,7 @@ class Memory_Event(object):
         self.op_purpose = None
         self.size = None
         self.value = None
+        self.id_ev = Memory_Event.global_id_ev
 
         if values:
             self.block.update_size(len(values))
@@ -392,12 +399,12 @@ class Memory_Event(object):
 
     @staticmethod        
     def reset_unique_names():
-        Memory_Event.id_ev = 1
+        Memory_Event.global_id_ev = 1
     
     @staticmethod        
     def get_unique_name():
-        ret = Memory_Event.id_ev
-        Memory_Event.id_ev = Memory_Event.id_ev + 1
+        ret = Memory_Event.global_id_ev
+        Memory_Event.global_id_ev = Memory_Event.global_id_ev + 1
         return "id%s"%ret
     
     def is_read(self):
@@ -421,6 +428,9 @@ class Memory_Event(object):
     def is_wtear(self):
         return self.tear == WTEAR
 
+    def is_init(self):
+        return self.ordering == INIT
+    
     def set_param_value(self, size, value):
         self.size = size
         self.value = value
@@ -491,7 +501,7 @@ class Memory_Event(object):
         elif size <= 4:
             return '<I'
         else:
-            raise UnreachableCodeException()
+            raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
 
     def __get_float_type(self, size):
         if size <= 4:
@@ -499,5 +509,5 @@ class Memory_Event(object):
         elif size <= 8:
             return '<d'
         else:
-            raise UnreachableCodeException()
+            raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
         
