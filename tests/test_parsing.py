@@ -85,8 +85,8 @@ def be_parsing(example):
     beprogram = beprogram.replace(" ", "")
 
     if not(strp == beprogram):
-        print strp
-        print beprogram
+        print(strp)
+        print(beprogram)
     
     assert(strp == beprogram)
     
