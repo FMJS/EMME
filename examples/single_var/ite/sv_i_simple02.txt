@@ -1,0 +1,17 @@
+// Single Variable Simple 13
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  x-I8[0] = 1;
+  x-I8[1] = 1;
+  x-I8[0] = 2;
+  x-I8[1] = 2;
+}
+
+Thread t2 {
+  if (x-I8[0] == 0) {
+     print(x-I8[0]);
+  } else {
+     print(x-I8[1]);
+  }
+}
