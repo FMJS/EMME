@@ -609,17 +609,17 @@ class DotPrinter(object):
         if event.name in reads_dic:
             event = reads_dic[event.name]
             value = event.get_correct_value()
-            bname = self.__get_block_size(event)
+            bname = "%s%s[%s]"%(event.block.name, self.__get_block_size(event), event.address[0])
         else:
             if event.is_init():
                 value = 0
-                bname = "Init"
+                bname = "%s-init"%event.block.name
             else:
                 value = event.get_correct_value()
-                bname = self.__get_block_size(event)
+                bname = "%s%s[%s]"%(event.block.name, self.__get_block_size(event), event.address[0])
             
         value = self.float_pri_js%value if event.is_wtear() else value
-        label = "%s<br/><B>%s=%s(%s)</B>"%(event.name, event.block.name, bname, value)
+        label = "%s<br/><B>%s = %s</B>"%(event.name, bname, value)
         node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(event.name, label, posx, posy)
 
         return node
@@ -631,19 +631,19 @@ class DotPrinter(object):
         
         if not isfloat:
             if size == 1:
-                return T_INT8[1:]
+                return T_INT8
             elif size == 2:
-                return T_INT16[1:]
+                return T_INT16
             elif size == 4:
-                return T_INT32[1:]
+                return T_INT32
             else:
                 raise UnreachableCodeException("Int size %s not valid"%str(size))
             
         if isfloat:
             if size == 4:
-                return T_FLO32[1:]
+                return T_FLO32
             elif size == 8:
-                return T_FLO64[1:]
+                return T_FLO64
             else:
                 raise UnreachableCodeException("Float size %s not valid"%str(size))
     

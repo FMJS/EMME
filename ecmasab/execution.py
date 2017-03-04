@@ -122,12 +122,14 @@ class Execution(object):
 
         read_map = dict((x.name, x) for x in self.reads_values)        
 
+        actual_conds = []
         for event in events:
             if isinstance(event, ITE_Statement):
                 for expcond in event.conditions:
-                    if not read_map[expcond[0].name].get_correct_value() == eval(expcond[1]):
-                        return False
-        return True
+                    loc_cond = read_map[expcond[0].name].get_correct_value() == eval(expcond[1])
+                    actual_cond = (event.condition_name, str(loc_cond).upper())
+                    actual_conds.append(actual_cond)
+        return actual_conds == self.conditions
     
     def get_HB(self):
         return self.happens_before
