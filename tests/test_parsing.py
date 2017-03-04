@@ -41,7 +41,7 @@ def parse_and_generate(example, valid):
         assert(jprinter in jprinters)
 
         jprog = jprinter.print_program(program)
-    except (ParsingErrorException, UnreachableCodeException) as e:
+    except Exception as e:
         if not valid:
             print(e)
             return
