@@ -120,8 +120,14 @@ class CVC4Printer(object):
         for relation in BLOCKING_RELATIONS:
             relations.append(interp.get_relation_by_name(relation))
 
-        ret = " AND ".join([self.__print_relation(x) for x in relations])
-        
+        relations = [self.__print_relation(x) for x in relations]
+
+        conds = []
+        if interp.conditions:
+            conds += ["(%s=%s)"%x for x in interp.conditions]
+            
+        ret = " AND ".join(relations+conds)
+            
         return "ASSERT NOT(%s);"%(ret)
     
     
