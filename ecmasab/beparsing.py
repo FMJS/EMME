@@ -11,7 +11,7 @@
 import copy
 from six.moves import range
 
-from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop
+from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.execution import OP_PRINT
@@ -66,6 +66,7 @@ P_EXPR = "expr"
 P_FLOOP = "floop"
 P_IF = "if"
 P_ELSE = "else"
+P_BCOND = "bcond"
 P_INIT = "init"
 P_LOAD = "load"
 P_PRINT = "print"
@@ -84,6 +85,9 @@ P_WRITE = "write"
 P_TRREL = "tr-relation"
 P_BIREL = "bi-relation"
 P_EMREL = "em-relation"
+P_ASS = "assign"
+
+DEBUG = True
 
 class ParsingErrorException(Exception):
     pass
@@ -123,11 +127,13 @@ class BeParser(object):
         birelation = (varname + T_EQ + T_OCB + (birel) + T_CCB)(P_BIREL)
         emrelation = (varname + T_EQ + T_OCB + (Empty()) + T_CCB)(P_EMREL)
 
-        relation = trrelation | birelation | emrelation
+        varassign = (T_OP + varname + T_EQ + varname + T_CP)(P_ASS)
         
-        relations = relation + ZeroOrMore(T_AND + relation)
+        assign = trrelation | birelation | emrelation | varassign
+        
+        assigns = assign + ZeroOrMore(T_AND + assign)
 
-        return relations
+        return assigns
 
 
     def __init_program_parser(self):
@@ -175,9 +181,11 @@ class BeParser(object):
         threaddef = (T_THREAD + varname + Literal(T_OCB))(P_TRDB)
         closescope = (Literal(T_CCB))(P_CSCOPE)
 
-        floop = (T_FOR + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
-        ite = (T_IF + T_OP + sabread + T_BEQ + value + T_CP + T_OCB)(P_IF)
-        els = (Literal(T_ELSE) + T_OCB)(P_ELSE)
+        floop = (Literal(T_FOR) + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
+
+        bcond = (sabread + T_BEQ + value)(P_BCOND)
+        ite = (Literal(T_IF) + T_OP + bcond + T_CP + T_OCB)(P_IF)
+        els = (T_CCB + Literal(T_ELSE) + T_OCB)(P_ELSE)
 
         command = sabstore | sab_def | sabassign | threaddef | printv | floop | ite | els | closescope | comment | emptyline
 
@@ -234,15 +242,20 @@ class BeParser(object):
         execs.program = self.program
         for model in self.models:
             execution = Execution()
-            for relation in model:
-                rel = Relation(relation[0])
-                size = 9 if relation.getName() == P_TRREL else \
-                       6 if relation.getName() == P_BIREL else 0
-                if size == 0: continue
-                for i in range(3, len(relation), size):
-                    rel.add_tuple(self.__get_tuple(size, relation[i:i+size]))
-                
-                self.__add_relation(execution, rel)
+            for assign in model:
+                if assign.getName() == P_ASS:
+                    variable = assign[1]
+                    value = assign[3]
+                    execution.add_condition(variable, value)
+                else:
+                    rel = Relation(assign[0])
+                    size = 9 if assign.getName() == P_TRREL else \
+                           6 if assign.getName() == P_BIREL else 0
+                    if size == 0: continue
+                    for i in range(3, len(assign), size):
+                        rel.add_tuple(self.__get_tuple(size, assign[i:i+size]))
+
+                    self.__add_relation(execution, rel)
             execs.add_execution(execution)
 
         self.executions = execs
@@ -282,6 +295,7 @@ class BeParser(object):
             try:
                 pline = self.program_parser.parseString(line, parseAll=True)
             except ParseException:
+                if DEBUG: raise
                 raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(self.commands)+1, line.strip()))
             self.commands.append(pline)
 
@@ -310,7 +324,42 @@ class BeParser(object):
         if typeop in [T_FLO32, T_FLO64]:
             return True
         return False
-    
+
+    def __gen_memory_event(self, command, parametric, thread, blocks):
+        block_name = command.varname
+        values = None
+        varsize = self.__get_var_size(command.typeop)
+
+        if parametric:
+            address = None
+            offset = "".join(list(command.address.asList())[1:][0])
+        else:
+            addr = int(command.address[1])
+            baddr = varsize*addr
+            eaddr = (varsize*(addr+1))-1
+            address = range(baddr, eaddr+1, 1)
+            varsize = eaddr+1
+
+        tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
+        ordering = SC if self.__var_type_is_float(command.typeop) else UNORD
+        name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.name)
+        me = Memory_Event(name = name, \
+                          operation = READ, \
+                          tear = tear, \
+                          ordering = ordering, \
+                          address = address, \
+                          block = blocks[block_name],\
+                          values = values)
+
+        blocks[block_name].update_size(varsize)
+
+        if parametric:
+            me.set_param_value(varsize, None)
+            me.offset = offset
+            me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
+
+        return me
+
     def __populate_program(self):
         program = Program()
         thread = Thread(MAIN)
@@ -384,18 +433,22 @@ class BeParser(object):
                 blocks[block_name].update_size(varsize)
                 value = "".join(command.value.asList()[1:][0])
 
-                if not floop:
-                    try:
-                        me.set_values_from_int(int(value), baddr, eaddr)
-                    except:
-                        raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
 
-                    thread.append(me)
-                else:
+                if floop:
                     me.set_param_value(varsize, value)
                     me.offset = offset
                     me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
+                elif ite:
+                    pass
+                else:
+                    try:
+                        me.set_values_from_int(int(value), baddr, eaddr)
+                    except:
+                        if DEBUG: raise
+                        raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
+
+                    thread.append(me)
 
             elif command_name == P_SABASS:
                 block_name = command.varname
@@ -427,23 +480,30 @@ class BeParser(object):
                 blocks[block_name].update_size(varsize)
 
                 value = "".join(command.value)
-                
-                if not floop:
+
+                if floop:
+                    value = "".join(value)
+                    me.set_param_value(varsize, value)
+                    me.offset = offset
+                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
+                    floop.append(me)
+                else:
                     try:
                         if self.__var_type_is_float(command.typeop):
                             me.set_values_from_float(float(value), baddr, eaddr)
                         if self.__var_type_is_int(command.typeop):
                             me.set_values_from_int(int(value), baddr, eaddr)
                     except:
+                        if DEBUG: raise
                         raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
 
-                    thread.append(me)
-                else:
-                    value = "".join(value)
-                    me.set_param_value(varsize, value)
-                    me.offset = offset
-                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-                    floop.append(me)
+                    if ite:
+                        if ite.has_else():
+                            ite.append_else(me)
+                        else:
+                            ite.append_then(me)
+                    else:                    
+                        thread.append(me)
 
             elif command_name == P_ACCESS:
                 block_name = command.varname
@@ -479,13 +539,15 @@ class BeParser(object):
                     me.op_purpose = op_purpose
                     op_purpose = None
 
-                if not floop:
-                    thread.append(me)                                
-                else:
+                if floop:
                     me.set_param_value(varsize, None)
                     me.offset = offset
                     me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
+                elif ite:
+                    pass
+                else:
+                    thread.append(me)                                
 
             elif command_name == P_LOAD:
                 block_name = command.varname
@@ -524,15 +586,17 @@ class BeParser(object):
                 if op_purpose:
                     me.op_purpose = op_purpose
                     op_purpose = None
-                
-                if not floop:
-                    thread.append(me)
-                else:
+
+                if floop:
                     value = "".join(command.value)
                     me.set_param_value(varsize, value)
                     me.offset = offset
                     me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
+                elif ite:
+                    pass
+                else:
+                    thread.append(me)
 
 
             elif command_name == P_PRINT:
@@ -550,9 +614,14 @@ class BeParser(object):
                     floop.get_uevents()
                     thread.append(floop)
                     floop = None
+                elif ite:
+                    thread.append(ite)
+                    ite = None
                 else:
                     program.add_thread(thread)
                     thread = None
+                continue
+            
             elif command_name == P_FLOOP:
                 floop = For_Loop()
                 frind = int(command.range[0])
@@ -560,6 +629,18 @@ class BeParser(object):
                 cname = command.varname
                 floop.set_values(cname, frind, toind)
                 continue
+            
+            elif command_name == P_IF:
+                ite = ITE_Statement()
+                condition = command.bcond
+                mem = self.__gen_memory_event(condition.access, False, thread, blocks)
+                ite.append_condition((mem, condition.value))
+                continue
+
+            elif command_name == P_ELSE:
+                ite.else_events = []
+                continue
+            
             elif (command_name == P_COMMENT) or (command_name == P_EMPTY):
                 continue
             else:

@@ -12,7 +12,7 @@ import itertools
 import re
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop
+from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
@@ -109,8 +109,12 @@ class CVC4Printer(object):
         relations.append(interp.get_RF())
         relations.append(interp.get_SW())
 
-        return " AND ".join([self.__print_relation(x) for x in relations])
-
+        values = [self.__print_relation(x) for x in relations]
+        if interp.conditions:
+            values += ["(%s=%s)"%x for x in interp.conditions]
+        
+        return " AND ".join(values)
+    
     def print_assert_execution(self, interp):
         relations = []
         for relation in BLOCKING_RELATIONS:
@@ -134,13 +138,16 @@ class CVC4Printer(object):
         program.sort_threads()
 
         ret = ""
+
+        ret += self.__print_conditions(program) + "\n"
+        conditional = program.has_conditions()
         
         for thread in program.threads:
             ret += self.print_thread(thread) + "\n"
 
         for thread in program.threads:
             for event in thread.get_events(True):
-                ret += self.print_event(event) + "\n"
+                ret += self.print_event(event, conditional) + "\n"
 
         for thread in program.threads:
             ret += self.__print_thread_events_set(thread) + "\n"
@@ -156,10 +163,10 @@ class CVC4Printer(object):
     def print_thread(self, thread):
         return "%s : THREAD_TYPE;" % thread.name
     
-    def print_event(self, event):
-        return "%s : MEM_OP_TYPE;\n%s" % (event.name, self.print_event_formula(event))
+    def print_event(self, event, conditional):
+        return "%s : MEM_OP_TYPE;\n%s" % (event.name, self.print_event_formula(event, conditional))
     
-    def print_event_formula(self, event):
+    def print_event_formula(self, event, conditional):
         ret = "ASSERT "
         indent = " "*len(ret)
         ret +=  "(%s.ID = %s) AND\n" % (event.name, str(event.name)+TYPE)
@@ -169,7 +176,23 @@ class CVC4Printer(object):
         if type(event.address[0]) == int:
             address = "{%s}" % (", ".join(["Int(%s)" % el for el in event.address]))
             ret += "%s(%s.M = %s) AND\n" % (indent, event.name, address)
+            
+        if conditional:
+            if event.en_conditions:
+                condition = []
+                for el in event.en_conditions:
+                    if el[1]:
+                        condition.append("(%s)"%el[0])
+                    else:
+                        condition.append("(NOT (%s))"%el[0])
+
+                ret +=  "%s((%s.A = ENABLED) <=> (%s)) AND\n" % (indent, event.name, " AND ".join(condition))
+            else:
+                ret +=  "%s(%s.A = ENABLED) AND\n" % (indent, event.name)
+
         ret += "%s(%s.B = %s);\n"    % (indent, event.name, str(event.block))
+
+                
         return ret
 
     def __print_thread_events_set(self, thread):
@@ -193,6 +216,15 @@ class CVC4Printer(object):
 
         return ret
 
+    def __print_conditions(self, program):
+        if not program.get_conditions():
+            return ""
+        ret = []
+        for condition in program.conditions:
+            ret.append("%s: BOOLEAN;"%condition)
+
+        return "\n".join(ret)
+    
     def __print_event_set(self, program):
         events = []
         rom_events = []
@@ -271,7 +303,7 @@ class JSV8Printer(JSPrinter):
 
     def compute_possible_executions(self, program, interps):
         ret = set([])
-        for interp in interps.executions:
+        for interp in interps.get_valid_executions():
             ret.add(self.print_execution(program, interp))
 
         return list(ret)
@@ -303,6 +335,8 @@ class JSV8Printer(JSPrinter):
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
                     ret += self.print_floop(ev)
+                if isinstance(ev, ITE_Statement):
+                    pass
                 else:
                     ret += self.print_event(ev)
 
@@ -464,7 +498,7 @@ class DotPrinter(object):
 
     def print_executions(self, program, interps):
         graphs = []
-        for interp in interps.executions:
+        for interp in interps.get_valid_executions():
             graphs.append(self.print_execution(program, interp))
         return graphs
 
@@ -488,7 +522,7 @@ class DotPrinter(object):
     def print_execution(self, program, interp):
 
         reads_dic = dict([(x.name, x) for x in interp.reads_values])
-        ev_dic = dict([(x.name, x) for x in program.get_events()])
+        ev_dic = dict([(x.name, x) for x in interp.get_events()])
 
         ret = []
         ret.append("digraph memory_model {")

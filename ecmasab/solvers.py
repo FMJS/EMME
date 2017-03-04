@@ -38,14 +38,19 @@ class CVC4Solver(object):
     executions = None
     assertions = None
     incremental = None
+    variables = None
     
     def __init__(self):
         self.verbosity = 1
         self.models_file = None
         self.executions = []
         self.assertions = []
+        self.variables = []
         self.incremental = False
 
+    def set_additional_variables(self, variables):
+        self.variables = variables
+        
     def __add_execution(self, execution):
         if str(execution) in self.executions:
             raise UnreachableCodeException("Enumeration of not distincs models")
@@ -199,6 +204,14 @@ class CVC4Solver(object):
                     assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
                     assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
 
+            for variable in self.variables:
+                assign = symboltable.lookup(variable)
+                value = smt.getValue(assign).toString()
+                exe.add_condition(variable, value)
+
+                assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
+                assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
+                
             self.__add_execution(exe)
             
             if self.verbosity > 0:

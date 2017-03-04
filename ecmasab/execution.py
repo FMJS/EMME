@@ -32,6 +32,9 @@ MO = "MO"
 AO = "AO"
 SW = "SW"
 
+FALSE = "FALSE"
+TRUE = "TRUE"
+
 OP_PRINT = "PRINT"
 
 DEFAULT_TEAR = NTEAR
@@ -65,6 +68,10 @@ class Executions(object):
         assert(isinstance(exe, Execution))
         self.executions.append(exe)
 
+
+    def get_valid_executions(self):
+        return [x for x in self.executions if x.is_valid()]
+        
     def get_size(self):
         return len(self.executions)
     
@@ -74,7 +81,8 @@ class Execution(object):
     reads_bytes_from = None
     reads_from = None
     synchronizes_with = None
-
+    conditions = None
+    
     reads_values = None
 
     program = None
@@ -87,6 +95,7 @@ class Execution(object):
         self.reads_from = Relation(RF)
         self.synchronizes_with = Relation(SW)
         self.reads_values = []
+        self.conditions = None
 
     def __repr__(self):
         relations = []
@@ -99,7 +108,27 @@ class Execution(object):
         
     def add_read_values(self, read_event):
         self.reads_values.append(read_event)
-        
+
+    def get_events(self):
+        events = []
+        for thread in self.program.threads:
+            events += thread.get_events(True, self.conditions)
+        return events
+
+    def is_valid(self):
+        events = []
+        for thread in self.program.threads:
+            events += thread.get_events(False)
+
+        read_map = dict((x.name, x) for x in self.reads_values)        
+
+        for event in events:
+            if isinstance(event, ITE_Statement):
+                for expcond in event.conditions:
+                    if not read_map[expcond[0].name].get_correct_value() == eval(expcond[1]):
+                        return False
+        return True
+    
     def get_HB(self):
         return self.happens_before
 
@@ -146,6 +175,11 @@ class Execution(object):
 
         return rel
 
+    def add_condition(self, condition, value):
+        if not self.conditions:
+            self.conditions = []
+        self.conditions.append((condition, value))
+    
     def get_relation_by_name(self, name):
         if name == RF:
             return self.get_RF()
@@ -185,10 +219,12 @@ class Relation(object):
 class Program(object):
     threads = []
     blocks = []
+    conditions = None
     
     def __init__(self):
         self.threads = []
         self.blocks = []
+        self.conditions = None
 
     def add_thread(self, thread):
         self.threads.append(thread)
@@ -199,6 +235,18 @@ class Program(object):
             blocks += thread.get_blocks()
         return list(set(blocks))
 
+    def get_conditions(self):
+        conditions = []
+        for thread in self.threads:
+            conditions += thread.get_conditions()
+
+        self.conditions = list(set(conditions))
+        return self.conditions
+
+    def has_conditions(self):
+        self.get_conditions()
+        return len(self.conditions)
+    
     def get_events(self):
         events = []
         for thread in self.threads:
@@ -244,12 +292,19 @@ class Thread(object):
         self.events = []
         self.uevents = []
         self.name = name
-        
-    def get_events(self, expand_loops):
+
+    def get_conditions(self):
+        conditions = []
+        for event in self.events:
+            if isinstance(event, ITE_Statement):
+                conditions.append(event.condition_name)
+        return list(set(conditions))
+
+    def get_events(self, expand_loops, conditions=None):
         if not expand_loops:
             return self.events
 
-        if self.uevents:
+        if self.uevents and not conditions:
             return self.uevents
         
         i = 0
@@ -257,6 +312,8 @@ class Thread(object):
         while i < len(self.uevents):
             if isinstance(self.uevents[i], For_Loop):
                 self.uevents = self.uevents[:i] + self.uevents[i].get_uevents() + self.uevents[i+1:]
+            if isinstance(self.uevents[i], ITE_Statement):
+                self.uevents = self.uevents[:i] + self.uevents[i].get_uevents(conditions) + self.uevents[i+1:]
             i += 1
 
         id_ev = 0
@@ -337,27 +394,55 @@ class For_Loop(object):
 
                 self.uevents.append(me)
 
-class ITE_Stament(object):
+class ITE_Statement(object):
     conditions = None
     then_events = None
     else_events = None
+    condition_name = None
     
     def __init__(self):
         self.conditions = []
-        self.then_events = []
-        self.else_events = []
+        self.then_events = None
+        self.else_events = None
+        self.condition_name = None
 
-    
     def append_condition(self, condition):
         self.conditions.append(condition)
+        self.condition_name = "%s_cond"%(Memory_Event.get_unique_condition())
     
     def append_then(self, event):
+        if not self.then_events:
+            self.then_events = []
+        event.add_enabling_condition((self.condition_name, 1))
         self.then_events.append(event)
 
     def append_else(self, event):
+        if not self.else_events:
+            self.else_events = []
+        event.add_enabling_condition((self.condition_name, 0))
         self.else_events.append(event)
-        
-                
+
+    def has_else(self):
+        return self.else_events is not None
+
+    def get_uevents(self, assconds=None):
+        uevents = []
+        for condition in self.conditions:
+            uevents.append(condition[0])
+
+        acthen = True
+        acelse = True
+        if assconds:
+            for asscond in assconds:
+                if (asscond == (self.condition_name, TRUE)):
+                    acelse = False
+                if (asscond == (self.condition_name, FALSE)):
+                    acthen = False
+
+        if acthen: uevents += self.then_events
+        if acelse: uevents += self.else_events
+        return uevents
+    
 class Memory_Event(object):
     name = None
     operation = None
@@ -367,10 +452,12 @@ class Memory_Event(object):
     block = None
     values = None
     global_id_ev = 1
+    global_id_cond = 1
     offset = None
     size = None
     value = None
     id_ev = None
+    en_conditions = None
     
     op_purpose = None
     
@@ -390,6 +477,7 @@ class Memory_Event(object):
         self.size = None
         self.value = None
         self.id_ev = Memory_Event.global_id_ev
+        self.en_conditions = None
 
         if values:
             self.block.update_size(len(values))
@@ -400,11 +488,18 @@ class Memory_Event(object):
     @staticmethod        
     def reset_unique_names():
         Memory_Event.global_id_ev = 1
+        Memory_Event.global_id_cond = 1
     
     @staticmethod        
     def get_unique_name():
         ret = Memory_Event.global_id_ev
         Memory_Event.global_id_ev = Memory_Event.global_id_ev + 1
+        return "id%s"%ret
+
+    @staticmethod        
+    def get_unique_condition():
+        ret = Memory_Event.global_id_cond
+        Memory_Event.global_id_cond = Memory_Event.global_id_cond + 1
         return "id%s"%ret
     
     def is_read(self):
@@ -445,6 +540,17 @@ class Memory_Event(object):
         if not self.size:
             self.size = len(self.address)
         return self.size
+
+    def add_enabling_condition(self, condition):
+        if not self.en_conditions:
+            self.en_conditions = []
+
+        self.en_conditions.append(condition)
+
+    def has_condition(self):
+        if not self.en_conditions:
+            return False
+        return True
     
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin

@@ -151,6 +151,11 @@ def main(config):
     # Generation of the CVC4 memory events #
     with open(config.id_type, "w") as f:
         f.write(c4printer.print_data_type(program))
+
+    if program.has_conditions():
+        if not config.defines:
+            config.defines = ""
+        config.defines += "ENCODE_CONDITIONS=1"
         
     # Preprocessing the model using cpp #
     cpppre = ExtPreprocessor(CPP)
@@ -179,6 +184,9 @@ def main(config):
     c4solver = CVC4Solver()
     c4solver.verbosity = config.verbosity
 
+    if program.has_conditions:
+        c4solver.set_additional_variables(program.get_conditions())
+        
     if True: #not config.sat:
         c4solver.models_file = config.models
 
@@ -230,7 +238,7 @@ def main(config):
         
         with open(config.models, "r") as modelfile:
             executions = parser.executions_from_string(modelfile.read())
-
+            
         with open(config.execs, "w") as exefile:
             jsexecs = jprinter.compute_possible_executions(program, executions)
             exefile.write("\n".join(jsexecs))
@@ -376,12 +384,10 @@ if __name__ == "__main__":
     if printing_relations == ALL:
         config.printing_relations = None
 
-    if DEBUG:
+    try:
         main(config)
-    else:
-        try:
-            main(config)
-        except Exception as e:
-            print(e)
-            sys.exit(1)
+    except Exception as e:
+        if DEBUG: raise
+        print(e)
+        sys.exit(1)
 
