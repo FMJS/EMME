@@ -335,7 +335,7 @@ class JSV8Printer(JSPrinter):
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
                     ret += self.print_floop(ev)
-                if isinstance(ev, ITE_Statement):
+                elif isinstance(ev, ITE_Statement):
                     pass
                 else:
                     ret += self.print_event(ev)
