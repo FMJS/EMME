@@ -336,7 +336,7 @@ class JSV8Printer(JSPrinter):
                 if isinstance(ev, For_Loop):
                     ret += self.print_floop(ev)
                 elif isinstance(ev, ITE_Statement):
-                    pass
+                    ret += self.print_ite(ev)
                 else:
                     ret += self.print_event(ev)
 
@@ -391,6 +391,27 @@ class JSV8Printer(JSPrinter):
         ret += "}\n"
 
         return ret
+
+    def print_ite(self, ite):
+        ret = ""
+
+        for cond in ite.conditions:
+            ret += self.print_event(cond[0])
+
+        conditions = ["%s == %s"%x for x in ite.conditions]
+        ret += "if(%s) {\n"%(" AND ".join(conditions))
+
+        for ev in ite.then_events:
+            ret += self.print_event(ev)
+
+        ret += "} else {\n"
+            
+        for ev in ite.else_events:
+            ret += self.print_event(ev)
+            
+        ret += "}\n"
+
+        return ret
     
     def print_event(self, event, postfix=None):
         operation = event.operation
@@ -401,19 +422,20 @@ class JSV8Printer(JSPrinter):
         block_size = event.get_size()
         is_float = event.is_wtear()
         var_def = ""
+        prt = ""
         
         if (ordering != INIT):
             if is_float:
-                var_def = "var %s = new Float%sArray(data.%s);"%(block_name, \
+                var_def = "var %s = new Float%sArray(data.%s)"%(block_name, \
                                                                   block_size*8, \
                                                                   block_name+"_sab")
             else:
-                var_def = "var %s = new Int%sArray(data.%s);"%(block_name, \
+                var_def = "var %s = new Int%sArray(data.%s)"%(block_name, \
                                                            block_size*8, \
                                                            block_name+"_sab")
 
         if (operation == WRITE) and (ordering == INIT):
-            operation = ""
+            mop = ""
 
 
         if (ordering == SC) and not is_float:
@@ -425,19 +447,19 @@ class JSV8Printer(JSPrinter):
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
-                operation = "Atomics.store(%s, %s, %s);"%(block_name, \
+                mop = "Atomics.store(%s, %s, %s)"%(block_name, \
                                                         addr, \
                                                         event_values)
 
 
             if operation == READ:
-                operation = "%s = Atomics.load(%s, %s);"%(event_name, \
+                mop = "%s = Atomics.load(%s, %s)"%(event_name, \
                                                           block_name, \
                                                           addr)
                 if postfix:
-                    operation += " print(\"%s_\"+%s+\": \"+%s);"%(event_name, postfix, event_name)
+                    prt = "print(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
                 else:
-                    operation += " print(\"%s: \"+%s);"%(event_name, event_name)
+                    prt = "print(\"%s: \"+%s)"%(event_name, event_name)
 
         if (ordering == UNORD) or is_float:
             if not event_address:
@@ -451,24 +473,26 @@ class JSV8Printer(JSPrinter):
                 if is_float and event_address:
                     event_values = self.float_pri_js%event_values
 
-                operation = ("%s[%s] = %s;")%(block_name, \
+                mop = ("%s[%s] = %s")%(block_name, \
                                               addr, \
                                               event_values)
 
             if operation == READ:
                 approx = self.float_app_js if is_float else ""
                     
-                operation = "%s = %s[%s];"%(event_name, \
+                mop = "%s = %s[%s]"%(event_name, \
                                             block_name, \
                                             addr)
 
                 if postfix:
-                    operation += " print(\"%s_\"+%s+\": \"+%s%s);"%(event_name, postfix, event_name, approx)
+                    prt = "print(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
                 else:
-                    operation += " print(\"%s: \"+%s%s);"%(event_name, event_name, approx)
-            
+                    prt = "print(\"%s: \"+%s%s)"%(event_name, event_name, approx)
 
-        return var_def+" "+operation+"\n"
+        if operation == READ:
+            return "%s; %s; %s;\n"%(var_def,mop,prt)
+        else:
+            return "%s; %s;\n"%(var_def,mop)
 
 
 class JSSMPrinter(JSPrinter):
