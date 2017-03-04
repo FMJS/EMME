@@ -325,14 +325,39 @@ class BeParser(object):
             return True
         return False
 
-    def __gen_memory_event(self, command, parametric, thread, blocks):
+    def __gen_memory_event(self, command, ctype, parametric, thread, blocks):
+
+        ordering = None
+        operation = None
+
+        if ctype == P_STORE:
+            ordering = SC
+            operation = WRITE
+
+        elif ctype == P_LOAD:
+            ordering = SC
+            operation = READ
+            
+        elif ctype == P_ACCESS:
+            ordering = UNORD
+            operation = READ
+            
+        elif ctype == P_SABASS:
+            ordering = UNORD
+            operation = WRITE
+
+        else:
+            raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
+        
         block_name = command.varname
-        values = None
         varsize = self.__get_var_size(command.typeop)
 
         if parametric:
             address = None
-            offset = "".join(list(command.address.asList())[1:][0])
+            offset = list(command.address.asList())[1:]
+            if ctype == P_SABASS:
+                offset = offset[:-1]
+            offset = "".join(offset[0])
         else:
             addr = int(command.address[1])
             baddr = varsize*addr
@@ -341,22 +366,38 @@ class BeParser(object):
             varsize = eaddr+1
 
         tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-        ordering = SC if self.__var_type_is_float(command.typeop) else UNORD
-        name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.name)
+        ordering = SC if self.__var_type_is_float(command.typeop) else ordering
+        name = "%s_%s_%s"%(Memory_Event.get_unique_name(), operation, thread.name)
         me = Memory_Event(name = name, \
-                          operation = READ, \
+                          operation = operation, \
                           tear = tear, \
                           ordering = ordering, \
                           address = address, \
                           block = blocks[block_name],\
-                          values = values)
+                          values = None)
 
         blocks[block_name].update_size(varsize)
 
+        if ctype == P_STORE:
+            value = "".join(command.value.asList()[1:][0])
+        else:
+            value = "".join(command.value)
+
         if parametric:
-            me.set_param_value(varsize, None)
+            me.set_param_value(varsize, value)
             me.offset = offset
             me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
+        elif operation == WRITE:
+            try:
+                if self.__var_type_is_float(command.typeop):
+                    me.set_values_from_float(float(value), baddr, eaddr)
+                if self.__var_type_is_int(command.typeop):
+                    me.set_values_from_int(int(value), baddr, eaddr)
+            except:
+                if DEBUG: raise
+                raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
+        else:
+            pass
 
         return me
 
@@ -381,8 +422,9 @@ class BeParser(object):
                 if thread:
                     program.add_thread(thread)
                 thread = Thread(thread_name)
+                
             elif command_name == P_SABDEF:
-                block_name = command[1]
+                block_name = command.varname
                 block = Block(block_name)
                 blocks[block_name] = block
 
@@ -401,213 +443,35 @@ class BeParser(object):
                 
                 thread.append(me)
                 
-            elif command_name == P_STORE:
-                block_name = command[1]
+            elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD]:
+                block_name = command.varname
+                varsize = self.__get_var_size(command.typeop)
+
                 if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
-                if self.__var_type_is_float(command.typeop):
-                    raise ParsingErrorException("ERROR (L%s): Atomics.store not supports float type"% linenum)
+                if self.__var_type_is_float(command.typeop) and (command_name in [P_STORE, P_LOAD]):
+                    raise ParsingErrorException("ERROR (L%s): Atomic operations not support the float type"%linenum)
                 
-                varsize = self.__get_var_size(command.typeop)
+                me = self.__gen_memory_event(command, command_name, floop, thread, blocks)
 
                 if floop:
-                    address = None
-                    offset = "".join(list(command.address.asList())[1:][0])
-                else:
-                    addr = int(command.address[1])
-                    baddr = varsize*addr
-                    eaddr = (varsize*(addr+1))-1
-                    address = range(baddr, eaddr+1, 1)
-                    varsize = eaddr+1
-                
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.name)
-                me = Memory_Event(name = name, \
-                                  operation = WRITE, \
-                                  tear = None, \
-                                  ordering = SC, \
-                                  address = address, \
-                                  block = blocks[block_name],\
-                                  values = None)
-
-                blocks[block_name].update_size(varsize)
-                value = "".join(command.value.asList()[1:][0])
-
-
-                if floop:
-                    me.set_param_value(varsize, value)
-                    me.offset = offset
-                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
                     floop.append(me)
                 elif ite:
-                    pass
-                else:
-                    try:
-                        me.set_values_from_int(int(value), baddr, eaddr)
-                    except:
-                        if DEBUG: raise
-                        raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
-
+                    if ite.has_else():
+                        ite.append_else(me)
+                    else:
+                        ite.append_then(me)
+                else:                    
                     thread.append(me)
-
-            elif command_name == P_SABASS:
-                block_name = command.varname
-                varsize = self.__get_var_size(command.typeop)
-
-                if block_name not in blocks:
-                    raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
-                if floop:
-                    address = None
-                    offset = "".join(list(command.address.asList())[1:-1][0])
-                else:
-                    addr = int(command.address[1])
-
-                    baddr = varsize*addr
-                    eaddr = (varsize*(addr+1))-1
-                    address = range(baddr, eaddr+1, 1)
-                    varsize = eaddr+1
-
-                ordering = SC if self.__var_type_is_float(command.typeop) else UNORD
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.name)
-                me = Memory_Event(name = name, \
-                                  operation = WRITE, \
-                                  tear = None, \
-                                  ordering = ordering, \
-                                  address = address, \
-                                  block = blocks[block_name],\
-                                  values = None)
-                
-                blocks[block_name].update_size(varsize)
-
-                value = "".join(command.value)
-
-                if floop:
-                    value = "".join(value)
-                    me.set_param_value(varsize, value)
-                    me.offset = offset
-                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-                    floop.append(me)
-                else:
-                    try:
-                        if self.__var_type_is_float(command.typeop):
-                            me.set_values_from_float(float(value), baddr, eaddr)
-                        if self.__var_type_is_int(command.typeop):
-                            me.set_values_from_int(int(value), baddr, eaddr)
-                    except:
-                        if DEBUG: raise
-                        raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
-
-                    if ite:
-                        if ite.has_else():
-                            ite.append_else(me)
-                        else:
-                            ite.append_then(me)
-                    else:                    
-                        thread.append(me)
-
-            elif command_name == P_ACCESS:
-                block_name = command.varname
-                if block_name not in blocks:
-                    raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
-
-                values = None
-                varsize = self.__get_var_size(command.typeop)
-                
-                if floop:
-                    address = None
-                    offset = "".join(list(command.address.asList())[1:][0])
-                else:
-                    addr = int(command.address[1])
-                    baddr = varsize*addr
-                    eaddr = (varsize*(addr+1))-1
-                    address = range(baddr, eaddr+1, 1)
-                    varsize = eaddr+1
-                    
-                tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-                ordering = SC if self.__var_type_is_float(command.typeop) else UNORD
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.name)
-                me = Memory_Event(name = name, \
-                                  operation = READ, \
-                                  tear = tear, \
-                                  ordering = ordering, \
-                                  address = address, \
-                                  block = blocks[block_name],\
-                                  values = values)
-
-                blocks[block_name].update_size(varsize)
-                if op_purpose:
-                    me.op_purpose = op_purpose
-                    op_purpose = None
-
-                if floop:
-                    me.set_param_value(varsize, None)
-                    me.offset = offset
-                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-                    floop.append(me)
-                elif ite:
-                    pass
-                else:
-                    thread.append(me)                                
-
-            elif command_name == P_LOAD:
-                block_name = command.varname
-                if block_name not in blocks:
-                    raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
-
-                if self.__var_type_is_float(command.typeop):
-                    raise ParsingErrorException("ERROR (L%s): Atomics.load not supports float type"%linenum)
-
-                values = None
-                
-                varsize = self.__get_var_size(command.typeop)
-
-                if floop:
-                    address = None
-                    offset = "".join(list(command.address.asList()[1:])[0])
-                else:
-                    addr = int(command.address[1])
-                    baddr = varsize*addr
-                    eaddr = (varsize*(addr+1))-1
-                    address = range(baddr, eaddr+1, 1)
-                    varsize = eaddr+1
-
-                tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-
-                name = "%s_%s_%s"%(Memory_Event.get_unique_name(), READ, thread.name)
-                me = Memory_Event(name = name, \
-                                  operation = READ, \
-                                  tear = tear, \
-                                  ordering = SC, \
-                                  address = address, \
-                                  block = blocks[block_name],\
-                                  values = values)
-                
-                blocks[block_name].update_size(varsize)
-                if op_purpose:
-                    me.op_purpose = op_purpose
-                    op_purpose = None
-
-                if floop:
-                    value = "".join(command.value)
-                    me.set_param_value(varsize, value)
-                    me.offset = offset
-                    me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-                    floop.append(me)
-                elif ite:
-                    pass
-                else:
-                    thread.append(me)
-
 
             elif command_name == P_PRINT:
                 op_purpose = OP_PRINT
                 if command.access:
                     self.commands.insert(0, command.access)
-                    continue
 
                 if command.load:
                     self.commands.insert(0, command.load)
-                    continue
                 
             elif command_name == P_CSCOPE:
                 if floop:
@@ -620,7 +484,6 @@ class BeParser(object):
                 else:
                     program.add_thread(thread)
                     thread = None
-                continue
             
             elif command_name == P_FLOOP:
                 floop = For_Loop()
@@ -628,24 +491,20 @@ class BeParser(object):
                 toind = int(command.range[2])
                 cname = command.varname
                 floop.set_values(cname, frind, toind)
-                continue
             
             elif command_name == P_IF:
                 ite = ITE_Statement()
                 condition = command.bcond
-                mem = self.__gen_memory_event(condition.access, False, thread, blocks)
+                mem = self.__gen_memory_event(condition.access, UNORD, False, thread, blocks)
                 ite.append_condition((mem, condition.value))
-                continue
 
             elif command_name == P_ELSE:
                 ite.else_events = []
-                continue
             
             elif (command_name == P_COMMENT) or (command_name == P_EMPTY):
                 continue
             else:
                 raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\" (%s)"%(linenum, " ".join(command), name))
-
 
         for sdef in sab_defs:
             sdef.set_init_values()

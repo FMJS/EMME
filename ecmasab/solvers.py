@@ -53,7 +53,7 @@ class CVC4Solver(object):
         
     def __add_execution(self, execution):
         if str(execution) in self.executions:
-            raise UnreachableCodeException("Enumeration of not distincs models")
+            raise UnreachableCodeException("Enumeration of not distinct models")
         
         self.executions.append(str(execution))
     
