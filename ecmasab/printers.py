@@ -681,6 +681,8 @@ class BePrinter(object):
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
                     ret += self.print_floop(ev)
+                elif isinstance(ev, ITE_Statement):
+                    ret += self.print_ite(ev)
                 else:
                     ret += self.print_event(ev)
 
@@ -688,7 +690,7 @@ class BePrinter(object):
                 
         return ret
 
-    def print_event(self, event):
+    def print_event(self, event, pure=False):
         operation = event.operation
         ordering = event.ordering
         block_name = event.block.name
@@ -696,6 +698,11 @@ class BePrinter(object):
         block_size = event.get_size()
         is_float = event.is_wtear()
 
+
+        if not pure:
+            pre = "print("
+            pst = ""
+        
         if (ordering == INIT):
             return ""
         
@@ -708,16 +715,16 @@ class BePrinter(object):
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
-                operation = "Atomics.store(%s%s, %s, %s);"%(block_name, \
-                                                            self.__get_block_size(block_size, False), \
-                                                            addr, \
-                                                            event_values)
+                ret = "Atomics.store(%s%s, %s, %s)"%(block_name, \
+                                                     self.__get_block_size(block_size, False), \
+                                                     addr, \
+                                                     event_values)
 
 
             if operation == READ:
-                operation = "print(Atomics.load(%s%s, %s));"%(block_name, \
-                                                              self.__get_block_size(block_size, False), \
-                                                              addr)
+                ret = "Atomics.load(%s%s, %s)"%(block_name, \
+                                                self.__get_block_size(block_size, False), \
+                                                addr)
 
         if (ordering == UNORD) or is_float:
             if not event_address:
@@ -732,17 +739,23 @@ class BePrinter(object):
                     event_values = self.float_pri_js%event_values
                     event_values = re.sub("0+\Z","", event_values)
                 
-                operation = ("%s%s[%s] = %s;")%(block_name, \
-                                                self.__get_block_size(block_size, is_float),\
-                                                addr, \
-                                                event_values)
+                ret = ("%s%s[%s] = %s")%(block_name, \
+                                         self.__get_block_size(block_size, is_float),\
+                                         addr, \
+                                         event_values)
 
             if operation == READ:
-                operation = "print(%s%s[%s]);"%(block_name, \
-                                                self.__get_block_size(block_size, is_float),\
-                                                addr)            
+                ret = "%s%s[%s]"%(block_name, \
+                                  self.__get_block_size(block_size, is_float),\
+                                  addr)            
 
-        return operation+"\n"
+        if not pure:
+            if operation == READ:
+                ret = "print(%s);\n"%ret
+            else:
+                ret = "%s;\n"%ret
+                
+        return ret
 
 
     def __get_block_size(self, size, isfloat):
@@ -775,6 +788,23 @@ class BePrinter(object):
         ret += "}\n"
 
         return ret
-    
+
+    def print_ite(self, ite):
+        ret = ""
+        conditions = ["%s == %s"%(self.print_event(x[0], True), x[1]) for x in ite.conditions]
+        ret += "if(%s) {\n"%(" AND ".join(conditions))
+        
+        for ev in ite.then_events:
+            ret += self.print_event(ev)
+
+        ret += "} else {\n"
+            
+        for ev in ite.else_events:
+            ret += self.print_event(ev)
+            
+        ret += "}\n"
+
+        return ret
+
     
     

@@ -84,6 +84,10 @@ def be_parsing(example):
     strp = strp.replace(" ","")
     beprogram = beprogram.replace(" ", "")
 
+    if not(strp == beprogram):
+        print strp
+        print beprogram
+    
     assert(strp == beprogram)
     
 def test_parsing():
@@ -95,11 +99,11 @@ def test_parsing():
         yield parse_and_generate, invalid, False
         
 if __name__ == "__main__":
-    # for example in examples:
-    #     be_parsing(example)
+    for example in examples:
+        be_parsing(example)
 
-    # for example in examples:
-    #     parse_and_generate(example, True)
+    for example in examples:
+        parse_and_generate(example, True)
 
     for invalid in invalids:
         parse_and_generate(invalid, False)

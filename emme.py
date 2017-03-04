@@ -40,6 +40,8 @@ EXECS = "outputs.txt"
 
 ALL = "all"
 
+E_CONDITIONS = ",ENCODE_CONDITIONS=1"
+
 DEBUG = True
 
 class Config(object):
@@ -155,7 +157,7 @@ def main(config):
     if program.has_conditions():
         if not config.defines:
             config.defines = ""
-        config.defines += "ENCODE_CONDITIONS=1"
+        config.defines += E_CONDITIONS
         
     # Preprocessing the model using cpp #
     cpppre = ExtPreprocessor(CPP)

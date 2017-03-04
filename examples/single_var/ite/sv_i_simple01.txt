@@ -6,7 +6,7 @@ Thread t1 {
 }
 
 Thread t2 {
-  if (x-I8[0] == 1) {
+  if (x-I8[0] == 0) {
      x-I8[0] = 2;
   } else {
      x-I8[1] = 2;

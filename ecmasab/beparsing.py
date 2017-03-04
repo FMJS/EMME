@@ -495,7 +495,7 @@ class BeParser(object):
             elif command_name == P_IF:
                 ite = ITE_Statement()
                 condition = command.bcond
-                mem = self.__gen_memory_event(condition.access, UNORD, False, thread, blocks)
+                mem = self.__gen_memory_event(condition.access, P_ACCESS, False, thread, blocks)
                 ite.append_condition((mem, condition.value))
 
             elif command_name == P_ELSE:
