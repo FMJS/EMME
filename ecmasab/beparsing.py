@@ -395,7 +395,7 @@ class BeParser(object):
                     me.set_values_from_int(int(value), baddr, eaddr)
             except:
                 if DEBUG: raise
-                raise ParsingErrorException("ERROR (L%s): value %s cannot be encoded into %s bytes"%(linenum, value, varsize))
+                raise ParsingErrorException("value %s cannot be encoded into %s bytes"%(value, varsize))
         else:
             pass
 
@@ -407,7 +407,6 @@ class BeParser(object):
         floop = None
         ite = None
         blocks = {}
-        op_purpose = None
         sab_defs = []
         linenum = 0
         name = ""
@@ -445,15 +444,19 @@ class BeParser(object):
                 
             elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD]:
                 block_name = command.varname
-                varsize = self.__get_var_size(command.typeop)
 
                 if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 if self.__var_type_is_float(command.typeop) and (command_name in [P_STORE, P_LOAD]):
                     raise ParsingErrorException("ERROR (L%s): Atomic operations not support the float type"%linenum)
-                
-                me = self.__gen_memory_event(command, command_name, floop, thread, blocks)
+
+                try:                
+                    me = self.__gen_memory_event(command, command_name, floop, thread, blocks)
+                except ParsingErrorException as e:
+                    if DEBUG: raise
+                    raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
+
 
                 if floop:
                     floop.append(me)
@@ -466,7 +469,6 @@ class BeParser(object):
                     thread.append(me)
 
             elif command_name == P_PRINT:
-                op_purpose = OP_PRINT
                 if command.access:
                     self.commands.insert(0, command.access)
 
@@ -495,7 +497,13 @@ class BeParser(object):
             elif command_name == P_IF:
                 ite = ITE_Statement()
                 condition = command.bcond
-                mem = self.__gen_memory_event(condition.access, P_ACCESS, False, thread, blocks)
+
+                try:                
+                    mem = self.__gen_memory_event(condition.access, P_ACCESS, False, thread, blocks)
+                except ParsingErrorException as e:
+                    if DEBUG: raise
+                    raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
+                
                 ite.append_condition((mem, condition.value))
 
             elif command_name == P_ELSE:
