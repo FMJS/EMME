@@ -62,7 +62,7 @@ def arit_eval(s):
 
     def _eval(node):
         if sys.version_info[0] >= 3:
-            return ast.literal_eval(node)
+            return eval(node)
 
         binOps = {
             ast.Add: operator.add,
