@@ -487,6 +487,9 @@ class BeParser(object):
                     thread = None
             
             elif command_name == P_FLOOP:
+                if ite or floop:
+                    raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not yet supported"%(linenum))
+                
                 floop = For_Loop()
                 frind = int(command.range[0])
                 toind = int(command.range[2])
@@ -494,11 +497,22 @@ class BeParser(object):
                 floop.set_values(cname, frind, toind)
             
             elif command_name == P_IF:
+                if ite or floop:
+                    raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not yet supported"%(linenum))
+                
                 ite = ITE_Statement()
                 condition = command.bcond
+                op = None
+                
+                if condition.access:
+                    op = P_ACCESS
+                elif condition.load:
+                    op = P_LOAD
+                else:
+                    raise ParsingErrorException("ERROR (L%s): operation not supported"%(linenum))
 
                 try:                
-                    mem = self.__gen_memory_event(condition.access, P_ACCESS, False, thread, blocks)
+                    mem = self.__gen_memory_event(condition.access, op, False, thread, blocks)
                 except ParsingErrorException as e:
                     if DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
