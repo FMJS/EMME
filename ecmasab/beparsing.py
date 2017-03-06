@@ -32,6 +32,10 @@ T_DOT = "."
 T_DOTS = ".."
 T_EQ = "="
 T_BEQ = "=="
+T_GEQ = ">="
+T_LEQ = "<="
+T_LT = "<"
+T_GT = ">"
 T_FLO32 = "-F32"
 T_FLO64 = "-F64"
 T_FOR = "for"
@@ -66,6 +70,7 @@ P_FLOOP = "floop"
 P_IF = "if"
 P_ELSE = "else"
 P_BCOND = "bcond"
+P_OP = "operator"
 P_INIT = "init"
 P_LOAD = "load"
 P_PRINT = "print"
@@ -182,7 +187,8 @@ class BeParser(object):
 
         floop = (Literal(T_FOR) + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
 
-        bcond = (sabread + T_BEQ + value)(P_BCOND)
+        op = (Literal(T_BEQ) | Literal(T_GEQ) | Literal(T_LEQ) | Literal(T_LT) | Literal(T_GT))(P_OP)
+        bcond = (sabread + op + value)(P_BCOND)
         ite = (Literal(T_IF) + T_OP + bcond + T_CP + T_OCB)(P_IF)
         els = (T_CCB + Literal(T_ELSE) + T_OCB)(P_ELSE)
 
@@ -515,7 +521,7 @@ class BeParser(object):
                     if DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
                 
-                ite.append_condition((mem, condition.value))
+                ite.append_condition(mem, command.operator, condition.value)
 
             elif command_name == P_ELSE:
                 ite.else_events = []

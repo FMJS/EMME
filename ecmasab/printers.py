@@ -404,7 +404,7 @@ class JSV8Printer(JSPrinter):
         for cond in ite.conditions:
             ret += self.print_event(cond[0])
 
-        conditions = ["%s == %s"%x for x in ite.conditions]
+        conditions = ["%s %s %s"%x for x in ite.conditions]
         ret += "if(%s) {\n"%(" AND ".join(conditions))
 
         for ev in ite.then_events:
@@ -817,7 +817,7 @@ class BePrinter(object):
 
     def print_ite(self, ite):
         ret = ""
-        conditions = ["%s == %s"%(self.print_event(x[0], True), x[1]) for x in ite.conditions]
+        conditions = ["%s %s %s"%(self.print_event(x[0], True), x[1], x[2]) for x in ite.conditions]
         ret += "if(%s) {\n"%(" AND ".join(conditions))
         
         for ev in ite.then_events:

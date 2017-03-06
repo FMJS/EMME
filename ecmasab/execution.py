@@ -71,6 +71,14 @@ def arit_eval(s):
             ast.Div: operator.div,
             ast.Mod: operator.mod
         }
+
+        cmpOps = {
+            ast.Eq: operator.eq,
+            ast.Lt: operator.lt,
+            ast.LtE: operator.le,
+            ast.Gt: operator.gt,
+            ast.GtE: operator.ge
+        }
         
         if isinstance(node, ast.Expression):
             return _eval(node.body)
@@ -78,6 +86,8 @@ def arit_eval(s):
             return node.s
         elif isinstance(node, ast.Num):
             return node.n
+        elif isinstance(node, ast.Compare):
+            return cmpOps[type(node.ops[0])](_eval(node.left), _eval(list(node.comparators)[0]))
         elif isinstance(node, ast.BinOp):
             return binOps[type(node.op)](_eval(node.left), _eval(node.right))
         else:
@@ -160,7 +170,9 @@ class Execution(object):
         for event in events:
             if isinstance(event, ITE_Statement):
                 for expcond in event.conditions:
-                    loc_cond = read_map[expcond[0].name].get_correct_value() == arit_eval(expcond[1])
+                    # evaluation of ITE conditions
+                    val1 = read_map[expcond[0].name].get_correct_value()
+                    loc_cond = arit_eval("%s %s %s"%(val1, expcond[1], expcond[2]))
                     actual_cond = (event.condition_name, str(loc_cond).upper())
                     actual_conds.append(actual_cond)
 
@@ -437,6 +449,7 @@ class ITE_Statement(object):
     then_events = None
     else_events = None
     condition_name = None
+    global_id_cond = 1
     
     def __init__(self):
         self.conditions = []
@@ -444,9 +457,15 @@ class ITE_Statement(object):
         self.else_events = None
         self.condition_name = None
 
-    def append_condition(self, condition):
-        self.conditions.append(condition)
-        self.condition_name = "%s_cond"%(Memory_Event.get_unique_condition())
+    @staticmethod        
+    def get_unique_condition():
+        ret = ITE_Statement.global_id_cond
+        ITE_Statement.global_id_cond = ITE_Statement.global_id_cond + 1
+        return "id%s"%ret
+        
+    def append_condition(self, el1, op, el2):
+        self.conditions.append((el1,op,el2))
+        self.condition_name = "%s_cond"%(ITE_Statement.get_unique_condition())
     
     def append_then(self, event):
         if not self.then_events:
@@ -490,7 +509,6 @@ class Memory_Event(object):
     block = None
     values = None
     global_id_ev = 1
-    global_id_cond = 1
     offset = None
     size = None
     value = None
@@ -527,12 +545,6 @@ class Memory_Event(object):
     def get_unique_name():
         ret = Memory_Event.global_id_ev
         Memory_Event.global_id_ev = Memory_Event.global_id_ev + 1
-        return "id%s"%ret
-
-    @staticmethod        
-    def get_unique_condition():
-        ret = Memory_Event.global_id_cond
-        Memory_Event.global_id_cond = Memory_Event.global_id_cond + 1
         return "id%s"%ret
     
     def is_read(self):

@@ -101,8 +101,9 @@ class Config(object):
 def graphviz_gen(gfile, pngfile):
     command = "neato -Tpng -o%s %s"%(pngfile, gfile)
     try:
-        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+        subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     except:
+        if DEBUG: raise
         raise UnreachableCodeException("ERROR: execution of \"%s\" failed"%(command))
 
             
