@@ -33,8 +33,7 @@ def run_command(command, number):
             # out, err = process.communicate()
 
             out = out.split("\n")
-            if "" in out:
-                out.remove("")
+            out = [x for x in out if x != ""]
             out.sort()
             out = ";".join(out)
 

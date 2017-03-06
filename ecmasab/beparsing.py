@@ -17,7 +17,7 @@ from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
 
 from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
-    operatorPrecedence, opAssoc, Combine, Optional, White
+    operatorPrecedence, opAssoc, Combine, Optional, White, Group
 
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
@@ -70,6 +70,8 @@ P_FLOOP = "floop"
 P_IF = "if"
 P_ELSE = "else"
 P_BCOND = "bcond"
+P_VRIGHT = "vright"
+P_VLEFT = "vleft"
 P_OP = "operator"
 P_INIT = "init"
 P_LOAD = "load"
@@ -144,13 +146,14 @@ class BeParser(object):
     def __init_program_parser(self):
         ivalue = Word(nums)
         fvalue = Combine(ivalue + Optional(Literal(T_DOT) + Optional(ivalue)))
+        nvalue = fvalue | ivalue
         strname = Word(alphas+nums+T_US)
         varname = (strname)(P_VNAME)
 
         typeop = (Literal(T_FLO64) | Literal(T_FLO32) | Literal(T_INT8) | Literal(T_INT16) | Literal(T_INT32))(P_TYPEOP)
         sabname = varname + typeop
 
-        operand = fvalue | ivalue | strname
+        operand = nvalue | strname
 
         signop = Literal(T_SUM) | Literal(T_MIN)
         multop = Literal(T_MUL) | Literal(T_DIV)
@@ -189,7 +192,11 @@ class BeParser(object):
         floop = (Literal(T_FOR) + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
 
         op = (Literal(T_BEQ) | Literal(T_GEQ) | Literal(T_LEQ) | Literal(T_LT) | Literal(T_GT))(P_OP)
-        bcond = (sabread + op + value)(P_BCOND)
+
+        lft_val = Group(sabread | nvalue).setResultsName(P_VLEFT)
+        rgt_val = Group(sabread | nvalue).setResultsName(P_VRIGHT)
+        
+        bcond = ((lft_val) + op + (rgt_val))(P_BCOND)
         ite = (Literal(T_IF) + T_OP + bcond + T_CP + T_OCB)(P_IF)
         els = (T_CCB + Literal(T_ELSE) + T_OCB)(P_ELSE)
 
@@ -378,6 +385,9 @@ class BeParser(object):
         me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
         me.operation = operation
         me.address = address
+
+        if not block_name in blocks:
+            raise ParsingErrorException("block \"%s\" is not defined"%(block_name))
         me.block = blocks[block_name]
         
         blocks[block_name].update_size(varsize)
@@ -508,21 +518,31 @@ class BeParser(object):
                 ite = ITE_Statement()
                 condition = command.bcond
                 op = None
-                
-                if condition.access:
-                    op = P_ACCESS
-                elif condition.load:
-                    op = P_LOAD
-                else:
-                    raise ParsingErrorException("ERROR (L%s): operation not supported"%(linenum))
+
+                ldict = dict(condition.vleft)
+                rdict = dict(condition.vright)
+
+                lval = None
+                rval = None
 
                 try:                
-                    mem = self.__gen_memory_event(condition.access, op, False, thread, blocks)
+                    if len([k for k in ldict if k in (P_LOAD, P_ACCESS)]):
+                        op = P_LOAD if P_LOAD in ldict else P_ACCESS
+                        lval = self.__gen_memory_event(condition.vleft, op, False, thread, blocks)
+                    else:
+                        lval = "".join(condition.vleft)
+
+                    if len([k for k in rdict if k in (P_LOAD, P_ACCESS)]):
+                        op = P_LOAD if P_LOAD in rdict else P_ACCESS
+                        rval = self.__gen_memory_event(condition.vright, op, False, thread, blocks)
+                    else:
+                        rval = "".join(condition.vright)
+                        
                 except ParsingErrorException as e:
                     if DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
-                
-                ite.append_condition(mem, command.operator, condition.value)
+
+                ite.append_condition(lval, command.operator, rval)
 
             elif command_name == P_ELSE:
                 ite.else_events = []

@@ -12,7 +12,7 @@ import itertools
 import re
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement
+from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
@@ -402,7 +402,9 @@ class JSV8Printer(JSPrinter):
         ret = ""
 
         for cond in ite.conditions:
-            ret += self.print_event(cond[0])
+            for ind in [0,2]:
+                if isinstance(cond[ind], Memory_Event):
+                    ret += self.print_event(cond[ind])
 
         conditions = ["%s %s %s"%x for x in ite.conditions]
         ret += "if(%s) {\n"%(" AND ".join(conditions))
@@ -823,7 +825,21 @@ class BePrinter(object):
 
     def print_ite(self, ite):
         ret = ""
-        conditions = ["%s %s %s"%(self.print_event(x[0], True), x[1], x[2]) for x in ite.conditions]
+
+        conditions = []
+        for cond in ite.conditions:
+            lft = None
+            rgt = None
+            if isinstance(cond[0], Memory_Event):
+                lft = self.print_event(cond[0], True)
+            else:
+                lft = cond[0]
+            if isinstance(cond[2], Memory_Event):
+                rgt = self.print_event(cond[2], True)
+            else:
+                rgt = cond[2]
+            conditions.append("%s %s %s"%(lft, cond[1], rgt))
+
         ret += "if(%s) {\n"%(" AND ".join(conditions))
         
         for ev in ite.then_events:

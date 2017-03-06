@@ -167,8 +167,17 @@ class Execution(object):
             if isinstance(event, ITE_Statement):
                 for expcond in event.conditions:
                     # evaluation of ITE conditions
-                    val1 = read_map[expcond[0].name].get_correct_value()
-                    loc_cond = arit_eval("%s %s %s"%(val1, expcond[1], expcond[2]))
+                    if str(expcond[0]) in read_map:
+                        val1 = read_map[expcond[0].name].get_correct_value()
+                    else:
+                        val1 = expcond[0]
+
+                    if str(expcond[2]) in read_map:
+                        val2 = read_map[expcond[2].name].get_correct_value()
+                    else:
+                        val2 = expcond[2]
+
+                    loc_cond = arit_eval("%s %s %s"%(val1, expcond[1], val2))
                     actual_cond = (event.condition_name, str(loc_cond).upper())
                     actual_conds.append(actual_cond)
 
@@ -494,8 +503,10 @@ class ITE_Statement(object):
     def get_uevents(self, assconds=None):
         uevents = []
         for condition in self.conditions:
-            uevents.append(condition[0])
-
+            for ind in [0,2]:
+                if isinstance(condition[ind], Memory_Event):
+                    uevents.append(condition[ind])
+                
         acthen = True
         acelse = True
         if assconds:

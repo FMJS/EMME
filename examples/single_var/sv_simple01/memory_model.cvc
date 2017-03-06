@@ -27,6 +27,9 @@
 %% Enables Incremental Verification
 %#define ENABLE_INCREMENTAL
 
+%% Enables Conditional Events
+%#define ENCODE_CONDITIONS 1
+
 %% Enables the usage of Host Synchronizes With
 %#define ENABLE_HSW
 
@@ -95,8 +98,12 @@
 #define RangeEQ(e1,e2) ((Range(e1) = Range(e2)) AND BlockEQ(e1,e2))
 #define RangeIN(e1,e2) ((NOT((Range(e1) & Range(e2)) = empty_int_set)) AND BlockEQ(e1,e2))
 #define RangeSS(e1,e2) (BlockEQ(e1,e2) AND ((Range(e1) <= Range(e2)) OR (Range(e2) <= Range(e1))))
+#define Empty(r) (r = empty_rel_set)
+#define NEmpty(r) (NOT(Empty(r)))
+#define ITE(c,t,e) (IF c THEN t ELSE e ENDIF)
+#define BTOI(b) (ITE(b,1,0))
+
 #define RBF(e1,id,e2) (((e1,e2),id) IS_IN RBF)
-%#define RF(e1,e2) (EXISTS (ind : INT_TYPE) : (RBF(e1,ind,e2)))
 #define RF(e1,e2) ((e1,e2) IS_IN RF)
 #define SW(e1,e2) ((e1,e2) IS_IN SW)
 #define AO(e1,e2) ((e1,e2) IS_IN AO)
@@ -104,10 +111,18 @@
 #define HB(e1,e2) ((e1,e2) IS_IN HB)
 #define DO(e1,e2) ((e1,e2) IS_IN DO)
 #define MO(e1,e2) ((e1,e2) IS_IN MO)
-#define Empty(r) (r = empty_rel_set)
-#define NEmpty(r) (NOT(Empty(r)))
-#define ITE(c,t,e) (IF c THEN t ELSE e ENDIF)
-#define BTOI(b) (ITE(b,1,0))
+
+#if ENCODE_CONDITIONS == 1
+#define Active(ev) (ev.A = ENABLED)
+#define Active2(e1,e2) (Active(e1) AND Active(e2))
+#define Active3(e1,e2,e3) (Active(e1) AND Active(e2) AND Active(e3))
+#define ActiveT(tup) (Active((tup).0) AND Active((tup).1))
+#else
+#define Active(e1) (TRUE)
+#define Active2(e1,e2) (TRUE)
+#define Active3(e1,e2,e3) (TRUE)
+#define ActiveT(tup) (TRUE)
+#endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DATA TYPES DEFINITION
@@ -138,7 +153,12 @@ ADDRESS_TYPE: TYPE = SET OF INT;
 #define INT_TYPE INT
 #endif
 
+#if ENCODE_CONDITIONS == 1
+DATATYPE ACTIVE = ENABLED | DISABLED END;
+MEM_OP_TYPE : TYPE = [# ID:ID_TYPE, O:MOPERATION, T:TEAR_TYPE, R:ORDER, B:BLOCK_TYPE, M:ADDRESS_TYPE, A:ACTIVE #];
+#else
 MEM_OP_TYPE : TYPE = [# ID:ID_TYPE, O:MOPERATION, T:TEAR_TYPE, R:ORDER, B:BLOCK_TYPE, M:ADDRESS_TYPE #];
+#endif
 
 BITUP: TYPE = [MEM_OP_TYPE, MEM_OP_TYPE];
 MO_A: TYPE = ARRAY INT OF MEM_OP_TYPE;
@@ -206,29 +226,33 @@ ASSERT en_RF;
 
 #if enc_RF == 1
 
-ASSERT en_RF => (FORALL (er,ew IN ev_set) : (RF(er,ew) <=> (EXISTS (addr : INT_TYPE) : (RBF(er,addr,ew)))));
+ASSERT en_RF => (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (RF(er,ew) <=> (EXISTS (addr : INT_TYPE) : (RBF(er,addr,ew))))));
 
 #elif enc_RF == 2
 
-ASSERT en_RF => (FORALL (er,ew IN ev_set) : (FORALL (addr IN locs) : (RBF(er,addr,ew) => RF(er,ew))));
+ASSERT en_RF => (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => RF(er,ew)))));
 
 #elif enc_RF == 3
 
-ASSERT (FORALL (er,ew IN ev_set) : ((EXISTS (addr : INT_TYPE) : (RBF(er,addr,ew))) => RF(er,ew)));
+ASSERT (FORALL (er,ew IN ev_set) : (Active2(er,ew) => ((EXISTS (addr : INT_TYPE) : (RBF(er,addr,ew))) => RF(er,ew))));
 
 #elif enc_RF == 4
 
-ASSERT (FORALL (ttup : TRTUP) : ((ttup IS_IN RBF) => (ttup.0 IS_IN RF)));
-ASSERT (FORALL (btup : BITUP) : ((btup IS_IN RF) => (EXISTS (addr IN locs) : ((btup, addr) IS_IN RBF))));
+ASSERT (FORALL (ttup : TRTUP) : (ActiveT(ttup.0) => ((ttup IS_IN RBF) => (ttup.0 IS_IN RF))));
+ASSERT (FORALL (btup : BITUP) : (ActiveT(btup) => ((btup IS_IN RF) => (EXISTS (addr IN locs) : ((btup, addr) IS_IN RBF)))));
 
 #else
 
-ASSERT en_RF => (FORALL (er,ew IN ev_set) : (RF(er,ew) <=> (EXISTS (addr IN locs) : (RBF(er,addr,ew)))));
+ASSERT en_RF => (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (RF(er,ew) <=> (EXISTS (addr IN locs) : (RBF(er,addr,ew))))));
 
 #endif
 
 #ifdef PROBLEM_DEF
 ASSERT RF <= comp_RF;
+#endif
+
+#if ENCODE_CONDITIONS == 1
+ASSERT FORALL (tup : BITUP) : ((tup IS_IN RF) => ActiveT(tup));
 #endif
 
 #endif
@@ -248,41 +272,46 @@ ASSERT en_RBF2;
 
 #if enc_RBF1 == 1
 
-ASSERT en_RBF1 => (FORALL (er IN ev_set) : (RoM(er) => (FORALL (addr IN locs) : (addr IS_IN Range(er)) => (EXISTS (ew IN ev_set) : (BlockEQ(ew,er) AND WoM(ew) AND RBF(er,addr, ew) AND (addr IS_IN Range(ew)))))));
+ASSERT en_RBF1 => (FORALL (er IN ev_set) : (Active(er) => (RoM(er) => (FORALL (addr IN locs) : (addr IS_IN Range(er)) => (EXISTS (ew IN ev_set) : (Active(ew) AND (BlockEQ(ew,er) AND WoM(ew) AND RBF(er,addr, ew) AND (addr IS_IN Range(ew)))))))));
 
 #elif enc_RBF1 == 2
 
-ASSERT en_RBF1 => (FORALL (er IN ev_set) : (RoM(er) => (FORALL (addr : INT_TYPE) : (addr IS_IN Range(er)) => (EXISTS (ew IN ev_set) : (BlockEQ(ew,er) AND WoM(ew) AND RBF(er,addr, ew) AND (addr IS_IN Range(ew)))))));
+ASSERT en_RBF1 => (FORALL (er IN ev_set) : (Active(er) => (RoM(er) => (FORALL (addr : INT_TYPE) : (addr IS_IN Range(er)) => (EXISTS (ew IN ev_set) : (Active(ew) AND (BlockEQ(ew,er) AND WoM(ew) AND RBF(er,addr, ew) AND (addr IS_IN Range(ew)))))))));
 
 #elif enc_RBF1 == 3
 
-ASSERT en_RBF1 => (FORALL (er IN ev_set) : (RoM(er) => (FORALL (addr : INT_TYPE) : (addr IS_IN Range(er)) => (EXISTS (ew IN ev_set) : (BlockEQ(ew,er) AND WoM(ew) AND RBF(er,addr, ew) AND (addr IS_IN Range(ew)))))));
+ASSERT en_RBF1 => (FORALL (er IN ev_set) : (Active(er) => (RoM(er) => (FORALL (addr : INT_TYPE) : (addr IS_IN Range(er)) => (EXISTS (ew IN ev_set) : (Active(ew) AND (BlockEQ(ew,er) AND WoM(ew) AND RBF(er,addr, ew) AND (addr IS_IN Range(ew)))))))));
 
 #else
 
-ASSERT en_RBF1 => (FORALL (er IN rom_ev_set) : ((FORALL (addr IN locs) : ((addr IS_IN Range(er)) => (EXISTS (ew IN wom_ev_set) : (RBF(er,addr,ew)))))));
+ASSERT en_RBF1 => (FORALL (er IN rom_ev_set) : (Active(er) => ((FORALL (addr IN locs) : ((addr IS_IN Range(er)) => (EXISTS (ew IN wom_ev_set) : (Active(ew) AND (RBF(er,addr,ew)))))))));
 
 
 #endif
 
 #if enc_RBF2 == 1
 
-ASSERT en_RBF2 => (FORALL (er,ew1,ew2 IN ev_set) : (FORALL (ind : INT_TYPE) : ((RBF(er,ind,ew1) AND RBF(er,ind,ew2)) => NOT(ew1 = ew2))));
+ASSERT en_RBF2 => (FORALL (er,ew1,ew2 IN ev_set) : (Active3(er,ew1,ew2) => (FORALL (ind : INT_TYPE) : ((RBF(er,ind,ew1) AND RBF(er,ind,ew2)) => NOT(ew1 = ew2)))));
 
 #elif enc_RBF2 == 2
 
-ASSERT en_RBF2 => (FORALL (tup1, tup2 : TRTUP) : (((tup1 IS_IN RBF) AND (tup2 IS_IN RBF)) =>  ((tup1 = tup2) OR (NOT(((tup1.0).0 = (tup2.0).0) AND (tup1.1 = tup2.1))))));
+ASSERT en_RBF2 => (FORALL (tup1, tup2 : TRTUP) : (ActiveT(tup1.0) AND ActiveT(tup2.0)) => (((tup1 IS_IN RBF) AND (tup2 IS_IN RBF)) =>  (((tup1 = tup2) OR (NOT(((tup1.0).0 = (tup2.0).0) AND (tup1.1 = tup2.1)))))));
 
 #elif enc_RBF == 3
 
-ASSERT en_RBF2 => (FORALL (er,ew1,ew2 IN ev_set) : (FORALL (ind : INT_TYPE) : (NOT(RBF(er,ind,ew1) AND RBF(er,ind,ew2) AND NOT(ew1 = ew2)))));
+ASSERT en_RBF2 => (FORALL (er,ew1,ew2 IN ev_set) : (Active3(er,ew1,ew2) => (FORALL (ind : INT_TYPE) : (NOT(RBF(er,ind,ew1) AND RBF(er,ind,ew2) AND NOT(ew1 = ew2))))));
 
 #else
 
-ASSERT en_RBF2 => (FORALL (er,ew1,ew2 IN ev_set) : ((RoM(er) AND WoM(ew1) AND WoM(ew2) AND BlockEQ(er,ew1) AND BlockEQ(er,ew2)) => (FORALL (ind IN locs) : ((ind IS_IN Range(er)) => NOT(RBF(er,ind,ew1) AND RBF(er,ind,ew2) AND NOT(ew1 = ew2))))));
+ASSERT en_RBF2 => (FORALL (er,ew1,ew2 IN ev_set) : (Active3(er,ew1,ew2) => ((RoM(er) AND WoM(ew1) AND WoM(ew2) AND BlockEQ(er,ew1) AND BlockEQ(er,ew2)) => (FORALL (ind IN locs) : ((ind IS_IN Range(er)) => NOT(RBF(er,ind,ew1) AND RBF(er,ind,ew2) AND NOT(ew1 = ew2)))))));
 
 #endif
 
+#endif
+
+
+#if ENCODE_CONDITIONS == 1
+ASSERT FORALL (tup : TRTUP) : ((tup IS_IN RBF) => ActiveT(tup.0));
 #endif
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_RBF
@@ -313,7 +342,7 @@ en_SW5 : BOOLEAN;
 
 #define SW4(er,ew) (en_SW4 => (SeqCst(er) AND RF(er,ew)))
 #define SW4c(er,ew) (en_SW4c => (SeqCst(ew) AND RangeEQ(er,ew)))
-#define SW4di(er) (en_SW4di => (FORALL (ev IN ev_set) : (RF(er,ev) => Init(ev))))
+#define SW4di(er) (en_SW4di => (FORALL (ev IN ev_set) : (Active(ev) => (RF(er,ev) => Init(ev)))))
 #define SW4d(er,ew) (en_SW4d => (Init(ew) AND SW4di(er)))
 
 #ifdef ENABLE_HSW
@@ -332,11 +361,15 @@ ASSERT en_SW4di;
 ASSERT en_SW4d;
 ASSERT en_SW5;
 
-ASSERT en_SW => (FORALL (er,ew IN ev_set) : ((SW(ew,er)) <=> ((SW4(er,ew) AND (SW4c(er,ew) OR SW4d(er,ew))) OR SW5(er,ew))));
+ASSERT en_SW => (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (SW(ew,er) <=> ((SW4(er,ew) AND (SW4c(er,ew) OR SW4d(er,ew))) OR SW5(er,ew)))));
 
 #endif
 
 ASSERT en_SW;
+
+#if ENCODE_CONDITIONS == 1
+ASSERT FORALL (tup : BITUP) : ((tup IS_IN SW) => ActiveT(tup));
+#endif
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_SW
 
@@ -355,7 +388,7 @@ ASSERT (FORALL (e1,e2 : MEM_OP_TYPE) : (SW(e1,e2)  => ((e1 IS_IN ev_set) AND (e2
 #endif
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_SW && defined ENABLE_HSW
-ASSERT (FORALL (e1,e2 : MEM_OP_TYPE) : (HSW(e1,e2)  => ((e1 IS_IN ev_set) AND (e2 IS_IN ev_set)));
+ASSERT (FORALL (e1,e2 : MEM_OP_TYPE) : Active2(e1,e2) => (HSW(e1,e2)  => ((e1 IS_IN ev_set) AND (e2 IS_IN ev_set)));
 #endif
 
 #ifdef ENABLE_INCREMENTAL
@@ -400,17 +433,17 @@ ASSERT ne_HB <=> NOT(HB = empty_rel_set);
 
 #if enc_HB == 1
 
-ASSERT en_HB => (en_HB2 => (FORALL (ee,ed IN ev_set) : (HBp(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed)OR HB4d(ee,ed))))));
+ASSERT en_HB => (en_HB2 => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HBp(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed)))))));
 
 #else
 
-ASSERT en_HB => (en_HB2 => (FORALL (ee,ed IN ev_set) : (NOT(ee=ed) => (HBp(ee,ed) <=> (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed)OR HB4d(ee,ed))))));
+ASSERT en_HB => (en_HB2 => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (NOT(ee=ed) => (HBp(ee,ed) <=> (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed)))))));
 
 #endif
 
 #if enc_HB1 == 1
 
-ASSERT en_HB1 => (FORALL (e1,e2 IN ev_set) : (HB(e1,e2) <=> (HBp(e1,e2) OR (EXISTS (e3 IN ev_set) : (HBp(e1,e3) AND HBp(e3,e2))))));
+ASSERT en_HB1 => (FORALL (e1,e2 IN ev_set) : (Active2(e1,e2) => (HB(e1,e2) <=> (HBp(e1,e2) OR (EXISTS (e3 IN ev_set) : Active(e3) AND (HBp(e1,e3) AND HBp(e3,e2)))))));
 ASSERT en_HB1 => ((HBp <= HB) AND (HB <= pair_ev_set));
 
 #else
@@ -421,13 +454,18 @@ ASSERT en_HB1 => (HB = TCLOSURE(HBp));
 
 #endif
 
+
+#if ENCODE_CONDITIONS == 1
+ASSERT FORALL (tup : BITUP) : ((tup IS_IN HB) => ActiveT(tup));
+ASSERT FORALL (tup : BITUP) : ((tup IS_IN HBp) => ActiveT(tup));
+#endif
+
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_HB
 
 #ifdef PROBLEM_DEF
 ASSERT HBp <= pair_ev_set;
 #else
-
-ASSERT (FORALL (e1,e2 IN ev_set) : (HB(e1,e2)  => (NOT(e1 = e2))));
+ASSERT (FORALL (e1,e2 IN ev_set) : (Active2(e1,e2) => (HB(e1,e2)  => (NOT(e1 = e2)))));
 
 #ifdef TUPLE_QUANT
 ASSERT (FORALL (tup : BITUP) : ((tup IS_IN HB)  => ((tup.0 IS_IN ev_set) AND (tup.1 IS_IN ev_set) AND NOT(tup.0 = tup.1))));
@@ -451,7 +489,7 @@ en_CR2 : BOOLEAN;
 
 ASSERT en_CR2;
 
-#define CR2(er,ew) (en_CR2 => (NOT (EXISTS (e1 IN ev_set) : (RF(er, e1) AND RangeSS(ew,e1) AND HB(ew,e1) AND HB(e1,er)))))
+#define CR2(er,ew) (en_CR2 => (NOT (EXISTS (e1 IN ev_set) : (Active(e1) AND (RF(er, e1) AND RangeSS(ew,e1) AND HB(ew,e1) AND HB(e1,er))))))
 
 CR : BOOLEAN;
 
@@ -462,15 +500,15 @@ en_CR : BOOLEAN;
 
 #if enc_CR == 1
 
-ASSERT en_CR => (CR <=> (FORALL (tup : BITUP) : ((tup IS_IN RF) => ((NOT HB((tup.0), (tup.1))) AND CR2((tup.0), (tup.1))))));
+ASSERT en_CR => (CR <=> (FORALL (tup : BITUP) : ActiveT(tup) => ((tup IS_IN RF) => ((NOT HB((tup.0), (tup.1))) AND CR2((tup.0), (tup.1))))));
 
 #elif enc_CR == 2
 
-ASSERT en_CR => (CR <=> (FORALL (er,ew IN ev_set) : (FORALL (addr IN locs) : (RBF(er,addr,ew) => (NOT (EXISTS (ee IN ev_set) : (WoM(ee) AND HB(ew,ee) AND HB(ee,er) AND BlockEQ(ee,ew) AND (addr IS_IN Range(ee)))))))));
+ASSERT en_CR => (CR <=> (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => (NOT (EXISTS (ee IN ev_set) : Active(ee) AND (WoM(ee) AND HB(ew,ee) AND HB(ee,er) AND BlockEQ(ee,ew) AND (addr IS_IN Range(ee))))))))));
 
 #else
 
-ASSERT en_CR => (CR <=> (FORALL (er IN rom_ev_set) : (FORALL (ew IN wom_ev_set) : (FORALL (addr IN locs) : (RBF(er,addr,ew) => (NOT (EXISTS (ev IN wom_ev_set) : (HB(ew,ev) AND HB(ev,er) AND BlockEQ(ev,ew) AND (addr IS_IN Range(ev))))))))));
+ASSERT en_CR => (CR <=> (FORALL (er IN rom_ev_set) : (Active(er) => (FORALL (ew IN wom_ev_set) : Active(ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => (NOT (EXISTS (ev IN wom_ev_set) : Active(ev) AND (HB(ew,ev) AND HB(ev,er) AND BlockEQ(ev,ew) AND (addr IS_IN Range(ev)))))))))));
 
 #endif
 
@@ -491,7 +529,7 @@ AOT : BOOLEAN;
 en_AOT : BOOLEAN;
 
 #ifdef ENABLE_AOT
-ASSERT en_AOT => (AOT <=> (FORALL (ee IN ev_set) : (NOT((ee,ee) IS_IN TCLOSURE(DO | RF)))));
+ASSERT en_AOT => (AOT <=> (FORALL (ee IN ev_set) : (Active(ee) => (NOT((ee,ee) IS_IN TCLOSURE(DO | RF))))));
 #endif
 
 ASSERT en_AOT;
@@ -514,9 +552,9 @@ ASSERT en_TFR2aiiA;
 ASSERT en_TFR2aii;
 ASSERT en_TFR2a;
 
-#define TFR2aiiA1(er,ew) (en_TFR2aiiA1 => (NOT (EXISTS (ev IN ev_set) : (RangeEQ(ev,ew) AND NoTear(ev) AND (NOT (ev = ew)) AND RF(er,ev)))))
+#define TFR2aiiA1(er,ew) (en_TFR2aiiA1 => (NOT (EXISTS (ev IN ev_set) : (Active(ev) AND (RangeEQ(ev,ew) AND NoTear(ev) AND (NOT (ev = ew)) AND RF(er,ev))))))
 #define TFR2aiiA(er,ew) (en_TFR2aiiA => ((RangeEQ(er,ew)) => TFR2aiiA1(er,ew)))
-#define TFR2aii(er) (en_TFR2aii => (FORALL (ew IN ev_set) : ((RF(er, ew) AND NoTear(ew)) => TFR2aiiA(er,ew))))
+#define TFR2aii(er) (en_TFR2aii => (FORALL (ew IN ev_set) : (Active(ew) => ((RF(er, ew) AND NoTear(ew)) => TFR2aiiA(er,ew)))))
 #define TFR2a(er) (en_TFR2a => (NoTear(er) => TFR2aii(er)))
 
 TFR : BOOLEAN;
@@ -524,9 +562,9 @@ TFR : BOOLEAN;
 en_TFR : BOOLEAN;
 
 #ifdef ENABLE_TFR
-ASSERT en_TFR => (TFR <=> (FORALL (er IN rom_ev_set) : (TFR2a(er))));
+ASSERT en_TFR => (TFR <=> (FORALL (er IN rom_ev_set) : (Active(er) => (TFR2a(er)))));
 
-% ASSERT en_TFR => (TFR <=> (FORALL (er,ew,ev IN ev_set) : ((RoM(er) AND NoTear(er)) => NOT(NoTear(ew) AND NoTear(ev) AND RF(er,ew) AND RF(er,ew) AND NOT(ev = ew) AND RangeEQ(er, ew) AND RangeEQ(er, ev) AND RangeEQ(ev, ew)))));
+% ASSERT en_TFR => (TFR <=> (FORALL (er,ew,ev IN ev_set) : (Active3(er,ew,ev) => ((RoM(er) AND NoTear(er)) => NOT(NoTear(ew) AND NoTear(ev) AND RF(er,ew) AND RF(er,ew) AND NOT(ev = ew) AND RangeEQ(er, ew) AND RangeEQ(er, ev) AND RangeEQ(ev, ew))))));
 
 #endif
 
@@ -548,19 +586,23 @@ ASSERT en_MO3bii;
 ASSERT en_MO3b;
 ASSERT en_MO3a;
 
-#define MO3bii(ee,ed) (en_MO3bii => (NOT (EXISTS (ew IN wom_ev_set) : (RangeEQ(ew,ed) AND MO(ee,ew) AND MO(ew,ed)))))
+#define MO3bii(ee,ed) (en_MO3bii => (NOT (EXISTS (ew IN wom_ev_set) : (Active(ew) AND (RangeEQ(ew,ed) AND MO(ee,ew) AND MO(ew,ed))))))
 #define MO3b(ee,ed) (en_MO3b => (SW(ee,ed) => MO3bii(ee,ed)))
 #define MO3a(ee,ed) (en_MO3a => (HB(ee,ed) => MO(ee,ed)))
 
 en_MO : BOOLEAN;
 
 #ifdef ENABLE_MO
-ASSERT en_MO => (FORALL (ee,ed IN ev_set) : (MO3a(ee,ed) AND MO3b(ee,ed)));
-ASSERT en_MO => (FORALL (ee IN ev_set) : (NOT(MO(ee,ee))));
-ASSERT en_MO => (FORALL (e1,e2 IN ev_set) : ((NOT(e1 = e2) => (MO(e1,e2) XOR MO(e2,e1))))); 
+ASSERT en_MO => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (MO3a(ee,ed) AND MO3b(ee,ed))));
+ASSERT en_MO => (FORALL (ee IN ev_set) : (Active(ee) => (NOT(MO(ee,ee)))));
+ASSERT en_MO => (FORALL (e1,e2 IN ev_set) : (Active2(e1,e2) => ((NOT(e1 = e2) => (MO(e1,e2) XOR MO(e2,e1)))))); 
 #endif
 
 ASSERT en_MO;
+
+#if ENCODE_CONDITIONS == 1
+ASSERT FORALL (tup : BITUP) : ((tup IS_IN MO) => ActiveT(tup));
+#endif
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_MO
 
@@ -689,7 +731,7 @@ CHECKSAT;
 DRF : BOOLEAN;
 
 en_DRF : BOOLEAN;
-ASSERT en_DRF => (DRF <=> (NOT (EXISTS (ee,ed IN ev_set) : (DRC(ee,ed)))));
+ASSERT en_DRF => (DRF <=> (NOT (EXISTS (ee,ed IN ev_set) : (Active2(ee,ed) AND (DRC(ee,ed))))));
 #endif
 
 #ifdef ENABLE_DRF

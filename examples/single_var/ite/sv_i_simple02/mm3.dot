@@ -19,5 +19,5 @@ id3_W_t1 [label=<id3_W_t1<br/><B>x-I8[1] := 1</B>>, pos="0,4!"]
 id4_W_t1 [label=<id4_W_t1<br/><B>x-I8[0] := 2</B>>, pos="0,2!"]
 id5_W_t1 [label=<id5_W_t1<br/><B>x-I8[1] := 2</B>>, pos="0,0!"]
 id6_R_t2 [label=<id6_R_t2<br/><B>x-I8[0] = 0</B>>, pos="5,6!"]
-id8_R_t2 [label=<id8_R_t2<br/><B>x-I8[1] = 2</B>>, pos="5,4!"]
+id8_R_t2 [label=<id8_R_t2<br/><B>x-I8[1] = 2</B><br/>(ELSE)>, pos="5,4!"]
 }
