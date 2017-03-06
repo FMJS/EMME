@@ -147,6 +147,9 @@ class Execution(object):
         return events
 
     def is_valid(self):
+        if not self.conditions:
+            return True
+        
         events = []
         for thread in self.program.threads:
             events += thread.get_events(False)
@@ -160,6 +163,7 @@ class Execution(object):
                     loc_cond = read_map[expcond[0].name].get_correct_value() == arit_eval(expcond[1])
                     actual_cond = (event.condition_name, str(loc_cond).upper())
                     actual_conds.append(actual_cond)
+
         return actual_conds == self.conditions
     
     def get_HB(self):
