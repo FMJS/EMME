@@ -9,6 +9,8 @@
 # limitations under the License.
 
 import struct
+import ast
+import operator
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -53,6 +55,31 @@ BLOCKING_RELATIONS.append(RF)
 # BLOCKING_RELATIONS.append(HB)
 # BLOCKING_RELATIONS.append(MO)
 # BLOCKING_RELATIONS.append(SW)
+
+def arit_eval(s):
+    binOps = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.div,
+        ast.Mod: operator.mod
+    }
+    
+    node = ast.parse(s, mode='eval')
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        elif isinstance(node, ast.Str):
+            return node.s
+        elif isinstance(node, ast.Num):
+            return node.n
+        elif isinstance(node, ast.BinOp):
+            return binOps[type(node.op)](_eval(node.left), _eval(node.right))
+        else:
+            raise Exception('Unsupported type {}'.format(node))
+
+    return _eval(node.body)
 
 class Executions(object):
     program = None
@@ -126,7 +153,7 @@ class Execution(object):
         for event in events:
             if isinstance(event, ITE_Statement):
                 for expcond in event.conditions:
-                    loc_cond = read_map[expcond[0].name].get_correct_value() == eval(expcond[1])
+                    loc_cond = read_map[expcond[0].name].get_correct_value() == arit_eval(expcond[1])
                     actual_cond = (event.condition_name, str(loc_cond).upper())
                     actual_conds.append(actual_cond)
         return actual_conds == self.conditions
@@ -370,7 +397,7 @@ class For_Loop(object):
                 offset = event.offset
 
                 offset = offset.replace(self.cname,str(i))
-                offset = int(eval(offset))
+                offset = int(arit_eval(offset))
                 
                 baddr = size*offset
                 eaddr = (size*(offset+1))-1
@@ -388,10 +415,10 @@ class For_Loop(object):
                 if value:
                     value = value.replace(self.cname,str(i))
                     if event.is_wtear():
-                        value = float(eval(value))
+                        value = float(arit_eval(value))
                         me.set_values_from_float(value, baddr, eaddr)
                     else:
-                        value = int(eval(value))
+                        value = int(arit_eval(value))
                         me.set_values_from_int(value, baddr, eaddr)
 
                 self.uevents.append(me)

@@ -14,7 +14,6 @@ from six.moves import range
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
-from ecmasab.execution import OP_PRINT
 from ecmasab.exceptions import UnreachableCodeException
 
 from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
@@ -207,7 +206,6 @@ class BeParser(object):
 
 
     def __compute_reads_values(self):
-        program = self.executions.program
         executions = self.executions.executions
         
         for exe in executions:
