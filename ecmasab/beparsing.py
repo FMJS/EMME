@@ -9,14 +9,14 @@
 # limitations under the License.
 
 import copy
-from six.moves import range
+#from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
 
-from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
+from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, OneOrMore, Empty, \
     operatorPrecedence, opAssoc, Combine, Optional, White, Group
 
 T_ALOAD = "Atomics.load"
@@ -58,6 +58,7 @@ T_SUM = "+"
 T_THREAD = "Thread"
 T_US = "_"
 T_VAR = "var"
+T_PARAMS = "Params"
 
 P_ACCESS = "access"
 P_ADDR = "address"
@@ -66,6 +67,8 @@ P_BCOND = "bcond"
 P_COMMENT = "comment"
 P_CSCOPE = "closescope"
 P_ELSE = "else"
+P_PARAM = "param"
+P_PARAMS = "params"
 P_EMPTY = "empty"
 P_EXPR = "expr"
 P_FLOOP = "floop"
@@ -93,7 +96,7 @@ P_BIREL = "bi-relation"
 P_EMREL = "em-relation"
 P_TRREL = "tr-relation"
 
-DEBUG = False
+DEBUG = True
 
 class ParsingErrorException(Exception):
     pass
@@ -148,12 +151,13 @@ class BeParser(object):
         fvalue = Combine(ivalue + Optional(Literal(T_DOT) + Optional(ivalue)))
         nvalue = fvalue | ivalue
         strname = Word(alphas+nums+T_US)
+        parname = (Literal(T_LT) + Word(alphas+nums+T_US) + Literal(T_GT))(P_PARAM)
         varname = (strname)(P_VNAME)
 
         typeop = (Literal(T_FLO64) | Literal(T_FLO32) | Literal(T_INT8) | Literal(T_INT16) | Literal(T_INT32))(P_TYPEOP)
         sabname = varname + typeop
 
-        operand = nvalue | strname
+        operand = nvalue | parname | strname
 
         signop = Literal(T_SUM) | Literal(T_MIN)
         multop = Literal(T_MUL) | Literal(T_DIV)
@@ -200,9 +204,13 @@ class BeParser(object):
         ite = (Literal(T_IF) + T_OP + bcond + T_CP + T_OCB)(P_IF)
         els = (T_CCB + Literal(T_ELSE) + T_OCB)(P_ELSE)
 
-        command = sabstore | sab_def | sabassign | threaddef | printv | floop | ite | els | closescope | comment | emptyline
+        command = sabstore | sab_def | sabassign | threaddef | printv | floop | \
+                  ite | els | closescope | comment | emptyline
 
-        return ZeroOrMore(command)
+        pardef = (strname + T_EQ + nrange + T_SEMI)(P_PARAM)
+        params = (Literal(T_PARAMS) + Literal(T_OCB))(P_PARAMS)
+        
+        return pardef | params | ZeroOrMore(command)
 
         
     def program_from_string(self, strinput):
@@ -419,6 +427,7 @@ class BeParser(object):
         program = Program()
         thread = Thread(MAIN)
         floop = None
+        params = False
         ite = None
         blocks = {}
         sab_defs = []
@@ -429,7 +438,7 @@ class BeParser(object):
             command = self.commands[0]
             self.commands = self.commands[1:]
             command_name = command.getName()
-            
+
             if command_name == P_TRDB:
                 thread_name = command[1]
                 if thread:
@@ -458,7 +467,17 @@ class BeParser(object):
                 
             elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD]:
                 block_name = command.varname
+                param = False
+                
+                if P_PARAM in dict(command):
+                    if ite or floop:
+                        raise ParsingErrorException("ERROR (L%s): nested ifs, for-loops, or param are not yet supported"%(linenum))
+                    param = True
+                    command.value = command.param[1]
 
+                if floop:
+                    param = True
+                    
                 if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
@@ -466,7 +485,7 @@ class BeParser(object):
                     raise ParsingErrorException("ERROR (L%s): Atomic operations not support the float type"%linenum)
 
                 try:                
-                    me = self.__gen_memory_event(command, command_name, floop, thread, blocks)
+                    me = self.__gen_memory_event(command, command_name, param, thread, blocks)
                 except ParsingErrorException as e:
                     if DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
@@ -497,6 +516,9 @@ class BeParser(object):
                 elif ite:
                     thread.append(ite)
                     ite = None
+                elif params:
+                    params = False
+                    continue
                 else:
                     program.add_thread(thread)
                     thread = None
@@ -546,7 +568,15 @@ class BeParser(object):
 
             elif command_name == P_ELSE:
                 ite.else_events = []
-            
+
+            elif command_name == P_PARAM:
+                params = True
+                values = range(int(command.range[0]), int(command.range[2])+1, 1)
+                program.add_param(command.param[0], values)
+
+            elif command_name == P_PARAMS:
+                continue
+                
             elif (command_name == P_COMMENT) or (command_name == P_EMPTY):
                 continue
             else:

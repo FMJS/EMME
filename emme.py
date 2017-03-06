@@ -42,7 +42,7 @@ ALL = "all"
 
 E_CONDITIONS = ",ENCODE_CONDITIONS=1"
 
-DEBUG = False
+DEBUG = True
 
 class Config(object):
     inputfile = None

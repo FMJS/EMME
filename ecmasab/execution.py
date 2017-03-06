@@ -12,6 +12,7 @@ import struct
 import ast
 import operator
 import sys
+import itertools
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -273,15 +274,42 @@ class Program(object):
     threads = []
     blocks = []
     conditions = None
+    params = None
     
     def __init__(self):
         self.threads = []
         self.blocks = []
         self.conditions = None
+        self.params = None
 
     def add_thread(self, thread):
         self.threads.append(thread)
 
+    def add_param(self, param, values):
+        if not self.params:
+            self.params = {}
+        self.params[param] = values
+
+    def get_params(self):
+        if not self.params:
+            return None
+
+        configs = []
+
+        for key in self.params:
+            param = []
+            for el in self.params[key]:
+                param.append((key, el))
+            configs.append(param)
+
+        ret = configs[0]
+        configs = configs[1:]
+        
+        for conf in configs:
+            ret  = list(itertools.product(ret,conf))
+        
+        return list(ret)
+        
     def get_blocks(self):
         blocks = []
         for thread in self.threads:
@@ -592,6 +620,8 @@ class Memory_Event(object):
     def set_param_value(self, size, value):
         self.size = size
         self.value = value
+
+        self.address = range(0, size)
         
     def set_values(self, values):
         self.offset = None
