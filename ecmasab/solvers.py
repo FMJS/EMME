@@ -91,7 +91,16 @@ class CVC4Solver(object):
         address = re.sub(SP+"|"+OCP+"|"+OCS, ES, expression.getChild(5).toString()).split("|")
         values = None
 
-        return Memory_Event(name, operation, tear, ordering, address, block, values)
+        me = Memory_Event()
+        me.name = name
+        me.operation = operation
+        me.tear = tear
+        me.ordering = ordering
+        me.address = address
+        me.block = block
+        me.values = values
+        
+        return me
 
     def __get_all_tuples(self, expression, tuples):
         if expression.isNull():

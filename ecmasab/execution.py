@@ -412,14 +412,15 @@ class For_Loop(object):
                 address = range(baddr, eaddr+1, 1)
                 name = "%s_%s"%(event.name, i)
 
-                me = Memory_Event(name = name, \
-                                  operation = event.operation, \
-                                  tear = event.tear, \
-                                  ordering = event.ordering, \
-                                  address = address, \
-                                  block = event.block,\
-                                  values = None)
+                me = Memory_Event()
 
+                me.name = name
+                me.operation = event.operation
+                me.tear = event.tear
+                me.ordering = event.ordering
+                me.address = address
+                me.block = event.block
+                
                 if value:
                     value = value.replace(self.cname,str(i))
                     if event.is_wtear():
@@ -498,26 +499,21 @@ class Memory_Event(object):
     
     op_purpose = None
     
-    def __init__(self, name, operation, tear, ordering, address, block, values):
-        if not name:
-            name = Memory_Event.get_unique_name()
-        if not tear:
-            tear = DEFAULT_TEAR
-        self.name = name
-        self.operation = operation
-        self.tear = tear
-        self.ordering = ordering
-        self.address = address
-        self.block = block
-        self.values = values
-        self.op_purpose = None
+    def __init__(self):
+        self.name = None
+        self.operation = None
+        self.tear = None
+        self.ordering = None
+        self.address = None
+        self.block = None
+        self.values = None
+        self.offset = None
         self.size = None
         self.value = None
-        self.id_ev = Memory_Event.global_id_ev
         self.en_conditions = None
-
-        if values:
-            self.block.update_size(len(values))
+        self.op_purpose = None
+        
+        self.id_ev = Memory_Event.global_id_ev
 
     def __repr__(self):
         return self.name

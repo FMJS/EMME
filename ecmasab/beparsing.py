@@ -367,14 +367,16 @@ class BeParser(object):
         tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
         ordering = SC if self.__var_type_is_float(command.typeop) else ordering
         name = "%s_%s_%s"%(Memory_Event.get_unique_name(), operation, thread.name)
-        me = Memory_Event(name = name, \
-                          operation = operation, \
-                          tear = tear, \
-                          ordering = ordering, \
-                          address = address, \
-                          block = blocks[block_name],\
-                          values = None)
+        
+        me = Memory_Event()
 
+        me.name = name
+        me.operation = operation
+        me.tear = tear
+        me.ordering = ordering
+        me.address = address
+        me.block = blocks[block_name]
+        
         blocks[block_name].update_size(varsize)
 
         if ctype == P_STORE:
@@ -427,14 +429,14 @@ class BeParser(object):
                 blocks[block_name] = block
 
                 name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, thread.name)
-                me = Memory_Event(name = name, \
-                                  operation = WRITE, \
-                                  tear = NTEAR, \
-                                  ordering = INIT, \
-                                  address = None, \
-                                  block = block,\
-                                  values = None)
+                me = Memory_Event()
 
+                me.name = name
+                me.operation = WRITE
+                me.tear = NTEAR
+                me.ordering = INIT
+                me.block = block
+                
                 # Added to the SAB definitions since the size of the
                 # write will depend on the other writes and reads
                 sab_defs.append(me)
