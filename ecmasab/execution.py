@@ -59,7 +59,7 @@ BLOCKING_RELATIONS.append(RF)
 
 def arit_eval(s):
     if sys.version_info[0] >= 3:
-        return ast.literal_eval(s)
+        return eval(s)
     
     node = ast.parse(s, mode='eval')
 
