@@ -58,11 +58,12 @@ BLOCKING_RELATIONS.append(RF)
 # BLOCKING_RELATIONS.append(SW)
 
 def arit_eval(s):
+    if sys.version_info[0] >= 3:
+        return ast.literal_eval(s)
+    
     node = ast.parse(s, mode='eval')
 
     def _eval(node):
-        if sys.version_info[0] >= 3:
-            return eval(node)
 
         binOps = {
             ast.Add: operator.add,
