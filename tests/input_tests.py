@@ -22,7 +22,8 @@ for f in ["%02d"%x for x in range(11, 21)]:
 ex_sv = ex_fast + ex_slow
 
 # ITE examples
-ex_it.append(it%"01")
+for f in ["%02d"%x for x in range(1, 3)]:
+    ex_it.append(it%f)
 
 # Double variables examples
 ex_dv.append(dv%"01")

@@ -209,11 +209,12 @@ class BeParser(object):
     def __compute_reads_values(self):
         program = self.executions.program
         executions = self.executions.executions
-        events = program.get_events()
-        ev_map = dict((x.name, x) for x in events)
-        read_evs = [x for x in events if x.is_read()]
-
+        
         for exe in executions:
+            events = exe.get_events()
+            ev_map = dict((x.name, x) for x in events)
+            read_evs = [x for x in events if x.is_read()]
+            
             rbf_map = dict(((x[0], int(x[2])), x[1]) for x in exe.get_RBF().tuples)
             for read_event in read_evs:
                 values = []
