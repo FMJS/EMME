@@ -441,7 +441,7 @@ class JSV8Printer(JSPrinter):
                                                            block_name+"_sab")
 
         if (operation == WRITE) and (ordering == INIT):
-            mop = ""
+            mop = None
 
 
         if (ordering == SC) and not is_float:
@@ -496,9 +496,11 @@ class JSV8Printer(JSPrinter):
                     prt = "print(\"%s: \"+%s%s)"%(event_name, event_name, approx)
 
         if operation == READ:
-            return "%s; %s; %s;\n"%(var_def,mop,prt)
+            return "%s;\n"%("; ".join([var_def,mop,prt]))
         else:
-            return "%s; %s;\n"%(var_def,mop)
+            if not mop:
+                return var_def+"\n"
+            return "%s;\n"%("; ".join([var_def,mop]))
 
 
 class JSSMPrinter(JSPrinter):

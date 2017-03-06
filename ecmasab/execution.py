@@ -176,7 +176,7 @@ class Execution(object):
                     actual_cond = (event.condition_name, str(loc_cond).upper())
                     actual_conds.append(actual_cond)
 
-        return actual_conds == self.conditions
+        return set(actual_conds) == set(self.conditions)
     
     def get_HB(self):
         return self.happens_before
@@ -462,7 +462,11 @@ class ITE_Statement(object):
         ret = ITE_Statement.global_id_cond
         ITE_Statement.global_id_cond = ITE_Statement.global_id_cond + 1
         return "id%s"%ret
-        
+
+    @staticmethod        
+    def reset_unique_names():
+        ITE_Statement.global_id_cond = 1
+    
     def append_condition(self, el1, op, el2):
         self.conditions.append((el1,op,el2))
         self.condition_name = "%s_cond"%(ITE_Statement.get_unique_condition())
@@ -539,7 +543,6 @@ class Memory_Event(object):
     @staticmethod        
     def reset_unique_names():
         Memory_Event.global_id_ev = 1
-        Memory_Event.global_id_cond = 1
     
     @staticmethod        
     def get_unique_name():

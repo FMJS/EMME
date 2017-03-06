@@ -19,7 +19,7 @@ var x = new Int8Array(data.x_sab); id8_R_t2 = x[1]; print("id8_R_t2: "+id8_R_t2)
 var data = {
 x_sab : new SharedArrayBuffer(8),
 }
-; ;
+
 var wt1 = new Worker(t1);
 var wt2 = new Worker(t2);
 wt1.postMessage(data, [data.x_sab]);

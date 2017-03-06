@@ -108,6 +108,7 @@ class BeParser(object):
 
     def __init__(self):
         Memory_Event.reset_unique_names()
+        ITE_Statement.reset_unique_names()
 
         self.commands = []
         self.models = []
