@@ -9,7 +9,7 @@ Thread t1 {
 }
 
 Thread t2 {
-  if (x-I8[0] == 1) {
+  if (x-I8[0] >= 1) {
      print(x-I8[0]);
   } else {
      print(x-I8[1]);
