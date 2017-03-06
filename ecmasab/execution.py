@@ -12,7 +12,6 @@ import struct
 import ast
 import operator
 import sys
-import ast
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException

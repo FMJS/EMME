@@ -729,11 +729,6 @@ class BePrinter(object):
         block_size = event.get_size()
         is_float = event.is_wtear()
 
-
-        if not pure:
-            pre = "print("
-            pst = ""
-        
         if (ordering == INIT):
             return ""
         
