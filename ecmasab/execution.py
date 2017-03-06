@@ -58,19 +58,19 @@ BLOCKING_RELATIONS.append(RF)
 # BLOCKING_RELATIONS.append(SW)
 
 def arit_eval(s):
-    binOps = {
-        ast.Add: operator.add,
-        ast.Sub: operator.sub,
-        ast.Mult: operator.mul,
-        ast.Div: operator.div,
-        ast.Mod: operator.mod
-    }
-    
     node = ast.parse(s, mode='eval')
 
     def _eval(node):
         if sys.version_info[0] >= 3:
             return ast.literal_eval(node)
+
+        binOps = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.div,
+            ast.Mod: operator.mod
+        }
         
         if isinstance(node, ast.Expression):
             return _eval(node.body)
