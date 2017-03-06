@@ -105,9 +105,8 @@ class Executions(object):
         assert(isinstance(exe, Execution))
         self.executions.append(exe)
 
-
-    def get_valid_executions(self):
-        return [x for x in self.executions if x.is_valid()]
+    def get_coherent_executions(self):
+        return [x for x in self.executions if x.is_coherent()]
         
     def get_size(self):
         return len(self.executions)
@@ -152,7 +151,7 @@ class Execution(object):
             events += thread.get_events(True, self.conditions)
         return events
 
-    def is_valid(self):
+    def is_coherent(self):
         if not self.conditions:
             return True
         

@@ -309,7 +309,7 @@ class JSV8Printer(JSPrinter):
 
     def compute_possible_executions(self, program, interps):
         ret = set([])
-        for interp in interps.get_valid_executions():
+        for interp in interps.get_coherent_executions():
             ret.add(self.print_execution(program, interp))
 
         return list(ret)
@@ -532,7 +532,7 @@ class DotPrinter(object):
 
     def print_executions(self, program, interps):
         graphs = []
-        for interp in interps.get_valid_executions():
+        for interp in interps.get_coherent_executions():
             graphs.append(self.print_execution(program, interp))
         return graphs
 

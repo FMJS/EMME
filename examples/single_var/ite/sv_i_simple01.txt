@@ -1,4 +1,4 @@
-// Single Variable Simple 13
+// Single Variable ITE Simple 01
 var x = new SharedArrayBuffer();
 
 Thread t1 {

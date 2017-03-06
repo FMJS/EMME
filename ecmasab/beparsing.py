@@ -22,6 +22,7 @@ from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, L
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
 T_ASTORE = "Atomics.store"
+T_BEQ = "=="
 T_CCB = "}"
 T_CM = ","
 T_COM = "//"
@@ -30,18 +31,19 @@ T_CSB = "]"
 T_DIV = "/"
 T_DOT = "."
 T_DOTS = ".."
+T_ELSE = "else"
 T_EQ = "="
-T_BEQ = "=="
-T_GEQ = ">="
-T_LEQ = "<="
-T_LT = "<"
-T_GT = ">"
 T_FLO32 = "-F32"
 T_FLO64 = "-F64"
 T_FOR = "for"
+T_GEQ = ">="
+T_GT = ">"
+T_IF = "if"
 T_INT16 = "-I16"
 T_INT32 = "-I32"
 T_INT8 = "-I8"
+T_LEQ = "<="
+T_LT = "<"
 T_MIN = "-"
 T_MUL = "*"
 T_NEW = "new"
@@ -56,25 +58,21 @@ T_SUM = "+"
 T_THREAD = "Thread"
 T_US = "_"
 T_VAR = "var"
-T_IF = "if"
-T_ELSE = "else"
 
 P_ACCESS = "access"
 P_ADDR = "address"
 P_ADDRSET = "address-set"
+P_BCOND = "bcond"
 P_COMMENT = "comment"
 P_CSCOPE = "closescope"
+P_ELSE = "else"
 P_EMPTY = "empty"
 P_EXPR = "expr"
 P_FLOOP = "floop"
 P_IF = "if"
-P_ELSE = "else"
-P_BCOND = "bcond"
-P_VRIGHT = "vright"
-P_VLEFT = "vleft"
-P_OP = "operator"
 P_INIT = "init"
 P_LOAD = "load"
+P_OP = "operator"
 P_PRINT = "print"
 P_RANGE = "range"
 P_READ = "read"
@@ -85,15 +83,17 @@ P_STORE = "store"
 P_TRDB = "thread-begin"
 P_TYPEOP = "typeop"
 P_VALUE = "value"
+P_VLEFT = "vleft"
 P_VNAME = "varname"
+P_VRIGHT = "vright"
 P_WRITE = "write"
 
-P_TRREL = "tr-relation"
+P_ASS = "assign"
 P_BIREL = "bi-relation"
 P_EMREL = "em-relation"
-P_ASS = "assign"
+P_TRREL = "tr-relation"
 
-DEBUG = True
+DEBUG = False
 
 class ParsingErrorException(Exception):
     pass
@@ -386,7 +386,7 @@ class BeParser(object):
         me.operation = operation
         me.address = address
 
-        if not block_name in blocks:
+        if block_name not in blocks:
             raise ParsingErrorException("block \"%s\" is not defined"%(block_name))
         me.block = blocks[block_name]
         
