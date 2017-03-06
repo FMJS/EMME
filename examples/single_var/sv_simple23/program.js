@@ -15,7 +15,7 @@ var x = new Float32Array(data.x_sab); x[1] = 2.00;
 var data = {
 x_sab : new SharedArrayBuffer(8),
 }
- 
+
 var wt1 = new Worker(t1);
 var wt2 = new Worker(t2);
 wt1.postMessage(data, [data.x_sab]);

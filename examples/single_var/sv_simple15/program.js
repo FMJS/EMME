@@ -18,7 +18,7 @@ var x = new Int16Array(data.x_sab); id7_R_t3 = Atomics.load(x, 1); print("id7_R_
 var data = {
 x_sab : new SharedArrayBuffer(8),
 }
- 
+
 var wt1 = new Worker(t1);
 var wt2 = new Worker(t2);
 var wt3 = new Worker(t3);

@@ -20,13 +20,13 @@ id9_R_t2 -> id6_W_t1 [label = "RF", color="red"];
 id1_W_main -> id7_R_t2 [label = "SW", color="blue"];
 id5_W_t1 -> id8_R_t2 [label = "SW", color="blue"];
 id6_W_t1 -> id9_R_t2 [label = "SW", color="blue"];
-id1_W_main [label=<id1_W_main<br/><B>x=Init(0)</B>>, pos="2.5,6!"]
-id2_W_main [label=<id2_W_main<br/><B>y=Init(0)</B>>, pos="2.5,4!"]
-id3_W_main [label=<id3_W_main<br/><B>z=Init(0)</B>>, pos="2.5,2!"]
-id4_W_t1 [label=<id4_W_t1<br/><B>x=I8(1)</B>>, pos="0,0!"]
-id5_W_t1 [label=<id5_W_t1<br/><B>y=I8(1)</B>>, pos="0,-2!"]
-id6_W_t1 [label=<id6_W_t1<br/><B>z=I8(1)</B>>, pos="0,-4!"]
-id7_R_t2 [label=<id7_R_t2<br/><B>x=I8(0)</B>>, pos="5,0!"]
-id8_R_t2 [label=<id8_R_t2<br/><B>y=I8(1)</B>>, pos="5,-2!"]
-id9_R_t2 [label=<id9_R_t2<br/><B>z=I8(1)</B>>, pos="5,-4!"]
+id1_W_main [label=<id1_W_main<br/><B>x-init := 0</B>>, pos="2.5,6!"]
+id2_W_main [label=<id2_W_main<br/><B>y-init := 0</B>>, pos="2.5,4!"]
+id3_W_main [label=<id3_W_main<br/><B>z-init := 0</B>>, pos="2.5,2!"]
+id4_W_t1 [label=<id4_W_t1<br/><B>x-I8[0] := 1</B>>, pos="0,0!"]
+id5_W_t1 [label=<id5_W_t1<br/><B>y-I8[0] := 1</B>>, pos="0,-2!"]
+id6_W_t1 [label=<id6_W_t1<br/><B>z-I8[0] := 1</B>>, pos="0,-4!"]
+id7_R_t2 [label=<id7_R_t2<br/><B>x-I8[0] = 0</B>>, pos="5,0!"]
+id8_R_t2 [label=<id8_R_t2<br/><B>y-I8[0] = 1</B>>, pos="5,-2!"]
+id9_R_t2 [label=<id9_R_t2<br/><B>z-I8[0] = 1</B>>, pos="5,-4!"]
 }

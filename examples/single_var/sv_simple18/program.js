@@ -15,7 +15,7 @@ var x = new Int16Array(data.x_sab); id7_R_t2 = x[1]; print("id7_R_t2: "+id7_R_t2
 var data = {
 x_sab : new SharedArrayBuffer(8),
 }
- 
+
 var wt1 = new Worker(t1);
 var wt2 = new Worker(t2);
 wt1.postMessage(data, [data.x_sab]);

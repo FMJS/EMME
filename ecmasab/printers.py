@@ -12,7 +12,7 @@ import itertools
 import re
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop
+from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
@@ -109,15 +109,25 @@ class CVC4Printer(object):
         relations.append(interp.get_RF())
         relations.append(interp.get_SW())
 
-        return " AND ".join([self.__print_relation(x) for x in relations])
-
+        values = [self.__print_relation(x) for x in relations]
+        if interp.conditions:
+            values += ["(%s=%s)"%x for x in interp.conditions]
+        
+        return " AND ".join(values)
+    
     def print_assert_execution(self, interp):
         relations = []
         for relation in BLOCKING_RELATIONS:
             relations.append(interp.get_relation_by_name(relation))
 
-        ret = " AND ".join([self.__print_relation(x) for x in relations])
-        
+        relations = [self.__print_relation(x) for x in relations]
+
+        conds = []
+        if interp.conditions:
+            conds += ["(%s=%s)"%x for x in interp.conditions]
+            
+        ret = " AND ".join(relations+conds)
+            
         return "ASSERT NOT(%s);"%(ret)
     
     
@@ -134,13 +144,16 @@ class CVC4Printer(object):
         program.sort_threads()
 
         ret = ""
+
+        ret += self.__print_conditions(program) + "\n"
+        conditional = program.has_conditions()
         
         for thread in program.threads:
             ret += self.print_thread(thread) + "\n"
 
         for thread in program.threads:
             for event in thread.get_events(True):
-                ret += self.print_event(event) + "\n"
+                ret += self.print_event(event, conditional) + "\n"
 
         for thread in program.threads:
             ret += self.__print_thread_events_set(thread) + "\n"
@@ -156,10 +169,10 @@ class CVC4Printer(object):
     def print_thread(self, thread):
         return "%s : THREAD_TYPE;" % thread.name
     
-    def print_event(self, event):
-        return "%s : MEM_OP_TYPE;\n%s" % (event.name, self.print_event_formula(event))
+    def print_event(self, event, conditional):
+        return "%s : MEM_OP_TYPE;\n%s" % (event.name, self.print_event_formula(event, conditional))
     
-    def print_event_formula(self, event):
+    def print_event_formula(self, event, conditional):
         ret = "ASSERT "
         indent = " "*len(ret)
         ret +=  "(%s.ID = %s) AND\n" % (event.name, str(event.name)+TYPE)
@@ -169,7 +182,23 @@ class CVC4Printer(object):
         if type(event.address[0]) == int:
             address = "{%s}" % (", ".join(["Int(%s)" % el for el in event.address]))
             ret += "%s(%s.M = %s) AND\n" % (indent, event.name, address)
+            
+        if conditional:
+            if event.en_conditions:
+                condition = []
+                for el in event.en_conditions:
+                    if el[1]:
+                        condition.append("(%s)"%el[0])
+                    else:
+                        condition.append("(NOT (%s))"%el[0])
+
+                ret +=  "%s((%s.A = ENABLED) <=> (%s)) AND\n" % (indent, event.name, " AND ".join(condition))
+            else:
+                ret +=  "%s(%s.A = ENABLED) AND\n" % (indent, event.name)
+
         ret += "%s(%s.B = %s);\n"    % (indent, event.name, str(event.block))
+
+                
         return ret
 
     def __print_thread_events_set(self, thread):
@@ -193,6 +222,15 @@ class CVC4Printer(object):
 
         return ret
 
+    def __print_conditions(self, program):
+        if not program.get_conditions():
+            return ""
+        ret = []
+        for condition in program.conditions:
+            ret.append("%s: BOOLEAN;"%condition)
+
+        return "\n".join(ret)
+    
     def __print_event_set(self, program):
         events = []
         rom_events = []
@@ -271,7 +309,7 @@ class JSV8Printer(JSPrinter):
 
     def compute_possible_executions(self, program, interps):
         ret = set([])
-        for interp in interps.executions:
+        for interp in interps.get_coherent_executions():
             ret.add(self.print_execution(program, interp))
 
         return list(ret)
@@ -303,6 +341,8 @@ class JSV8Printer(JSPrinter):
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
                     ret += self.print_floop(ev)
+                elif isinstance(ev, ITE_Statement):
+                    ret += self.print_ite(ev)
                 else:
                     ret += self.print_event(ev)
 
@@ -357,6 +397,29 @@ class JSV8Printer(JSPrinter):
         ret += "}\n"
 
         return ret
+
+    def print_ite(self, ite):
+        ret = ""
+
+        for cond in ite.conditions:
+            for ind in [0,2]:
+                if isinstance(cond[ind], Memory_Event):
+                    ret += self.print_event(cond[ind])
+
+        conditions = ["%s %s %s"%x for x in ite.conditions]
+        ret += "if(%s) {\n"%(" AND ".join(conditions))
+
+        for ev in ite.then_events:
+            ret += self.print_event(ev)
+
+        ret += "} else {\n"
+            
+        for ev in ite.else_events:
+            ret += self.print_event(ev)
+            
+        ret += "}\n"
+
+        return ret
     
     def print_event(self, event, postfix=None):
         operation = event.operation
@@ -367,19 +430,20 @@ class JSV8Printer(JSPrinter):
         block_size = event.get_size()
         is_float = event.is_wtear()
         var_def = ""
+        prt = ""
         
         if (ordering != INIT):
             if is_float:
-                var_def = "var %s = new Float%sArray(data.%s);"%(block_name, \
+                var_def = "var %s = new Float%sArray(data.%s)"%(block_name, \
                                                                   block_size*8, \
                                                                   block_name+"_sab")
             else:
-                var_def = "var %s = new Int%sArray(data.%s);"%(block_name, \
+                var_def = "var %s = new Int%sArray(data.%s)"%(block_name, \
                                                            block_size*8, \
                                                            block_name+"_sab")
 
         if (operation == WRITE) and (ordering == INIT):
-            operation = ""
+            mop = None
 
 
         if (ordering == SC) and not is_float:
@@ -391,19 +455,19 @@ class JSV8Printer(JSPrinter):
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
-                operation = "Atomics.store(%s, %s, %s);"%(block_name, \
+                mop = "Atomics.store(%s, %s, %s)"%(block_name, \
                                                         addr, \
                                                         event_values)
 
 
             if operation == READ:
-                operation = "%s = Atomics.load(%s, %s);"%(event_name, \
+                mop = "%s = Atomics.load(%s, %s)"%(event_name, \
                                                           block_name, \
                                                           addr)
                 if postfix:
-                    operation += " print(\"%s_\"+%s+\": \"+%s);"%(event_name, postfix, event_name)
+                    prt = "print(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
                 else:
-                    operation += " print(\"%s: \"+%s);"%(event_name, event_name)
+                    prt = "print(\"%s: \"+%s)"%(event_name, event_name)
 
         if (ordering == UNORD) or is_float:
             if not event_address:
@@ -417,24 +481,28 @@ class JSV8Printer(JSPrinter):
                 if is_float and event_address:
                     event_values = self.float_pri_js%event_values
 
-                operation = ("%s[%s] = %s;")%(block_name, \
+                mop = ("%s[%s] = %s")%(block_name, \
                                               addr, \
                                               event_values)
 
             if operation == READ:
                 approx = self.float_app_js if is_float else ""
                     
-                operation = "%s = %s[%s];"%(event_name, \
+                mop = "%s = %s[%s]"%(event_name, \
                                             block_name, \
                                             addr)
 
                 if postfix:
-                    operation += " print(\"%s_\"+%s+\": \"+%s%s);"%(event_name, postfix, event_name, approx)
+                    prt = "print(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
                 else:
-                    operation += " print(\"%s: \"+%s%s);"%(event_name, event_name, approx)
-            
+                    prt = "print(\"%s: \"+%s%s)"%(event_name, event_name, approx)
 
-        return var_def+" "+operation+"\n"
+        if operation == READ:
+            return "%s;\n"%("; ".join([var_def,mop,prt]))
+        else:
+            if not mop:
+                return var_def+"\n"
+            return "%s;\n"%("; ".join([var_def,mop]))
 
 
 class JSSMPrinter(JSPrinter):
@@ -464,7 +532,7 @@ class DotPrinter(object):
 
     def print_executions(self, program, interps):
         graphs = []
-        for interp in interps.executions:
+        for interp in interps.get_coherent_executions():
             graphs.append(self.print_execution(program, interp))
         return graphs
 
@@ -488,7 +556,7 @@ class DotPrinter(object):
     def print_execution(self, program, interp):
 
         reads_dic = dict([(x.name, x) for x in interp.reads_values])
-        ev_dic = dict([(x.name, x) for x in program.get_events()])
+        ev_dic = dict([(x.name, x) for x in interp.get_events()])
 
         ret = []
         ret.append("digraph memory_model {")
@@ -575,17 +643,22 @@ class DotPrinter(object):
         if event.name in reads_dic:
             event = reads_dic[event.name]
             value = event.get_correct_value()
-            bname = self.__get_block_size(event)
+            bname = "%s%s[%s]"%(event.block.name, self.__get_block_size(event), event.address[0])
         else:
             if event.is_init():
                 value = 0
-                bname = "Init"
+                bname = "%s-init"%event.block.name
             else:
                 value = event.get_correct_value()
-                bname = self.__get_block_size(event)
+                bname = "%s%s[%s]"%(event.block.name, self.__get_block_size(event), event.address[0])
             
         value = self.float_pri_js%value if event.is_wtear() else value
-        label = "%s<br/><B>%s=%s(%s)</B>"%(event.name, event.block.name, bname, value)
+        oper = "=" if event.is_read() else ":="
+
+        label = "%s<br/><B>%s %s %s</B>"%(event.name, bname, oper, value)
+        if event.has_info(ITE_Statement.OP_ITE):
+            label +=  "<br/>(%s)"%event.info[ITE_Statement.OP_ITE]
+        
         node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(event.name, label, posx, posy)
 
         return node
@@ -597,19 +670,19 @@ class DotPrinter(object):
         
         if not isfloat:
             if size == 1:
-                return T_INT8[1:]
+                return T_INT8
             elif size == 2:
-                return T_INT16[1:]
+                return T_INT16
             elif size == 4:
-                return T_INT32[1:]
+                return T_INT32
             else:
                 raise UnreachableCodeException("Int size %s not valid"%str(size))
             
         if isfloat:
             if size == 4:
-                return T_FLO32[1:]
+                return T_FLO32
             elif size == 8:
-                return T_FLO64[1:]
+                return T_FLO64
             else:
                 raise UnreachableCodeException("Float size %s not valid"%str(size))
     
@@ -647,6 +720,8 @@ class BePrinter(object):
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
                     ret += self.print_floop(ev)
+                elif isinstance(ev, ITE_Statement):
+                    ret += self.print_ite(ev)
                 else:
                     ret += self.print_event(ev)
 
@@ -654,7 +729,7 @@ class BePrinter(object):
                 
         return ret
 
-    def print_event(self, event):
+    def print_event(self, event, pure=False):
         operation = event.operation
         ordering = event.ordering
         block_name = event.block.name
@@ -674,16 +749,16 @@ class BePrinter(object):
                 event_values = event.get_correct_value()
 
             if operation == WRITE:
-                operation = "Atomics.store(%s%s, %s, %s);"%(block_name, \
-                                                            self.__get_block_size(block_size, False), \
-                                                            addr, \
-                                                            event_values)
+                ret = "Atomics.store(%s%s, %s, %s)"%(block_name, \
+                                                     self.__get_block_size(block_size, False), \
+                                                     addr, \
+                                                     event_values)
 
 
             if operation == READ:
-                operation = "print(Atomics.load(%s%s, %s));"%(block_name, \
-                                                              self.__get_block_size(block_size, False), \
-                                                              addr)
+                ret = "Atomics.load(%s%s, %s)"%(block_name, \
+                                                self.__get_block_size(block_size, False), \
+                                                addr)
 
         if (ordering == UNORD) or is_float:
             if not event_address:
@@ -698,17 +773,23 @@ class BePrinter(object):
                     event_values = self.float_pri_js%event_values
                     event_values = re.sub("0+\Z","", event_values)
                 
-                operation = ("%s%s[%s] = %s;")%(block_name, \
-                                                self.__get_block_size(block_size, is_float),\
-                                                addr, \
-                                                event_values)
+                ret = ("%s%s[%s] = %s")%(block_name, \
+                                         self.__get_block_size(block_size, is_float),\
+                                         addr, \
+                                         event_values)
 
             if operation == READ:
-                operation = "print(%s%s[%s]);"%(block_name, \
-                                                self.__get_block_size(block_size, is_float),\
-                                                addr)            
+                ret = "%s%s[%s]"%(block_name, \
+                                  self.__get_block_size(block_size, is_float),\
+                                  addr)            
 
-        return operation+"\n"
+        if not pure:
+            if operation == READ:
+                ret = "print(%s);\n"%ret
+            else:
+                ret = "%s;\n"%ret
+                
+        return ret
 
 
     def __get_block_size(self, size, isfloat):
@@ -741,6 +822,37 @@ class BePrinter(object):
         ret += "}\n"
 
         return ret
-    
+
+    def print_ite(self, ite):
+        ret = ""
+
+        conditions = []
+        for cond in ite.conditions:
+            lft = None
+            rgt = None
+            if isinstance(cond[0], Memory_Event):
+                lft = self.print_event(cond[0], True)
+            else:
+                lft = cond[0]
+            if isinstance(cond[2], Memory_Event):
+                rgt = self.print_event(cond[2], True)
+            else:
+                rgt = cond[2]
+            conditions.append("%s %s %s"%(lft, cond[1], rgt))
+
+        ret += "if(%s) {\n"%(" AND ".join(conditions))
+        
+        for ev in ite.then_events:
+            ret += self.print_event(ev)
+
+        ret += "} else {\n"
+            
+        for ev in ite.else_events:
+            ret += self.print_event(ev)
+            
+        ret += "}\n"
+
+        return ret
+
     
     

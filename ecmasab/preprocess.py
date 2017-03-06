@@ -250,6 +250,7 @@ class ExtPreprocessor(object):
         command.append("%s"%self.pproc)
         if self.defines is not None:
             for define in self.defines.split(","):
+                if define == "": continue
                 command.append("-D %s" % define)
         command.append("%s" % filename)
 

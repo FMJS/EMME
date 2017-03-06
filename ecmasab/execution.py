@@ -9,6 +9,9 @@
 # limitations under the License.
 
 import struct
+import ast
+import operator
+import sys
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -32,8 +35,6 @@ MO = "MO"
 AO = "AO"
 SW = "SW"
 
-OP_PRINT = "PRINT"
-
 DEFAULT_TEAR = NTEAR
 
 RELATIONS = []
@@ -51,6 +52,45 @@ BLOCKING_RELATIONS.append(RF)
 # BLOCKING_RELATIONS.append(MO)
 # BLOCKING_RELATIONS.append(SW)
 
+def arit_eval(s):
+    if sys.version_info[0] >= 3:
+        return eval(s)
+    
+    node = ast.parse(s, mode='eval')
+
+    def _eval(node):
+
+        binOps = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.div,
+            ast.Mod: operator.mod
+        }
+
+        cmpOps = {
+            ast.Eq: operator.eq,
+            ast.Lt: operator.lt,
+            ast.LtE: operator.le,
+            ast.Gt: operator.gt,
+            ast.GtE: operator.ge
+        }
+        
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        elif isinstance(node, ast.Str):
+            return node.s
+        elif isinstance(node, ast.Num):
+            return node.n
+        elif isinstance(node, ast.Compare):
+            return cmpOps[type(node.ops[0])](_eval(node.left), _eval(list(node.comparators)[0]))
+        elif isinstance(node, ast.BinOp):
+            return binOps[type(node.op)](_eval(node.left), _eval(node.right))
+        else:
+            raise Exception('Unsupported type {}'.format(node))
+
+    return _eval(node.body)
+
 class Executions(object):
     program = None
     executions = None
@@ -65,6 +105,9 @@ class Executions(object):
         assert(isinstance(exe, Execution))
         self.executions.append(exe)
 
+    def get_coherent_executions(self):
+        return [x for x in self.executions if x.is_coherent()]
+        
     def get_size(self):
         return len(self.executions)
     
@@ -74,7 +117,8 @@ class Execution(object):
     reads_bytes_from = None
     reads_from = None
     synchronizes_with = None
-
+    conditions = None
+    
     reads_values = None
 
     program = None
@@ -87,6 +131,7 @@ class Execution(object):
         self.reads_from = Relation(RF)
         self.synchronizes_with = Relation(SW)
         self.reads_values = []
+        self.conditions = None
 
     def __repr__(self):
         relations = []
@@ -99,7 +144,44 @@ class Execution(object):
         
     def add_read_values(self, read_event):
         self.reads_values.append(read_event)
+
+    def get_events(self):
+        events = []
+        for thread in self.program.threads:
+            events += thread.get_events(True, self.conditions)
+        return events
+
+    def is_coherent(self):
+        if not self.conditions:
+            return True
         
+        events = []
+        for thread in self.program.threads:
+            events += thread.get_events(False)
+
+        read_map = dict((x.name, x) for x in self.reads_values)        
+
+        actual_conds = []
+        for event in events:
+            if isinstance(event, ITE_Statement):
+                for expcond in event.conditions:
+                    # evaluation of ITE conditions
+                    if str(expcond[0]) in read_map:
+                        val1 = read_map[expcond[0].name].get_correct_value()
+                    else:
+                        val1 = expcond[0]
+
+                    if str(expcond[2]) in read_map:
+                        val2 = read_map[expcond[2].name].get_correct_value()
+                    else:
+                        val2 = expcond[2]
+
+                    loc_cond = arit_eval("%s %s %s"%(val1, expcond[1], val2))
+                    actual_cond = (event.condition_name, str(loc_cond).upper())
+                    actual_conds.append(actual_cond)
+
+        return set(actual_conds) == set(self.conditions)
+    
     def get_HB(self):
         return self.happens_before
 
@@ -146,6 +228,11 @@ class Execution(object):
 
         return rel
 
+    def add_condition(self, condition, value):
+        if not self.conditions:
+            self.conditions = []
+        self.conditions.append((condition, value))
+    
     def get_relation_by_name(self, name):
         if name == RF:
             return self.get_RF()
@@ -185,10 +272,12 @@ class Relation(object):
 class Program(object):
     threads = []
     blocks = []
+    conditions = None
     
     def __init__(self):
         self.threads = []
         self.blocks = []
+        self.conditions = None
 
     def add_thread(self, thread):
         self.threads.append(thread)
@@ -199,6 +288,18 @@ class Program(object):
             blocks += thread.get_blocks()
         return list(set(blocks))
 
+    def get_conditions(self):
+        conditions = []
+        for thread in self.threads:
+            conditions += thread.get_conditions()
+
+        self.conditions = list(set(conditions))
+        return self.conditions
+
+    def has_conditions(self):
+        self.get_conditions()
+        return len(self.conditions)
+    
     def get_events(self):
         events = []
         for thread in self.threads:
@@ -244,12 +345,19 @@ class Thread(object):
         self.events = []
         self.uevents = []
         self.name = name
-        
-    def get_events(self, expand_loops):
+
+    def get_conditions(self):
+        conditions = []
+        for event in self.events:
+            if isinstance(event, ITE_Statement):
+                conditions.append(event.condition_name)
+        return list(set(conditions))
+
+    def get_events(self, expand_loops, conditions=None):
         if not expand_loops:
             return self.events
 
-        if self.uevents:
+        if self.uevents and not conditions:
             return self.uevents
         
         i = 0
@@ -257,6 +365,8 @@ class Thread(object):
         while i < len(self.uevents):
             if isinstance(self.uevents[i], For_Loop):
                 self.uevents = self.uevents[:i] + self.uevents[i].get_uevents() + self.uevents[i+1:]
+            if isinstance(self.uevents[i], ITE_Statement):
+                self.uevents = self.uevents[:i] + self.uevents[i].get_uevents(conditions) + self.uevents[i+1:]
             i += 1
 
         id_ev = 0
@@ -311,33 +421,104 @@ class For_Loop(object):
                 offset = event.offset
 
                 offset = offset.replace(self.cname,str(i))
-                offset = int(eval(offset))
+                offset = int(arit_eval(offset))
                 
                 baddr = size*offset
                 eaddr = (size*(offset+1))-1
                 address = range(baddr, eaddr+1, 1)
                 name = "%s_%s"%(event.name, i)
 
-                me = Memory_Event(name = name, \
-                                  operation = event.operation, \
-                                  tear = event.tear, \
-                                  ordering = event.ordering, \
-                                  address = address, \
-                                  block = event.block,\
-                                  values = None)
+                me = Memory_Event()
 
+                me.name = name
+                me.operation = event.operation
+                me.tear = event.tear
+                me.ordering = event.ordering
+                me.address = address
+                me.block = event.block
+                
                 if value:
                     value = value.replace(self.cname,str(i))
                     if event.is_wtear():
-                        value = float(eval(value))
+                        value = float(arit_eval(value))
                         me.set_values_from_float(value, baddr, eaddr)
                     else:
-                        value = int(eval(value))
+                        value = int(arit_eval(value))
                         me.set_values_from_int(value, baddr, eaddr)
 
                 self.uevents.append(me)
 
+class ITE_Statement(object):
+    conditions = None
+    then_events = None
+    else_events = None
+    condition_name = None
+    global_id_cond = 1
+
+    OP_ITE = "ITE"
+    B_THEN = "THEN"
+    B_ELSE = "ELSE"
+
+    FALSE = "FALSE"
+    TRUE = "TRUE"
+    
+    def __init__(self):
+        self.conditions = []
+        self.then_events = None
+        self.else_events = None
+        self.condition_name = None
+
+    @staticmethod        
+    def get_unique_condition():
+        ret = ITE_Statement.global_id_cond
+        ITE_Statement.global_id_cond = ITE_Statement.global_id_cond + 1
+        return "id%s"%ret
+
+    @staticmethod        
+    def reset_unique_names():
+        ITE_Statement.global_id_cond = 1
+    
+    def append_condition(self, el1, op, el2):
+        self.conditions.append((el1,op,el2))
+        self.condition_name = "%s_cond"%(ITE_Statement.get_unique_condition())
+    
+    def append_then(self, event):
+        if not self.then_events:
+            self.then_events = []
+        event.add_enabling_condition((self.condition_name, 1))
+        event.add_info(self.OP_ITE, self.B_THEN)
+        self.then_events.append(event)
+
+    def append_else(self, event):
+        if not self.else_events:
+            self.else_events = []
+        event.add_enabling_condition((self.condition_name, 0))
+        event.add_info(self.OP_ITE, self.B_ELSE)
+        self.else_events.append(event)
+
+    def has_else(self):
+        return self.else_events is not None
+
+    def get_uevents(self, assconds=None):
+        uevents = []
+        for condition in self.conditions:
+            for ind in [0,2]:
+                if isinstance(condition[ind], Memory_Event):
+                    uevents.append(condition[ind])
                 
+        acthen = True
+        acelse = True
+        if assconds:
+            for asscond in assconds:
+                if (asscond == (self.condition_name, self.TRUE)):
+                    acelse = False
+                if (asscond == (self.condition_name, self.FALSE)):
+                    acthen = False
+
+        if acthen: uevents += self.then_events
+        if acelse: uevents += self.else_events
+        return uevents
+    
 class Memory_Event(object):
     name = None
     operation = None
@@ -351,28 +532,25 @@ class Memory_Event(object):
     size = None
     value = None
     id_ev = None
+    en_conditions = None
     
-    op_purpose = None
+    info = None
     
-    def __init__(self, name, operation, tear, ordering, address, block, values):
-        if not name:
-            name = Memory_Event.get_unique_name()
-        if not tear:
-            tear = DEFAULT_TEAR
-        self.name = name
-        self.operation = operation
-        self.tear = tear
-        self.ordering = ordering
-        self.address = address
-        self.block = block
-        self.values = values
-        self.op_purpose = None
+    def __init__(self):
+        self.name = None
+        self.operation = None
+        self.tear = None
+        self.ordering = None
+        self.address = None
+        self.block = None
+        self.values = None
+        self.offset = None
         self.size = None
         self.value = None
+        self.en_conditions = None
+        self.info = None
+        
         self.id_ev = Memory_Event.global_id_ev
-
-        if values:
-            self.block.update_size(len(values))
 
     def __repr__(self):
         return self.name
@@ -425,7 +603,28 @@ class Memory_Event(object):
         if not self.size:
             self.size = len(self.address)
         return self.size
-    
+
+    def add_enabling_condition(self, condition):
+        if not self.en_conditions:
+            self.en_conditions = []
+
+        self.en_conditions.append(condition)
+
+    def has_condition(self):
+        if not self.en_conditions:
+            return False
+        return True
+
+    def add_info(self, key, value):
+        if not self.info:
+            self.info = {}
+        self.info[key] = value
+
+    def has_info(self, key):
+        if not self.info:
+            return False
+        return key in self.info
+        
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
         size = (end-begin)+1

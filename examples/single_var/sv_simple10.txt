@@ -2,9 +2,8 @@
 var x = new SharedArrayBuffer();
 
 Thread t1 {
-  for(i=0..1) {
-    x-F32[i] = i;
-  }
+  x-F32[0] = 1.1;
+  x-F32[1] = 2.2;
 }
 
 Thread t2 {
