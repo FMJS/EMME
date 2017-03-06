@@ -11,6 +11,8 @@
 import struct
 import ast
 import operator
+import sys
+import ast
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -68,6 +70,9 @@ def arit_eval(s):
     node = ast.parse(s, mode='eval')
 
     def _eval(node):
+        if sys.version_info[0] >= 3:
+            return ast.literal_eval(node)
+        
         if isinstance(node, ast.Expression):
             return _eval(node.body)
         elif isinstance(node, ast.Str):
