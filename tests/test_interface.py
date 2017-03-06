@@ -53,6 +53,7 @@ def run_fresh(example, skip_solving, expand):
     with open(config.prefix+outputs, "r") as new:
         with open(example+"/"+outputs, "r") as old:
             linesold = [x.strip() for x in old.readlines()]
+            assert(len(new.readlines()) != 0)
             for linenew in new.readlines():
                 assert(linenew in linesold)
                 
