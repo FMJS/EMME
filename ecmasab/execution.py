@@ -35,11 +35,6 @@ MO = "MO"
 AO = "AO"
 SW = "SW"
 
-FALSE = "FALSE"
-TRUE = "TRUE"
-
-OP_PRINT = "PRINT"
-
 DEFAULT_TEAR = NTEAR
 
 RELATIONS = []
@@ -451,6 +446,13 @@ class ITE_Statement(object):
     else_events = None
     condition_name = None
     global_id_cond = 1
+
+    OP_ITE = "ITE"
+    B_THEN = "THEN"
+    B_ELSE = "ELSE"
+
+    FALSE = "FALSE"
+    TRUE = "TRUE"
     
     def __init__(self):
         self.conditions = []
@@ -476,12 +478,14 @@ class ITE_Statement(object):
         if not self.then_events:
             self.then_events = []
         event.add_enabling_condition((self.condition_name, 1))
+        event.add_info(self.OP_ITE, self.B_THEN)
         self.then_events.append(event)
 
     def append_else(self, event):
         if not self.else_events:
             self.else_events = []
         event.add_enabling_condition((self.condition_name, 0))
+        event.add_info(self.OP_ITE, self.B_ELSE)
         self.else_events.append(event)
 
     def has_else(self):
@@ -496,9 +500,9 @@ class ITE_Statement(object):
         acelse = True
         if assconds:
             for asscond in assconds:
-                if (asscond == (self.condition_name, TRUE)):
+                if (asscond == (self.condition_name, self.TRUE)):
                     acelse = False
-                if (asscond == (self.condition_name, FALSE)):
+                if (asscond == (self.condition_name, self.FALSE)):
                     acthen = False
 
         if acthen: uevents += self.then_events
@@ -520,7 +524,7 @@ class Memory_Event(object):
     id_ev = None
     en_conditions = None
     
-    op_purpose = None
+    info = None
     
     def __init__(self):
         self.name = None
@@ -534,7 +538,7 @@ class Memory_Event(object):
         self.size = None
         self.value = None
         self.en_conditions = None
-        self.op_purpose = None
+        self.info = None
         
         self.id_ev = Memory_Event.global_id_ev
 
@@ -600,7 +604,17 @@ class Memory_Event(object):
         if not self.en_conditions:
             return False
         return True
-    
+
+    def add_info(self, key, value):
+        if not self.info:
+            self.info = {}
+        self.info[key] = value
+
+    def has_info(self, key):
+        if not self.info:
+            return False
+        return key in self.info
+        
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
         size = (end-begin)+1

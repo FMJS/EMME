@@ -652,7 +652,11 @@ class DotPrinter(object):
             
         value = self.float_pri_js%value if event.is_wtear() else value
         oper = "=" if event.is_read() else ":="
+
         label = "%s<br/><B>%s %s %s</B>"%(event.name, bname, oper, value)
+        if event.has_info(ITE_Statement.OP_ITE):
+            label +=  "<br/>(%s)"%event.info[ITE_Statement.OP_ITE]
+        
         node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(event.name, label, posx, posy)
 
         return node
