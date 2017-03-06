@@ -364,16 +364,12 @@ class BeParser(object):
             address = range(baddr, eaddr+1, 1)
             varsize = eaddr+1
 
-        tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
-        ordering = SC if self.__var_type_is_float(command.typeop) else ordering
-        name = "%s_%s_%s"%(Memory_Event.get_unique_name(), operation, thread.name)
-        
         me = Memory_Event()
 
-        me.name = name
+        me.name = "%s_%s_%s"%(Memory_Event.get_unique_name(), operation, thread.name)
+        me.ordering = SC if self.__var_type_is_float(command.typeop) else ordering
+        me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
         me.operation = operation
-        me.tear = tear
-        me.ordering = ordering
         me.address = address
         me.block = blocks[block_name]
         
