@@ -318,9 +318,9 @@ class Program(object):
             return [[list(x)] for x in ret]
         
         for conf in configs:
-            ret  = list(itertools.product(ret,conf))
-
-        return [list(x) for x in ret]
+            ret  = itertools.product(ret,conf)
+            
+        return list(ret)
         
     def get_blocks(self):
         blocks = []
@@ -615,7 +615,7 @@ class Memory_Event(object):
                 self.set_values_from_int(float(pardic[self.value]),\
                                          int(self.offset), \
                                          int(self.offset)+int(self.size))
-
+            
                 
     @staticmethod        
     def reset_unique_names():

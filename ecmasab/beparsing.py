@@ -214,7 +214,7 @@ class BeParser(object):
 
         
     def program_from_string(self, strinput):
-        Memory_Event.reset_unique_names()
+        self.__init__()
         self.__parse_program(strinput)
         self.__populate_program()
         return self.program
@@ -224,11 +224,7 @@ class BeParser(object):
         self.__populate_executions()
         
         if self.program:
-            if self.program.params:
-                for paramass in self.program.get_params():
-                    self.__compute_reads_values(dict(paramass))
-            else:
-                self.__compute_reads_values()
+            self.__compute_reads_values()
 
         return self.executions
 
@@ -499,7 +495,6 @@ class BeParser(object):
                 except ParsingErrorException as e:
                     if DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
-
 
                 if floop:
                     floop.append(me)
