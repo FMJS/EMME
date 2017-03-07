@@ -16,7 +16,7 @@ from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
 
-from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, OneOrMore, Empty, \
+from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
     operatorPrecedence, opAssoc, Combine, Optional, White, Group
 
 T_ALOAD = "Atomics.load"
@@ -229,7 +229,7 @@ class BeParser(object):
         return self.executions
 
 
-    def __compute_reads_values(self, pardic={}):
+    def __compute_reads_values(self):
         executions = self.executions.executions
         for exe in executions:
             events = exe.get_events()
@@ -383,7 +383,7 @@ class BeParser(object):
             eaddr = (varsize*(addr+1))-1
             address = range(baddr, eaddr+1, 1)
             varsize = eaddr+1
-        except:
+        except Exception:
             pass
             
         if parametric:
