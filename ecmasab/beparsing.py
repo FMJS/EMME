@@ -434,6 +434,8 @@ class BeParser(object):
         thread = Thread(MAIN)
         floop = None
         params = False
+        used_params = []
+        defined_params = {}
         ite = None
         blocks = {}
         sab_defs = []
@@ -480,6 +482,7 @@ class BeParser(object):
                         raise ParsingErrorException("ERROR (L%s): nested ifs, for-loops, or param are not yet supported"%(linenum))
                     param = True
                     command.value = command.param[1]
+                    used_params.append(command.value)
 
                 if floop:
                     param = True
@@ -523,6 +526,13 @@ class BeParser(object):
                     ite = None
                 elif params:
                     params = False
+                    diff = set(used_params) - set([x for x in defined_params])
+                    if len(diff):
+                        raise ParsingErrorException("ERROR: parameters not defined \"%s\""%(", ".join(list(diff))))
+
+                    for par in used_params:
+                        program.add_param(par, defined_params[par])
+                    
                     continue
                 else:
                     program.add_thread(thread)
@@ -577,7 +587,7 @@ class BeParser(object):
             elif command_name == P_PARAM:
                 params = True
                 values = range(int(command.range[0]), int(command.range[2])+1, 1)
-                program.add_param(command.param[0], values)
+                defined_params[command.param[0]] = values
 
             elif command_name == P_PARAMS:
                 continue
