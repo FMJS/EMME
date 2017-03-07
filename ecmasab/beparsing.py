@@ -9,7 +9,7 @@
 # limitations under the License.
 
 import copy
-#from six.moves import range
+from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
