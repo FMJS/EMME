@@ -222,12 +222,18 @@ class BeParser(object):
     def executions_from_string(self, strinput):
         self.__parse_executions(strinput)
         self.__populate_executions()
+
         if self.program:
-            self.__compute_reads_values()
+            if self.program.params:
+                for paramass in self.program.get_params():
+                    self.__compute_reads_values(dict(paramass))
+            else:
+                self.__compute_reads_values()
+
         return self.executions
 
 
-    def __compute_reads_values(self):
+    def __compute_reads_values(self, pardic={}):
         executions = self.executions.executions
         
         for exe in executions:
@@ -240,6 +246,10 @@ class BeParser(object):
                 values = []
                 for i in read_event.address:
                     write_event = ev_map[rbf_map[(read_event.name, i)]]
+                    if write_event.value in pardic:
+                        write_event.set_values_from_int(int(pardic[write_event.value]), \
+                                                        int(write_event.offset), \
+                                                        int(write_event.offset)+int(write_event.size))
                     value = write_event.values[i]
                     values.append(value)
                 new_read_event = copy.deepcopy(read_event)

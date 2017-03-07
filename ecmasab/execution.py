@@ -290,6 +290,9 @@ class Program(object):
             self.params = {}
         self.params[param] = values
 
+    def param_size(self):
+        return len(self.get_params())
+        
     def get_params(self):
         if not self.params:
             return None
@@ -304,11 +307,14 @@ class Program(object):
 
         ret = configs[0]
         configs = configs[1:]
+
+        if not len(configs):
+            return [[list(x)] for x in ret]
         
         for conf in configs:
             ret  = list(itertools.product(ret,conf))
-        
-        return list(ret)
+
+        return [list(x) for x in ret]
         
     def get_blocks(self):
         blocks = []

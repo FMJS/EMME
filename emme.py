@@ -214,26 +214,10 @@ def main(config):
             print(" -> Found %s total models"%(totmodels))
         else:
             print(" -> No viable executions found")
-
-    if config.verbosity > 0:
-        sys.stdout.write("Generating JS program... ")
-        sys.stdout.flush()
-        
-    # Generation of the JS litmus test #
-    jprinter = PrintersFactory.printer_by_name(config.jsprinter)
-    dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
-    dprinter.set_printing_relations(config.printing_relations)
-
-    with open(config.jsprogram, "w") as f:
-        f.write(jprinter.print_program(program))
-
-    if config.verbosity > 0:
-        sys.stdout.write("DONE\n")
-        sys.stdout.flush()
     
     if (totmodels > 0) and (not config.sat):
         if config.verbosity > 0:
-            sys.stdout.write("Generating expected outputs... ")
+            sys.stdout.write("Computing expected outputs... ")
             sys.stdout.flush()
 
         executions = None
@@ -241,16 +225,51 @@ def main(config):
         
         with open(config.models, "r") as modelfile:
             executions = parser.executions_from_string(modelfile.read())
+
+        if config.verbosity > 0:
+            sys.stdout.write("DONE\n")
+            sys.stdout.flush()
+
+        if config.verbosity > 0:
+            sys.stdout.write("Generating JS program... ")
+            sys.stdout.flush()
+
+        # Generation of the JS litmus test #
+        jprinter = PrintersFactory.printer_by_name(config.jsprinter)
+        dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
+        dprinter.set_printing_relations(config.printing_relations)
+
+        print executions.program.param_size()
+            
+        
+        with open(config.jsprogram, "w") as f:
+            f.write(jprinter.print_program(program))
+
+        if config.verbosity > 0:
+            sys.stdout.write("DONE\n")
+            sys.stdout.flush()
+
+        if config.verbosity > 0:
+            sys.stdout.write("Generating expected outputs... ")
+            sys.stdout.flush()
             
         with open(config.execs, "w") as exefile:
             jsexecs = jprinter.compute_possible_executions(program, executions)
             exefile.write("\n".join(jsexecs))
+
+        if config.verbosity > 0:
+            sys.stdout.write("DONE\n")
+            sys.stdout.flush()
             
         # Generation of all possible outputs for the JS litmus test #
         with open(config.execs, "w") as exefile:
             jsexecs = jprinter.compute_possible_executions(program, executions)
             exefile.write("\n".join(jsexecs))
 
+        if config.verbosity > 0:
+            sys.stdout.write("Generating MM interpretations... ")
+            sys.stdout.flush()
+            
         # Generation of all possible MM interpretations #
         mms = dprinter.print_executions(program, executions)
         for i in range(len(mms)):
