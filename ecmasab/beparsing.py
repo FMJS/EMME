@@ -222,7 +222,7 @@ class BeParser(object):
     def executions_from_string(self, strinput):
         self.__parse_executions(strinput)
         self.__populate_executions()
-
+        
         if self.program:
             if self.program.params:
                 for paramass in self.program.get_params():
@@ -235,7 +235,6 @@ class BeParser(object):
 
     def __compute_reads_values(self, pardic={}):
         executions = self.executions.executions
-        
         for exe in executions:
             events = exe.get_events()
             ev_map = dict((x.name, x) for x in events)
@@ -246,10 +245,6 @@ class BeParser(object):
                 values = []
                 for i in read_event.address:
                     write_event = ev_map[rbf_map[(read_event.name, i)]]
-                    if write_event.value in pardic:
-                        write_event.set_values_from_int(int(pardic[write_event.value]), \
-                                                        int(write_event.offset), \
-                                                        int(write_event.offset)+int(write_event.size))
                     value = write_event.values[i]
                     values.append(value)
                 new_read_event = copy.deepcopy(read_event)
@@ -258,6 +253,7 @@ class BeParser(object):
 
     
     def __parse_executions(self, strinput):
+        self.models = []
         for line in strinput.split(T_NL):
             if line == "": continue
             rels = []
@@ -383,18 +379,22 @@ class BeParser(object):
         block_name = command.varname
         varsize = self.__get_var_size(command.typeop)
 
-        if parametric:
-            address = None
-            offset = list(command.address.asList())[1:]
-            if ctype == P_SABASS:
-                offset = offset[:-1]
-            offset = "".join(offset[0])
-        else:
+        address = None
+        
+        try:
             addr = int(command.address[1])
             baddr = varsize*addr
             eaddr = (varsize*(addr+1))-1
             address = range(baddr, eaddr+1, 1)
             varsize = eaddr+1
+        except:
+            pass
+            
+        if parametric:
+            offset = list(command.address.asList())[1:]
+            if ctype == P_SABASS:
+                offset = offset[:-1]
+            offset = "".join(offset[0])
 
         me = Memory_Event()
 

@@ -95,7 +95,7 @@ def arit_eval(s):
 class Executions(object):
     program = None
     executions = None
-
+    
     def __init__(self):
         self.program = None
         self.executions = []
@@ -291,8 +291,14 @@ class Program(object):
         self.params[param] = values
 
     def param_size(self):
+        if not self.get_params():
+            return 1
         return len(self.get_params())
-        
+
+    def apply_param(self, pardic):
+        for thread in self.threads:
+            thread.apply_param(pardic)
+    
     def get_params(self):
         if not self.params:
             return None
@@ -387,6 +393,10 @@ class Thread(object):
                 conditions.append(event.condition_name)
         return list(set(conditions))
 
+    def apply_param(self, pardic):
+        for event in self.events:
+            event.apply_param(pardic)
+    
     def get_events(self, expand_loops, conditions=None):
         if not expand_loops:
             return self.events
@@ -438,6 +448,9 @@ class For_Loop(object):
         self.fromind = frind
         self.toind = toind
 
+    def apply_param(self, pardic):
+        pass
+        
     def get_uevents(self):
         if not self.uevents:
             self.uevents = []
@@ -511,7 +524,10 @@ class ITE_Statement(object):
     @staticmethod        
     def reset_unique_names():
         ITE_Statement.global_id_cond = 1
-    
+
+    def apply_param(self, pardic):
+        pass
+        
     def append_condition(self, el1, op, el2):
         self.conditions.append((el1,op,el2))
         self.condition_name = "%s_cond"%(ITE_Statement.get_unique_condition())
@@ -589,6 +605,18 @@ class Memory_Event(object):
     def __repr__(self):
         return self.name
 
+    def apply_param(self, pardic):
+        if self.value in pardic:
+            if self.is_wtear():
+                self.set_values_from_float(float(pardic[self.value]),\
+                                           int(self.offset), \
+                                           int(self.offset)+int(self.size))
+            else:
+                self.set_values_from_int(float(pardic[self.value]),\
+                                         int(self.offset), \
+                                         int(self.offset)+int(self.size))
+
+                
     @staticmethod        
     def reset_unique_names():
         Memory_Event.global_id_ev = 1
@@ -627,8 +655,6 @@ class Memory_Event(object):
         self.size = size
         self.value = value
 
-        self.address = range(0, size)
-        
     def set_values(self, values):
         self.offset = None
         self.values = values

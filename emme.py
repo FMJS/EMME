@@ -98,6 +98,10 @@ class Config(object):
             self.execs = self.prefix+EXECS
             self.mm = FORMAL_MODEL
 
+            if not os.path.exists(self.prefix):
+                os.makedirs(self.prefix)
+
+
 def graphviz_gen(gfile, pngfile):
     command = "neato -Tpng -o%s %s"%(pngfile, gfile)
     try:
@@ -214,34 +218,29 @@ def main(config):
             print(" -> Found %s total models"%(totmodels))
         else:
             print(" -> No viable executions found")
-    
-    if (totmodels > 0) and (not config.sat):
-        if config.verbosity > 0:
-            sys.stdout.write("Computing expected outputs... ")
-            sys.stdout.flush()
-
-        executions = None
-        jsexecs = []
         
-        with open(config.models, "r") as modelfile:
-            executions = parser.executions_from_string(modelfile.read())
+    # Generation of the JS litmus test #
+    jprinter = PrintersFactory.printer_by_name(config.jsprinter)
+    dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
+    dprinter.set_printing_relations(config.printing_relations)
 
-        if config.verbosity > 0:
-            sys.stdout.write("DONE\n")
-            sys.stdout.flush()
+    prefix = config.prefix
+    params = program.get_params()
+    models = config.models
+    for idparam in range(program.param_size()):
 
+        if program.params:
+            config.prefix = "%sparam%02d/"%(prefix, idparam+1)
+            config.generate_filenames()
+            program.apply_param(dict(params[idparam]))
+
+            if config.verbosity > 0:
+                print("\nParameter configuration %02d:"%(idparam+1))
+            
         if config.verbosity > 0:
             sys.stdout.write("Generating JS program... ")
             sys.stdout.flush()
-
-        # Generation of the JS litmus test #
-        jprinter = PrintersFactory.printer_by_name(config.jsprinter)
-        dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
-        dprinter.set_printing_relations(config.printing_relations)
-
-        print executions.program.param_size()
             
-        
         with open(config.jsprogram, "w") as f:
             f.write(jprinter.print_program(program))
 
@@ -249,42 +248,41 @@ def main(config):
             sys.stdout.write("DONE\n")
             sys.stdout.flush()
 
-        if config.verbosity > 0:
-            sys.stdout.write("Generating expected outputs... ")
-            sys.stdout.flush()
-            
-        with open(config.execs, "w") as exefile:
-            jsexecs = jprinter.compute_possible_executions(program, executions)
-            exefile.write("\n".join(jsexecs))
+        if (totmodels > 0) and (not config.sat):
+            if config.verbosity > 0:
+                sys.stdout.write("Generating expected outputs... ")
+                sys.stdout.flush()
 
-        if config.verbosity > 0:
-            sys.stdout.write("DONE\n")
-            sys.stdout.flush()
-            
-        # Generation of all possible outputs for the JS litmus test #
-        with open(config.execs, "w") as exefile:
-            jsexecs = jprinter.compute_possible_executions(program, executions)
-            exefile.write("\n".join(jsexecs))
+            executions = None
+            jsexecs = []
 
-        if config.verbosity > 0:
-            sys.stdout.write("Generating MM interpretations... ")
-            sys.stdout.flush()
-            
-        # Generation of all possible MM interpretations #
-        mms = dprinter.print_executions(program, executions)
-        for i in range(len(mms)):
-            with open(config.dots%(str(i+1)), "w") as dot:
-                dot.write(mms[i])
-            if config.graphviz:
-                with open(config.grap%(str(i+1)), "w") as dot:
-                    graphviz_gen(config.dots%(str(i+1)), config.grap%(str(i+1)))
+            with open(models, "r") as modelfile:
+                executions = parser.executions_from_string(modelfile.read())
 
-        if config.verbosity > 0:
-            sys.stdout.write("DONE\n")
-            sys.stdout.flush()
+            with open(config.execs, "w") as exefile:
+                jsexecs = jprinter.compute_possible_executions(program, executions)
+                exefile.write("\n".join(jsexecs))
 
-        if config.verbosity > 0:
-            print(" -> Found %s total possible outputs"%(len(jsexecs)))
+            # Generation of all possible outputs for the JS litmus test #
+            with open(config.execs, "w") as exefile:
+                jsexecs = jprinter.compute_possible_executions(program, executions)
+                exefile.write("\n".join(jsexecs))
+
+            # Generation of all possible MM interpretations #
+            mms = dprinter.print_executions(program, executions)
+            for i in range(len(mms)):
+                with open(config.dots%(str(i+1)), "w") as dot:
+                    dot.write(mms[i])
+                if config.graphviz:
+                    with open(config.grap%(str(i+1)), "w") as dot:
+                        graphviz_gen(config.dots%(str(i+1)), config.grap%(str(i+1)))
+
+            if config.verbosity > 0:
+                sys.stdout.write("DONE\n")
+                sys.stdout.flush()
+
+            if config.verbosity > 0:
+                print(" -> Found %s total possible outputs"%(len(jsexecs)))
             
     if (config.verbosity > 0):
         print("\nExiting...")

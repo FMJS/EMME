@@ -55,6 +55,10 @@ def parse_and_generate(example, valid):
         with open("%s/program.js"%example,"r") as f:
             a = f.read()
             b = jprog
+            if a != b:
+                print(example)
+                print(a)
+                print(b)
             assert a == b
 
         execsstr = open("%s/models.txt"%example,"r").read()
