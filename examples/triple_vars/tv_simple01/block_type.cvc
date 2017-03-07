@@ -1,1 +1,1 @@
-DATATYPE BLOCK_TYPE = y | z | x END;
+DATATYPE BLOCK_TYPE = x | z | y END;

@@ -449,6 +449,7 @@ class For_Loop(object):
         self.toind = toind
 
     def apply_param(self, pardic):
+
         pass
         
     def get_uevents(self):
@@ -502,6 +503,8 @@ class ITE_Statement(object):
     condition_name = None
     global_id_cond = 1
 
+    param_conds = None
+    
     OP_ITE = "ITE"
     B_THEN = "THEN"
     B_ELSE = "ELSE"
@@ -514,6 +517,7 @@ class ITE_Statement(object):
         self.then_events = None
         self.else_events = None
         self.condition_name = None
+        self.param_conds = None
 
     @staticmethod        
     def get_unique_condition():
@@ -525,7 +529,25 @@ class ITE_Statement(object):
     def reset_unique_names():
         ITE_Statement.global_id_cond = 1
 
+    def __switch_conditions(self):
+        if self.param_conds:
+            self.conditions = self.param_conds
+        else:
+            self.param_conds = self.conditions
+        
     def apply_param(self, pardic):
+        self.__switch_conditions()
+        loc_conds = []
+        for cond in self.conditions:
+            newcond = []
+            for el in cond:
+                if el in pardic:
+                    newcond.append(pardic[el])
+                else:
+                    newcond.append(el)
+            loc_conds.append(tuple(newcond))
+                    
+        self.conditions = loc_conds
         pass
         
     def append_condition(self, el1, op, el2):
@@ -609,13 +631,12 @@ class Memory_Event(object):
         if self.value in pardic:
             if self.is_wtear():
                 self.set_values_from_float(float(pardic[self.value]),\
-                                           int(self.offset), \
-                                           int(self.offset)+int(self.size))
+                                           self.address[0], \
+                                           self.address[-1])
             else:
                 self.set_values_from_int(float(pardic[self.value]),\
-                                         int(self.offset), \
-                                         int(self.offset)+int(self.size))
-            
+                                           self.address[0], \
+                                           self.address[-1])
                 
     @staticmethod        
     def reset_unique_names():
@@ -689,8 +710,8 @@ class Memory_Event(object):
         
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
-        size = (end-begin)+1
-        values = list(struct.pack(self.__get_int_type(size), int_value))
+        self.size = (end-begin)+1
+        values = list(struct.pack(self.__get_int_type(self.size), int_value))
         self.values = ([None] * begin) + values
 
         self.tear = NTEAR
@@ -699,8 +720,8 @@ class Memory_Event(object):
 
     def set_values_from_float(self, float_value, begin, end):
         self.offset = begin
-        size = (end-begin)+1
-        values = list(struct.pack(self.__get_float_type(size), float_value))
+        self.size = (end-begin)+1
+        values = list(struct.pack(self.__get_float_type(self.size), float_value))
         self.values = ([None] * begin) + values
 
         self.tear = WTEAR

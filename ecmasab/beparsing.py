@@ -44,6 +44,8 @@ T_INT32 = "-I32"
 T_INT8 = "-I8"
 T_LEQ = "<="
 T_LT = "<"
+T_OPE = "op_"
+T_VAL = "val_"
 T_MIN = "-"
 T_MUL = "*"
 T_NEW = "new"
@@ -78,6 +80,7 @@ P_LOAD = "load"
 P_OP = "operator"
 P_PRINT = "print"
 P_RANGE = "range"
+P_LIST = "list"
 P_READ = "read"
 P_SABASS = "sab-assign"
 P_SABDEF = "sabdef"
@@ -151,13 +154,16 @@ class BeParser(object):
         fvalue = Combine(ivalue + Optional(Literal(T_DOT) + Optional(ivalue)))
         nvalue = fvalue | ivalue
         strname = Word(alphas+nums+T_US)
-        parname = (Literal(T_LT) + Word(alphas+nums+T_US) + Literal(T_GT))(P_PARAM)
+        
+        parval = (Literal(T_LT) + Literal(T_VAL) + Word(alphas+nums+T_US) + Literal(T_GT))(P_PARAM)
+        parop = (Literal(T_LT) + Literal(T_OPE) + Word(alphas+nums+T_US) + Literal(T_GT))(P_PARAM)
+        
         varname = (strname)(P_VNAME)
 
         typeop = (Literal(T_FLO64) | Literal(T_FLO32) | Literal(T_INT8) | Literal(T_INT16) | Literal(T_INT32))(P_TYPEOP)
         sabname = varname + typeop
 
-        operand = nvalue | parname | strname
+        operand = nvalue | parval | strname
 
         signop = Literal(T_SUM) | Literal(T_MIN)
         multop = Literal(T_MUL) | Literal(T_DIV)
@@ -170,6 +176,7 @@ class BeParser(object):
         )
         
         nrange = (Word(nums) + T_DOTS + Word(nums))(P_RANGE)
+        nlist = (Literal(T_OSB) + Word(nums) + ZeroOrMore(T_CM + Word(nums)) + Literal(T_CSB))(P_LIST)
         addr = (T_OSB + expr + T_CSB)(P_ADDR)
         
         emptyline = (ZeroOrMore(White(' \t')) + LineEnd())(P_EMPTY)
@@ -196,18 +203,19 @@ class BeParser(object):
         floop = (Literal(T_FOR) + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
 
         op = (Literal(T_BEQ) | Literal(T_GEQ) | Literal(T_LEQ) | Literal(T_LT) | Literal(T_GT))(P_OP)
+        oplist = (Literal(T_OSB) + op + ZeroOrMore(T_CM + op) + Literal(T_CSB))(P_LIST)
 
-        lft_val = Group(sabread | nvalue).setResultsName(P_VLEFT)
-        rgt_val = Group(sabread | nvalue).setResultsName(P_VRIGHT)
+        lft_val = Group(sabread | nvalue | parval).setResultsName(P_VLEFT)
+        rgt_val = Group(sabread | nvalue | parval).setResultsName(P_VRIGHT)
         
-        bcond = ((lft_val) + op + (rgt_val))(P_BCOND)
+        bcond = ((lft_val) + (parop | op) + (rgt_val))(P_BCOND)
         ite = (Literal(T_IF) + T_OP + bcond + T_CP + T_OCB)(P_IF)
         els = (T_CCB + Literal(T_ELSE) + T_OCB)(P_ELSE)
 
         command = sabstore | sab_def | sabassign | threaddef | printv | floop | \
                   ite | els | closescope | comment | emptyline
 
-        pardef = (strname + T_EQ + nrange + T_SEMI)(P_PARAM)
+        pardef = (strname + T_EQ + (nrange | nlist | oplist) + T_SEMI)(P_PARAM)
         params = (Literal(T_PARAMS) + Literal(T_OCB))(P_PARAMS)
         
         return pardef | params | ZeroOrMore(command)
@@ -376,7 +384,7 @@ class BeParser(object):
         varsize = self.__get_var_size(command.typeop)
 
         address = None
-        
+
         try:
             addr = int(command.address[1])
             baddr = varsize*addr
@@ -385,7 +393,7 @@ class BeParser(object):
             varsize = eaddr+1
         except Exception:
             pass
-            
+
         if parametric:
             offset = list(command.address.asList())[1:]
             if ctype == P_SABASS:
@@ -403,7 +411,7 @@ class BeParser(object):
         if block_name not in blocks:
             raise ParsingErrorException("block \"%s\" is not defined"%(block_name))
         me.block = blocks[block_name]
-        
+
         blocks[block_name].update_size(varsize)
 
         if ctype == P_STORE:
@@ -481,7 +489,8 @@ class BeParser(object):
                     if ite or floop:
                         raise ParsingErrorException("ERROR (L%s): nested ifs, for-loops, or param are not yet supported"%(linenum))
                     param = True
-                    command.value = command.param[1]
+                    command.param = "".join(command.param[1:3])
+                    command.value = command.param
                     used_params.append(command.value)
 
                 if floop:
@@ -556,6 +565,11 @@ class BeParser(object):
                 condition = command.bcond
                 op = None
 
+                if P_PARAM in dict(command):
+                    command.param = "".join(command.param[1:3])
+                    command.operator = command.param
+                    used_params.append(command.param)
+                
                 ldict = dict(condition.vleft)
                 rdict = dict(condition.vright)
 
@@ -568,16 +582,24 @@ class BeParser(object):
                         lval = self.__gen_memory_event(condition.vleft, op, False, thread, blocks)
                     else:
                         lval = "".join(condition.vleft)
+                        if P_PARAM in ldict:
+                            lval = lval[1:-1]
+                            used_params.append(lval)
+
 
                     if len([k for k in rdict if k in (P_LOAD, P_ACCESS)]):
                         op = P_LOAD if P_LOAD in rdict else P_ACCESS
                         rval = self.__gen_memory_event(condition.vright, op, False, thread, blocks)
                     else:
                         rval = "".join(condition.vright)
+                        if P_PARAM in rdict:
+                            rval = rval[1:-1]
+                            used_params.append(rval)
                         
                 except ParsingErrorException as e:
                     if DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
+
 
                 ite.append_condition(lval, command.operator, rval)
 
@@ -586,7 +608,12 @@ class BeParser(object):
 
             elif command_name == P_PARAM:
                 params = True
-                values = range(int(command.range[0]), int(command.range[2])+1, 1)
+
+                if P_RANGE in dict(command):
+                    values = range(int(command.range[0]), int(command.range[2])+1, 1)
+                elif P_LIST in dict(command):
+                    values = [x for x in command.list[1:-1] if x != T_CM]
+
                 defined_params[command.param[0]] = values
 
             elif command_name == P_PARAMS:

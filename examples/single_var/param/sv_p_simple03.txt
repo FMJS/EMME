@@ -1,0 +1,20 @@
+// Single Variable ITE Simple 03
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  x-I8[0] = 1;
+  x-I8[0] = 2;
+}
+
+Thread t2 {
+  if (x-I8[0] <op_param1> x-I8[0]) {
+     print(x-I8[0]);
+  } else {
+     print(x-I8[0]);
+  }
+}
+
+
+Params {
+  op_param1 = [==,<];
+}

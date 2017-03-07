@@ -3,7 +3,7 @@ if (this.Worker) {
 var t1 =
 `onmessage = function(data) {
 var x = new Int8Array(data.x_sab); x[0] = 1;
-var x = new Int16Array(data.x_sab); x[0] = 0;
+var x = new Int8Array(data.x_sab); x[1] = 0;
 };`;
 var t2 =
 `onmessage = function(data) {
