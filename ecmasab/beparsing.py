@@ -270,6 +270,8 @@ class BeParser(object):
 
     def __populate_executions(self):
         execs = Executions()
+        if self.program:
+            self.program.expand_events()
         execs.program = self.program
         for model in self.models:
             execution = Execution()

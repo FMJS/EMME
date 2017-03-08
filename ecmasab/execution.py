@@ -308,7 +308,11 @@ class Program(object):
     def apply_param(self, pardic):
         for thread in self.threads:
             thread.apply_param(pardic)
-    
+
+    def expand_events(self):
+        for thread in self.threads:
+            thread.expand_events()
+            
     def get_params(self):
         if not self.params:
             return None
@@ -406,7 +410,11 @@ class Thread(object):
     def apply_param(self, pardic):
         for event in self.events:
             event.apply_param(pardic)
-    
+
+    def expand_events(self):
+        self.uevents = None
+        self.get_events(True)
+        
     def get_events(self, expand_loops, conditions=None):
         if not expand_loops:
             return self.events
@@ -459,13 +467,15 @@ class For_Loop(object):
         self.toind = toind
 
     def apply_param(self, pardic):
-        # for event in self.events:
-        #     event.apply_param(pardic)
-
-        for event in self.uevents:
+        for event in self.events:
             event.apply_param(pardic)
             
+        self.uevents = None
+        self.get_uevents()
+
     def get_uevents(self):
+        if self.uevents:
+            return self.uevents
         self.uevents = []
         self.__compute_events()
         return self.uevents
@@ -615,6 +625,7 @@ class Memory_Event(object):
     offset = None
     size = None
     value = None
+    pvalue = None
     id_ev = None
     en_conditions = None
     
@@ -631,6 +642,7 @@ class Memory_Event(object):
         self.offset = None
         self.size = None
         self.value = None
+        self.pvalue = None
         self.en_conditions = None
         self.info = None
         
@@ -639,23 +651,27 @@ class Memory_Event(object):
     def __repr__(self):
         return self.name
 
-    def apply_param(self, pardic, assign=False):
+    def apply_param(self, pardic):
+        if not self.pvalue:
+            self.pvalue = self.value
+        self.value = self.pvalue
         if self.value:
             assert(type(self.value) == list)
             value = []
             for x in range(len(self.value)):
                 val = self.value[x]
                 value.append(str(pardic[val]) if val in pardic else str(val))
-                if is_number(value):
-                    value = arit_eval("".join(value))
-                    if self.is_wtear():
-                        self.set_values_from_float(float(value),\
-                                                   self.address[0], \
-                                                   self.address[-1])
-                    else:
-                        self.set_values_from_int(float(value),\
-                                                   self.address[0], \
-                                                   self.address[-1])
+            self.value = value
+            if is_number(value):
+                value = arit_eval("".join(value))
+                if self.is_wtear():
+                    self.set_values_from_float(float(value),\
+                                               self.address[0], \
+                                               self.address[-1])
+                else:
+                    self.set_values_from_int(float(value),\
+                                               self.address[0], \
+                                               self.address[-1])
                 
     @staticmethod        
     def reset_unique_names():

@@ -3,7 +3,7 @@ if (this.Worker) {
 var t1 =
 `onmessage = function(data) {
 for(i = 0; i <= 1; i++){
-var x = new Float32Array(data.x_sab); x[i] = ['i', '+', 'val_param1'];
+var x = new Float32Array(data.x_sab); x[i] = i+2;
 }
 };`;
 var t2 =
