@@ -232,6 +232,7 @@ class BeParser(object):
         self.__populate_executions()
         
         if self.program:
+            self.program.expand_events()
             self.__compute_reads_values()
 
         return self.executions
@@ -270,8 +271,6 @@ class BeParser(object):
 
     def __populate_executions(self):
         execs = Executions()
-        if self.program:
-            self.program.expand_events()
         execs.program = self.program
         for model in self.models:
             execution = Execution()
@@ -504,14 +503,6 @@ class BeParser(object):
                         pname = command.value[i][1:-1]
                         command.value[i] = pname
                         used_params.append(pname)
-
-                # if P_PARAM in dict(command):
-                #     if ite or floop:
-                #         raise ParsingErrorException("ERROR (L%s): nested ifs, for-loops, or param are not yet supported"%(linenum))
-                #     param = True
-                #     command.param = "".join(command.param[1:3])
-                #     command.value = command.param
-                #     used_params.append(command.value)
                     
                 if floop:
                     param = True
