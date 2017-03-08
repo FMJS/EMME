@@ -98,6 +98,8 @@ def is_number(value):
     for el in value:
         if re.search('[a-zA-Z]', el):
             return False
+        if not len(el):
+            return False
     return True
 
 class Executions(object):
