@@ -449,7 +449,7 @@ class JSV8Printer(JSPrinter):
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
@@ -472,7 +472,7 @@ class JSV8Printer(JSPrinter):
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
@@ -743,7 +743,7 @@ class BePrinter(object):
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
@@ -763,7 +763,7 @@ class BePrinter(object):
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
