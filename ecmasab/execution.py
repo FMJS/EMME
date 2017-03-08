@@ -13,6 +13,7 @@ import ast
 import operator
 import sys
 import itertools
+import re
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -91,6 +92,13 @@ def arit_eval(s):
             raise Exception('Unsupported type {}'.format(node))
 
     return _eval(node.body)
+
+def is_number(value):
+    assert(type(value) == list)
+    for el in value:
+        if re.search('[a-zA-Z]', el):
+            return False
+    return True
 
 class Executions(object):
     program = None
@@ -490,15 +498,13 @@ class For_Loop(object):
                 if value:
                     value = [x.replace(self.cname,str(i)) for x in value]
                     me.value = value
-                try:
-                    if event.is_wtear():
-                        value = float(arit_eval("".join(value)))
-                        me.set_values_from_float(value, baddr, eaddr)
-                    else:
-                        value = int(arit_eval("".join(value)))
-                        me.set_values_from_int(value, baddr, eaddr)
-                except:
-                    pass
+                    if is_number(value):
+                        if event.is_wtear():
+                            value = float(arit_eval("".join(value)))
+                            me.set_values_from_float(value, baddr, eaddr)
+                        else:
+                            value = int(arit_eval("".join(value)))
+                            me.set_values_from_int(value, baddr, eaddr)
                 self.uevents.append(me)
 
 class ITE_Statement(object):
@@ -638,18 +644,16 @@ class Memory_Event(object):
             for x in range(len(self.value)):
                 val = self.value[x]
                 value.append(str(pardic[val]) if val in pardic else str(val))
-            try:
-                value = arit_eval("".join(value))
-                if self.is_wtear():
-                    self.set_values_from_float(float(value),\
-                                               self.address[0], \
-                                               self.address[-1])
-                else:
-                    self.set_values_from_int(float(value),\
-                                               self.address[0], \
-                                               self.address[-1])
-            except:
-                pass
+                if is_number(value):
+                    value = arit_eval("".join(value))
+                    if self.is_wtear():
+                        self.set_values_from_float(float(value),\
+                                                   self.address[0], \
+                                                   self.address[-1])
+                    else:
+                        self.set_values_from_int(float(value),\
+                                                   self.address[0], \
+                                                   self.address[-1])
                 
     @staticmethod        
     def reset_unique_names():
