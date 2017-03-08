@@ -237,7 +237,7 @@ def main(config):
             if config.verbosity > 0:
                 conf = params[idparam]
                 pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
-                print("\nParameter configuration (%02d): %s"%(idparam, (", ".join(pconf))))
+                print("\nParameter configuration (%02d): %s"%(idparam+1, (", ".join(pconf))))
             
         if config.verbosity > 0:
             sys.stdout.write("Generating JS program... ")

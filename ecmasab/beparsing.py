@@ -546,8 +546,7 @@ class BeParser(object):
 
                     for par in used_params:
                         program.add_param(par, defined_params[par])
-                    
-                    continue
+
                 else:
                     program.add_thread(thread)
                     thread = None
@@ -622,10 +621,10 @@ class BeParser(object):
                 defined_params[command.param[0]] = values
 
             elif command_name == P_PARAMS:
-                continue
+                pass
                 
             elif (command_name == P_COMMENT) or (command_name == P_EMPTY):
-                continue
+                pass
             else:
                 raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\" (%s)"%(linenum, " ".join(command), name))
 
