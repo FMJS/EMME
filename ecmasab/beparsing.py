@@ -155,7 +155,7 @@ class BeParser(object):
         nvalue = fvalue | ivalue
         strname = Word(alphas+nums+T_US)
         
-        parval = (Literal(T_LT) + Literal(T_VAL) + Word(alphas+nums+T_US) + Literal(T_GT))(P_PARAM)
+        parval = (Combine(Literal(T_LT) + Literal(T_VAL) + Word(alphas+nums+T_US) + Literal(T_GT)))(P_PARAM)
         parop = (Literal(T_LT) + Literal(T_OPE) + Word(alphas+nums+T_US) + Literal(T_GT))(P_PARAM)
         
         varname = (strname)(P_VNAME)
@@ -205,8 +205,8 @@ class BeParser(object):
         op = (Literal(T_BEQ) | Literal(T_GEQ) | Literal(T_LEQ) | Literal(T_LT) | Literal(T_GT))(P_OP)
         oplist = (Literal(T_OSB) + op + ZeroOrMore(T_CM + op) + Literal(T_CSB))(P_LIST)
 
-        lft_val = Group(sabread | nvalue | parval).setResultsName(P_VLEFT)
-        rgt_val = Group(sabread | nvalue | parval).setResultsName(P_VRIGHT)
+        lft_val = Group(sabread | expr).setResultsName(P_VLEFT)
+        rgt_val = Group(sabread | expr).setResultsName(P_VRIGHT)
         
         bcond = ((lft_val) + (parop | op) + (rgt_val))(P_BCOND)
         ite = (Literal(T_IF) + T_OP + bcond + T_CP + T_OCB)(P_IF)
@@ -415,20 +415,21 @@ class BeParser(object):
         blocks[block_name].update_size(varsize)
 
         if ctype == P_STORE:
-            value = "".join(command.value.asList()[1:][0])
+            value = command.value.asList()[1:][0]
         else:
-            value = "".join(command.value)
+            value = command.value
 
         if parametric:
-            me.set_param_value(varsize, value)
+            me.size = varsize
+            me.value = list(value)
             me.offset = offset
             me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
         elif operation == WRITE:
             try:
                 if self.__var_type_is_float(command.typeop):
-                    me.set_values_from_float(float(value), baddr, eaddr)
+                    me.set_values_from_float(float("".join(value)), baddr, eaddr)
                 if self.__var_type_is_int(command.typeop):
-                    me.set_values_from_int(int(value), baddr, eaddr)
+                    me.set_values_from_int(int("".join(value)), baddr, eaddr)
             except:
                 if DEBUG: raise
                 raise ParsingErrorException("value %s cannot be encoded into %s bytes"%(value, varsize))
@@ -483,25 +484,36 @@ class BeParser(object):
                 
             elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD]:
                 block_name = command.varname
-                param = False
-                
-                if P_PARAM in dict(command):
-                    if ite or floop:
-                        raise ParsingErrorException("ERROR (L%s): nested ifs, for-loops, or param are not yet supported"%(linenum))
-                    param = True
-                    command.param = "".join(command.param[1:3])
-                    command.value = command.param
-                    used_params.append(command.value)
 
-                if floop:
-                    param = True
-                    
                 if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
                 if self.__var_type_is_float(command.typeop) and (command_name in [P_STORE, P_LOAD]):
                     raise ParsingErrorException("ERROR (L%s): Atomic operations not support the float type"%linenum)
 
+                param = False
+
+                if type(command.value) == str:
+                    command.value = [command.value]
+                    
+                for i in range(len(command.value)):
+                    if T_VAL in command.value[i]:
+                        param = True
+                        pname = command.value[i][1:-1]
+                        command.value[i] = pname
+                        used_params.append(pname)
+
+                # if P_PARAM in dict(command):
+                #     if ite or floop:
+                #         raise ParsingErrorException("ERROR (L%s): nested ifs, for-loops, or param are not yet supported"%(linenum))
+                #     param = True
+                #     command.param = "".join(command.param[1:3])
+                #     command.value = command.param
+                #     used_params.append(command.value)
+                    
+                if floop:
+                    param = True
+                    
                 try:                
                     me = self.__gen_memory_event(command, command_name, param, thread, blocks)
                 except ParsingErrorException as e:

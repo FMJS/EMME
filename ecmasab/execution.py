@@ -449,13 +449,15 @@ class For_Loop(object):
         self.toind = toind
 
     def apply_param(self, pardic):
+        # for event in self.events:
+        #     event.apply_param(pardic)
 
-        pass
-        
+        for event in self.uevents:
+            event.apply_param(pardic)
+            
     def get_uevents(self):
-        if not self.uevents:
-            self.uevents = []
-            self.__compute_events()
+        self.uevents = []
+        self.__compute_events()
         return self.uevents
     
     def append(self, event):
@@ -484,16 +486,19 @@ class For_Loop(object):
                 me.ordering = event.ordering
                 me.address = address
                 me.block = event.block
-                
+
                 if value:
-                    value = value.replace(self.cname,str(i))
+                    value = [x.replace(self.cname,str(i)) for x in value]
+                    me.value = value
+                try:
                     if event.is_wtear():
-                        value = float(arit_eval(value))
+                        value = float(arit_eval("".join(value)))
                         me.set_values_from_float(value, baddr, eaddr)
                     else:
-                        value = int(arit_eval(value))
+                        value = int(arit_eval("".join(value)))
                         me.set_values_from_int(value, baddr, eaddr)
-
+                except:
+                    pass
                 self.uevents.append(me)
 
 class ITE_Statement(object):
@@ -548,7 +553,6 @@ class ITE_Statement(object):
             loc_conds.append(tuple(newcond))
                     
         self.conditions = loc_conds
-        pass
         
     def append_condition(self, el1, op, el2):
         self.conditions.append((el1,op,el2))
@@ -627,16 +631,25 @@ class Memory_Event(object):
     def __repr__(self):
         return self.name
 
-    def apply_param(self, pardic):
-        if self.value in pardic:
-            if self.is_wtear():
-                self.set_values_from_float(float(pardic[self.value]),\
-                                           self.address[0], \
-                                           self.address[-1])
-            else:
-                self.set_values_from_int(float(pardic[self.value]),\
-                                           self.address[0], \
-                                           self.address[-1])
+    def apply_param(self, pardic, assign=False):
+        if self.value:
+            assert(type(self.value) == list)
+            value = []
+            for x in range(len(self.value)):
+                val = self.value[x]
+                value.append(str(pardic[val]) if val in pardic else str(val))
+            try:
+                value = arit_eval("".join(value))
+                if self.is_wtear():
+                    self.set_values_from_float(float(value),\
+                                               self.address[0], \
+                                               self.address[-1])
+                else:
+                    self.set_values_from_int(float(value),\
+                                               self.address[0], \
+                                               self.address[-1])
+            except:
+                pass
                 
     @staticmethod        
     def reset_unique_names():
@@ -671,10 +684,6 @@ class Memory_Event(object):
 
     def is_init(self):
         return self.ordering == INIT
-    
-    def set_param_value(self, size, value):
-        self.size = size
-        self.value = value
 
     def set_values(self, values):
         self.offset = None
