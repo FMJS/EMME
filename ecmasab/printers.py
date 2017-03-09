@@ -36,6 +36,7 @@ class PrintersFactory(object):
         PrintersFactory.register_printer(CVC4Printer())
         PrintersFactory.register_printer(JSV8Printer())
         PrintersFactory.register_printer(JST262Printer())
+        PrintersFactory.register_printer(JSV8T262Printer())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
@@ -511,9 +512,8 @@ class JST262Printer(JSPrinter):
     float_app_js = ".toFixed(2)"
     float_pri_js = "%.2f"
 
-    waiting_time = 10
-    agent_prefix = "$"
-#    agent_prefix = "$262"
+    waiting_time = 0
+    agent_prefix = "$262"
     
     def print_executions(self, program, interps):
         return "\n".join(self.compute_possible_executions(program, interps))
@@ -740,6 +740,12 @@ class JST262Printer(JSPrinter):
                 return var_def+"\n"
             return "%s;\n"%("; ".join([var_def,mop]))
     
+
+class JSV8T262Printer(JST262Printer):
+    NAME = "JSV8-TEST262"
+
+    agent_prefix = "$"
+
 
 class DotPrinter(object):
     NAME = "DOT"

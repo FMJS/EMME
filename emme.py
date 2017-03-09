@@ -57,6 +57,7 @@ class Config(object):
     jsprinter = None
     printing_relations = None
     graphviz = None
+    jsdir = None
     
     model = None
     model_ex = None
@@ -83,6 +84,7 @@ class Config(object):
         self.jsprinter = None
         self.graphviz = None
         self.printing_relations = ",".join([RF,HB,SW])
+        self.jsdir = None
         
     def generate_filenames(self):
         if self.prefix:
@@ -101,6 +103,10 @@ class Config(object):
             if not os.path.exists(self.prefix):
                 os.makedirs(self.prefix)
 
+            if self.jsdir:
+                if not os.path.exists(self.jsdir):
+                    os.makedirs(self.jsdir)
+                
 
 def graphviz_gen(gfile, pngfile):
     command = "neato -Tpng -o%s %s"%(pngfile, gfile)
@@ -257,8 +263,12 @@ def main(config):
         if config.verbosity > 0:
             sys.stdout.write("Generating JS program... ")
             sys.stdout.flush()
+
+        jsprogram = config.jsprogram
+        if config.jsdir:
+            jsprogram = "%s/%s"%(config.jsdir, config.jsprogram.replace("/","-"))
             
-        with open(config.jsprogram, "w") as f:
+        with open(jsprogram, "w") as f:
             f.write(jprinter.print_program(program, executions))
 
         if config.verbosity > 0:
@@ -323,6 +333,10 @@ if __name__ == "__main__":
     parser.add_argument('-j', '--jsprinter', metavar='jsprinter', type=str, nargs='?',
                         help='select the JS printer between \"%s\". (Default is \"%s\")'%("|".join(jsprinters), djsprinter))
 
+    parser.set_defaults(jsdir=None)
+    parser.add_argument('-d', '--jsdir', metavar='jsdir', type=str, nargs='?',
+                        help='directory where to store all JS programs. (Default is the same as the input file)')
+    
     parser.set_defaults(verbosity=1)
     parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
                         help="verbosity level. (Default is \"%s\")"%1)
@@ -331,17 +345,14 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--only-sat', dest='check_sat', action='store_true',
                         help="performs only the satisfiability checking. (Default is \"%s\")"%False)
 
-
     parser.set_defaults(only_model=False)
     parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
                         help="exists right after the model generation. (Default is \"%s\")"%False)
-
 
     parser.set_defaults(skip_solving=False)
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
                         help="skips the solving part. (Default is \"%s\")"%False)
 
-    
     parser.set_defaults(expand_bounded_sets=True)
     parser.add_argument('-n','--no-exbounded', dest='expand_bounded_sets', action='store_false',
                         help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%True)
@@ -349,7 +360,7 @@ if __name__ == "__main__":
     parser.set_defaults(graphviz=False)
     parser.add_argument('-g', '--graphvis', dest='graphviz', action='store_true',
                         help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
-    
+
     parser.set_defaults(prefix=None)
     parser.add_argument('-p', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. (Default is the same as the input file)')
@@ -373,50 +384,41 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    inputfile = args.input_file
     prefix = args.prefix
-    cpp_preproc = args.cpp_preproc
-    only_model = args.only_model
     preproc = args.preproc
-    verbosity = args.verbosity
-    expand_bounded_sets = args.expand_bounded_sets
-    defines = args.defines
-    check_sat = args.check_sat
-    skip_solving = args.skip_solving
-    jsprinter = args.jsprinter
-    printing_relations = args.printing_relations
-    graphviz = args.graphviz
     
-    if cpp_preproc and (not preproc):
+    if args.cpp_preproc and (not preproc):
         preproc = CPP
 
     if not prefix:
-        prefix = inputfile.split("/")
+        prefix = args.input_file.split("/")
         prefix[-1] = prefix[-1].split(".")[0]
         prefix = "/".join(prefix)
         prefix += "/"
         
 
-    if not os.path.exists(inputfile):
-        print("File not found: \"%s\""%inputfile)
+    if not os.path.exists(args.input_file):
+        print("File not found: \"%s\""%args.input_file)
         sys.exit(1)
     
     config = Config()
-    config.inputfile = inputfile
+    config.inputfile = args.input_file
     config.prefix = prefix
     config.preproc = preproc
-    config.expand_bounded_sets = expand_bounded_sets
-    config.verbosity = verbosity
-    config.defines = defines
-    config.sat = check_sat
-    config.only_model = only_model
-    config.skip_solving = skip_solving
-    config.jsprinter = jsprinter
-    config.printing_relations = printing_relations
-    config.graphviz = graphviz
-    if printing_relations == ALL:
+    config.expand_bounded_sets = args.expand_bounded_sets
+    config.verbosity = args.verbosity
+    config.defines = args.defines
+    config.sat = args.check_sat
+    config.only_model = args.only_model
+    config.skip_solving = args.skip_solving
+    config.jsprinter = args.jsprinter
+    config.printing_relations = args.printing_relations
+    if args.printing_relations == ALL:
         config.printing_relations = None
 
+    config.graphviz = args.graphviz
+    config.jsdir = args.jsdir
+        
     try:
         main(config)
     except Exception as e:
