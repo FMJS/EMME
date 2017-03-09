@@ -238,13 +238,28 @@ def main(config):
                 conf = params[idparam]
                 pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
                 print("\nParameter configuration (%02d): %s"%(idparam+1, (", ".join(pconf))))
-            
+
+
+        executions = None
+        if (totmodels > 0) and (not config.sat):
+            if config.verbosity > 0:
+                sys.stdout.write("Computing expected outputs... ")
+                sys.stdout.flush()
+
+            with open(models, "r") as modelfile:
+                executions = parser.executions_from_string(modelfile.read())
+
+            if config.verbosity > 0:
+                sys.stdout.write("DONE\n")
+                sys.stdout.flush()
+                
+                
         if config.verbosity > 0:
             sys.stdout.write("Generating JS program... ")
             sys.stdout.flush()
             
         with open(config.jsprogram, "w") as f:
-            f.write(jprinter.print_program(program))
+            f.write(jprinter.print_program(program, executions))
 
         if config.verbosity > 0:
             sys.stdout.write("DONE\n")
@@ -255,11 +270,7 @@ def main(config):
                 sys.stdout.write("Generating expected outputs... ")
                 sys.stdout.flush()
 
-            executions = None
             jsexecs = []
-
-            with open(models, "r") as modelfile:
-                executions = parser.executions_from_string(modelfile.read())
 
             with open(config.execs, "w") as exefile:
                 jsexecs = jprinter.compute_possible_executions(program, executions)
@@ -310,54 +321,54 @@ if __name__ == "__main__":
 
     parser.set_defaults(jsprinter=djsprinter)
     parser.add_argument('-j', '--jsprinter', metavar='jsprinter', type=str, nargs='?',
-                        help='select the JS printer between \"%s\", default is \"%s\"'%("|".join(jsprinters), djsprinter))
+                        help='select the JS printer between \"%s\". (Default is \"%s\")'%("|".join(jsprinters), djsprinter))
 
     parser.set_defaults(verbosity=1)
     parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
-                        help="verbosity level, default is 1")
+                        help="verbosity level. (Default is \"%s\")"%1)
 
     parser.set_defaults(check_sat=False)
-    parser.add_argument('-s', dest='check_sat', action='store_true',
-                        help="performs only the satisfiability checking")
+    parser.add_argument('-s', '--only-sat', dest='check_sat', action='store_true',
+                        help="performs only the satisfiability checking. (Default is \"%s\")"%False)
 
 
     parser.set_defaults(only_model=False)
     parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
-                        help="exists right after the model generation")
+                        help="exists right after the model generation. (Default is \"%s\")"%False)
 
 
     parser.set_defaults(skip_solving=False)
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
-                        help="skips the solving part")
+                        help="skips the solving part. (Default is \"%s\")"%False)
 
     
     parser.set_defaults(expand_bounded_sets=True)
     parser.add_argument('-n','--no-exbounded', dest='expand_bounded_sets', action='store_false',
-                        help="disables the bounded sets quantifier expansion")
+                        help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%True)
 
     parser.set_defaults(graphviz=False)
     parser.add_argument('-g', '--graphvis', dest='graphviz', action='store_true',
-                        help="generates the png files of each execution (requires neato)")
+                        help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
     
     parser.set_defaults(prefix=None)
     parser.add_argument('-p', '--prefix', metavar='prefix', type=str, nargs='?',
-                        help='directory where to store the results. If none, it will be the same as the input file')
+                        help='directory where to store the results. (Default is the same as the input file)')
 
     parser.set_defaults(printing_relations=",".join([RF,HB,SW]))
     parser.add_argument('--printing-relations', metavar='printing_relations', type=str, nargs='?',
-                        help='the (comma separated) list of relations that have to be considered in the graphvis file')
+                        help='the (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
     
     parser.set_defaults(preproc=None)
     parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
-                        help='the memory model preprocessor, default is \"%s\"'%CPP)
+                        help='the memory model preprocessor. (Default is \"%s\")'%CPP)
 
     parser.set_defaults(defines=None)
     parser.add_argument('--defines', metavar='defines', type=str, nargs='?',
-                       help='the set of preprocessor\'s defines')
+                        help='the set of preprocessor\'s defines. (Default is none)')
     
     parser.set_defaults(cpp_preproc=True)
     parser.add_argument('--no-cpp', dest='cpp_preproc', action='store_false',
-                        help="disables the call of the cpp preprocessor")
+                        help="disables the call of the cpp preprocessor. (Default is \"%s\")"%True)
     
 
     args = parser.parse_args()
