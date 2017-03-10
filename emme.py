@@ -342,7 +342,7 @@ if __name__ == "__main__":
 
     parser.set_defaults(only_model=False)
     parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
-                        help="exists right after the model generation. (Default is \"%s\")"%False)
+                        help="exits right after the model generation. (Default is \"%s\")"%False)
 
     parser.set_defaults(debug=False)
     parser.add_argument('-d', '--debug', dest='debug', action='store_true',
