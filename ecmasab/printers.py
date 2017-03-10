@@ -686,6 +686,9 @@ class JST262Printer(JSPrinter):
         is_float = event.is_wtear()
         var_def = ""
         prt = ""
+
+        if (operation == WRITE) and (ordering == INIT):
+            return ""
         
         if (ordering != INIT):
             if is_float:
@@ -696,10 +699,6 @@ class JST262Printer(JSPrinter):
                 var_def = "var %s = new Int%sArray(data.%s)"%(block_name, \
                                                            block_size*8, \
                                                            block_name+"_sab")
-
-        if (operation == WRITE) and (ordering == INIT):
-            mop = None
-
 
         if (ordering == SC) and not is_float:
             if not event_address:
