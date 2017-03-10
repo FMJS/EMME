@@ -580,11 +580,9 @@ class JST262Printer(JSPrinter):
             ret += (ind*1)+"`);\n"
 
 
-        ret += "\n// MAIN Thread\n"
-            
         blocks = [(x.name, x.size) for x in program.get_blocks()]
         blocks.sort()
-        ret += "var data = {\n"
+        ret += "\nvar data = {\n"
         for sab in blocks:
             size = sab[1]
             if (size % 8) != 0:
@@ -593,25 +591,26 @@ class JST262Printer(JSPrinter):
         ret += "}\n"
 
         ret += "%s.agent.broadcast(data);\n"%self.agent_prefix
-        ret += "var res = [];\n"
+        ret += "var report = [];\n"
         
+        ret += "\n// MAIN Thread\n"
         for thread in program.threads:
             if thread.name != MAIN:
                 continue
             for ev in thread.get_events(True):
-                ret += self.print_event(ev, main=True)
+                ret += self.print_event(ev)
 
+        ret += "\n"
         if self.waiting_time > 0:
             ret += "%s.agent.sleep(%s);\n"%(self.agent_prefix, self.waiting_time)
-        ret += "var report;\n"
-
+        ret += "var thread_report;\n"
         ret += "var reports = 0;\n"
         ret += "while (true) {\n"
-        ret += (ind*1)+"report = %s.agent.getReport();\n"%self.agent_prefix
-        ret += (ind*1)+"if (report != null) {\n"
-        ret += (ind*2)+"for(var i=0; i < report.length; i++){\n"
-        ret += (ind*3)+"res.push(report[i]);\n"
-        ret += (ind*3)+"print(report[i]);\n"
+        ret += (ind*1)+"thread_report = %s.agent.getReport();\n"%self.agent_prefix
+        ret += (ind*1)+"if (thread_report != null) {\n"
+        ret += (ind*2)+"for(var i=0; i < thread_report.length; i++){\n"
+        ret += (ind*3)+"report.push(thread_report[i]);\n"
+        ret += (ind*3)+"print(thread_report[i]);\n"
         ret += (ind*2)+"}\n"
         ret += (ind*2)+"reports += 1;\n"
         ret += (ind*2)+"if (reports >= %s) break;\n"%(len(program.threads)-1)
@@ -619,8 +618,8 @@ class JST262Printer(JSPrinter):
         ret += "}\n\n"
         
         if executions:
-            ret += "res.sort();\n"
-            ret += "res = res.join(\";\");\n"
+            ret += "report.sort();\n"
+            ret += "report = report.join(\";\");\n"
 
             ret += "var ex = [];\n"
             i = 0
@@ -630,9 +629,10 @@ class JST262Printer(JSPrinter):
 
             ret += "var ok = false;\n"
             ret += "for(var i=0; i < ex.length; i++){\n"
-            ret += (ind*1)+"if (res == ex[i]) {\n"
-            ret += (ind*2)+"ok = true;\n"
-            ret += (ind*1)+"}\n"
+            ret += (ind*1)+"if (report == ex[i]) ok = true; break;\n"
+            # ret += (ind*1)+"if (report == ex[i]) {\n"
+            # ret += (ind*2)+"ok = true;\n"
+            # ret += (ind*1)+"}\n"
             ret += "}\n"
             ret += "assert(ok);\n"
 
@@ -647,7 +647,7 @@ class JST262Printer(JSPrinter):
                                                  floop.toind,
                                                  floop.cname)
         for ev in floop.events:
-            ret += (ind*3)+self.print_event(ev, postfix=floop.cname)
+            ret += (ind*3)+self.print_event(ev, floop.cname)
 
         ret += (ind*2)+"}\n"
 
@@ -677,7 +677,7 @@ class JST262Printer(JSPrinter):
 
         return ret
     
-    def print_event(self, event, postfix=None, main=False):
+    def print_event(self, event, postfix=None):
         operation = event.operation
         ordering = event.ordering
         block_name = event.block.name
@@ -688,11 +688,6 @@ class JST262Printer(JSPrinter):
         var_def = ""
         prt = ""
 
-        if main:
-            report = "res"
-        else:
-            report = "report"
-        
         if (operation == WRITE) and (ordering == INIT):
             return ""
         
@@ -725,9 +720,9 @@ class JST262Printer(JSPrinter):
                                                           block_name, \
                                                           addr)
                 if postfix:
-                    prt = report+".push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
                 else:
-                    prt = report+".push(\"%s: \"+%s)"%(event_name, event_name)
+                    prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
 
         if (ordering == UNORD) or is_float:
             if not event_address:
@@ -753,9 +748,9 @@ class JST262Printer(JSPrinter):
                                             addr)
 
                 if postfix:
-                    prt = report+".push(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
                 else:
-                    prt = report+".push(\"%s: \"+%s%s)"%(event_name, event_name, approx)
+                    prt = "report.push(\"%s: \"+%s%s)"%(event_name, event_name, approx)
 
         if operation == READ:
             return "%s;\n"%("; ".join([var_def,mop,prt]))
