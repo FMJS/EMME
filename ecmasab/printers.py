@@ -604,10 +604,11 @@ class JST262Printer(JSPrinter):
             ret += "%s.agent.sleep(%s);\n"%(self.agent_prefix, self.waiting_time)
         ret += "var thread_report;\n"
         ret += "var reports = 0;\n"
+        ret += "var i = 0;\n"
         ret += "while (true) {\n"
         ret += (ind*1)+"thread_report = %s.agent.getReport();\n"%self.agent_prefix
         ret += (ind*1)+"if (thread_report != null) {\n"
-        ret += (ind*2)+"for(var i=0; i < thread_report.length; i++){\n"
+        ret += (ind*2)+"for(i=0; i < thread_report.length; i++){\n"
         ret += (ind*3)+"report.push(thread_report[i]);\n"
         ret += (ind*3)+"print(thread_report[i]);\n"
         ret += (ind*2)+"}\n"
@@ -620,17 +621,13 @@ class JST262Printer(JSPrinter):
             ret += "report.sort();\n"
             ret += "report = report.join(\";\");\n"
 
-            ret += "var ex = [];\n"
+            ret += "var outputs = [];\n"
             i = 0
             for ex_out in self.compute_possible_executions(program, executions):
-                ret += "ex[%s] = \"%s\"\n"%(i, ex_out)
+                ret += "outputs[%s] = \"%s\";\n"%(i, ex_out)
                 i += 1
 
-            ret += "var ok = false;\n"
-            ret += "for(var i=0; i < ex.length; i++){\n"
-            ret += (ind*1)+"if (report == ex[i]) {ok = true; break;}\n"
-            ret += "}\n"
-            ret += "assert(ok);\n"
+            ret += "assert(-1 != outputs.indexOf(report));\n"
 
         return ret
 
