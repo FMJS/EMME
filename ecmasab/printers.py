@@ -14,8 +14,19 @@ from six.moves import range
 
 from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
-from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
+from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE
 from ecmasab.exceptions import UnreachableCodeException
+
+LICENSE = ""
+LICENSE += "// Copyright 2017 Cristian Mattarei\n"
+LICENSE += "//\n"
+LICENSE += "// Licensed under the modified BSD (3-clause BSD) License.\n"
+LICENSE += "//\n"
+LICENSE += "// Unless required by applicable law or agreed to in writing, software\n"
+LICENSE += "// distributed under the License is distributed on an \"AS IS\" BASIS,\n"
+LICENSE += "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"
+LICENSE += "// See the License for the specific language governing permissions and\n"
+LICENSE += "// limitations under the License.\n\n"
 
 
 class NotRegisteredPrinterException(Exception):
@@ -35,7 +46,8 @@ class PrintersFactory(object):
     def init_printers():
         PrintersFactory.register_printer(CVC4Printer())
         PrintersFactory.register_printer(JSV8Printer())
-        PrintersFactory.register_printer(JSSMPrinter())
+        PrintersFactory.register_printer(JST262Printer())
+        PrintersFactory.register_printer(JSV8T262Printer())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
@@ -74,7 +86,7 @@ class JSPrinter(object):
     def print_execution(self, program, interp):
         pass
     
-    def print_program(self, program):
+    def print_program(self, program, executions=None):
         pass
     
     def print_event(self, event):
@@ -94,6 +106,9 @@ class CVC4Printer(object):
 
         return "\n".join(ret)
 
+    def print_done(self):
+        return T_DONE
+    
     def print_assertions(self, interps):
         ret = []
         for interp in interps.executions:
@@ -326,10 +341,10 @@ class JSV8Printer(JSPrinter):
                 reads.append("%s: %s"%(el.name, value))
         return ";".join(reads)
 
-    def print_program(self, program):
+    def print_program(self, program, executions=None):
         program.sort_threads()
         
-        ret = ""
+        ret = LICENSE
         ret += "if (this.Worker) {\n"
         ret += "(function execution() {\n"
 
@@ -449,7 +464,7 @@ class JSV8Printer(JSPrinter):
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
@@ -472,7 +487,7 @@ class JSV8Printer(JSPrinter):
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
@@ -505,21 +520,247 @@ class JSV8Printer(JSPrinter):
             return "%s;\n"%("; ".join([var_def,mop]))
 
 
-class JSSMPrinter(JSPrinter):
-    NAME = "JS-SM"
+class JST262Printer(JSPrinter):
+    NAME = "JS-TEST262"
+
+    float_app_js = ".toFixed(2)"
+    float_pri_js = "%.2f"
+
+    waiting_time = 0
+    agent_prefix = "$262"
+
+    indent = "   "
     
     def print_executions(self, program, interps):
-        pass
+        return "\n".join(self.compute_possible_executions(program, interps))
 
+    def compute_possible_executions(self, program, interps):
+        ret = set([])
+        for interp in interps.get_coherent_executions():
+            ret.add(self.print_execution(program, interp))
+
+        return list(ret)
+    
     def print_execution(self, program, interp):
-        pass
+        reads = []
+        for el in interp.reads_values:
+            value = el.get_correct_value()
+            if el.is_wtear():
+                if (self.float_pri_js%value) == "-0.00":
+                    value = 0
+                reads.append(("%s: "+self.float_pri_js)%(el.name, value))
+            else:
+                reads.append("%s: %s"%(el.name, value))
+        return ";".join(reads)
+
+    def print_program(self, program, executions=None):
+        program.sort_threads()
+
+        ind = self.indent
+        
+        ret = LICENSE
+
+        for thread in program.threads:
+            if thread.name == MAIN:
+                continue
+            ret += "\n// Thread %s\n"%thread.name
+            ret += "%s.agent.start(\n"%self.agent_prefix
+            ret += (ind*1)+"`%s.agent.receiveBroadcast(function (data) {\n"%self.agent_prefix
+            ret += (ind*2)+"var report = [];\n"
+
+            for ev in thread.get_events(False):
+                if isinstance(ev, For_Loop):
+                    ret += self.print_floop(ev)
+                elif isinstance(ev, ITE_Statement):
+                    ret += self.print_ite(ev)
+                else:
+                    ret += (ind*2)+self.print_event(ev)
+
+            ret += (ind*2)+"%s.agent.report(report);\n"%self.agent_prefix
+            ret += (ind*2)+"%s.agent.leaving();\n"%self.agent_prefix
+            ret += (ind*1)+"})\n"
+            ret += (ind*1)+"`);\n"
+
+
+        blocks = [(x.name, x.size) for x in program.get_blocks()]
+        blocks.sort()
+        ret += "\nvar data = {\n"
+        for sab in blocks:
+            size = sab[1]
+            if (size % 8) != 0:
+                size = (int(size / 8)+1) * 8
+            ret += (ind*1)+"%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
+        ret += "}\n"
+
+        ret += "%s.agent.broadcast(data);\n"%self.agent_prefix
+        ret += "var report = [];\n"
+        
+        ret += "\n// MAIN Thread\n"
+        for thread in program.threads:
+            if thread.name != MAIN:
+                continue
+            for ev in thread.get_events(True):
+                ret += self.print_event(ev)
+
+        ret += "\n"
+        if self.waiting_time > 0:
+            ret += "%s.agent.sleep(%s);\n"%(self.agent_prefix, self.waiting_time)
+        ret += "var thread_report;\n"
+        ret += "var reports = 0;\n"
+        ret += "var i = 0;\n"
+        ret += "while (true) {\n"
+        ret += (ind*1)+"thread_report = %s.agent.getReport();\n"%self.agent_prefix
+        ret += (ind*1)+"if (thread_report != null) {\n"
+        ret += (ind*2)+"for(i=0; i < thread_report.length; i++){\n"
+        ret += (ind*3)+"report.push(thread_report[i]);\n"
+        ret += (ind*3)+"print(thread_report[i]);\n"
+        ret += (ind*2)+"}\n"
+        ret += (ind*2)+"reports += 1;\n"
+        ret += (ind*2)+"if (reports >= %s) break;\n"%(len(program.threads)-1)
+        ret += (ind*1)+"}\n"
+        ret += "}\n\n"
+        
+        if executions:
+            ret += "report.sort();\n"
+            ret += "report = report.join(\";\");\n"
+
+            ret += "var outputs = [];\n"
+            i = 0
+            for ex_out in self.compute_possible_executions(program, executions):
+                ret += "outputs[%s] = \"%s\";\n"%(i, ex_out)
+                i += 1
+
+            ret += "assert(-1 != outputs.indexOf(report));\n"
+
+        return ret
+
+    def print_floop(self, floop):
+        ind = self.indent
+        ret = ""
+        ret += (ind*2)+"for(%s = %s; %s <= %s; %s++){\n"%(floop.cname, \
+                                                 floop.fromind, \
+                                                 floop.cname, \
+                                                 floop.toind,
+                                                 floop.cname)
+        for ev in floop.events:
+            ret += (ind*3)+self.print_event(ev, floop.cname)
+
+        ret += (ind*2)+"}\n"
+
+        return ret
+
+    def print_ite(self, ite):
+        ind = self.indent
+        ret = ""
+
+        for cond in ite.conditions:
+            for i in [0,2]:
+                if isinstance(cond[i], Memory_Event):
+                    ret += (ind*2)+self.print_event(cond[i])
+
+        conditions = ["%s %s %s"%x for x in ite.conditions]
+        ret += (ind*2)+"if(%s) {\n"%(" AND ".join(conditions))
+
+        for ev in ite.then_events:
+            ret += (ind*3)+self.print_event(ev)
+
+        ret += (ind*2)+"} else {\n"
+            
+        for ev in ite.else_events:
+            ret += (ind*3)+self.print_event(ev)
+            
+        ret += (ind*2)+"}\n"
+
+        return ret
     
-    def print_program(self, program):
-        pass
+    def print_event(self, event, postfix=None):
+        operation = event.operation
+        ordering = event.ordering
+        block_name = event.block.name
+        event_name = event.name
+        event_address = event.address
+        block_size = event.get_size()
+        is_float = event.is_wtear()
+        var_def = ""
+        prt = ""
+
+        if (operation == WRITE) and (ordering == INIT):
+            return ""
+        
+        if (ordering != INIT):
+            if is_float:
+                var_def = "var %s = new Float%sArray(data.%s)"%(block_name, \
+                                                                  block_size*8, \
+                                                                  block_name+"_sab")
+            else:
+                var_def = "var %s = new Int%sArray(data.%s)"%(block_name, \
+                                                           block_size*8, \
+                                                           block_name+"_sab")
+
+        if (ordering == SC) and not is_float:
+            if not event_address:
+                addr = event.offset
+                event_values = "".join(event.value)
+            else:
+                addr = int(event_address[0]/block_size)
+                event_values = event.get_correct_value()
+
+            if operation == WRITE:
+                mop = "Atomics.store(%s, %s, %s)"%(block_name, \
+                                                        addr, \
+                                                        event_values)
+
+
+            if operation == READ:
+                mop = "%s = Atomics.load(%s, %s)"%(event_name, \
+                                                          block_name, \
+                                                          addr)
+                if postfix:
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
+                else:
+                    prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
+
+        if (ordering == UNORD) or is_float:
+            if not event_address:
+                addr = event.offset
+                event_values = "".join(event.value)
+            else:
+                addr = int(event_address[0]/block_size)
+                event_values = event.get_correct_value()
+                    
+            if operation == WRITE:
+                if is_float and event_address:
+                    event_values = self.float_pri_js%event_values
+
+                mop = ("%s[%s] = %s")%(block_name, \
+                                              addr, \
+                                              event_values)
+
+            if operation == READ:
+                approx = self.float_app_js if is_float else ""
+                    
+                mop = "%s = %s[%s]"%(event_name, \
+                                            block_name, \
+                                            addr)
+
+                if postfix:
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
+                else:
+                    prt = "report.push(\"%s: \"+%s%s)"%(event_name, event_name, approx)
+
+        if operation == READ:
+            return "%s;\n"%("; ".join([var_def,mop,prt]))
+        else:
+            if not mop:
+                return var_def+"\n"
+            return "%s;\n"%("; ".join([var_def,mop]))
     
-    def print_event(self, event):
-        pass
-    
+
+class JSV8T262Printer(JST262Printer):
+    NAME = "JSV8-TEST262"
+
+    agent_prefix = "$"
+
 
 class DotPrinter(object):
     NAME = "DOT"
@@ -743,7 +984,7 @@ class BePrinter(object):
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
@@ -763,7 +1004,7 @@ class BePrinter(object):
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
-                event_values = event.value
+                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()

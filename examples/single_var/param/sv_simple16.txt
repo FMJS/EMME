@@ -1,0 +1,19 @@
+// Single Variable Simple 16
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  Atomics.store(x-I8, 0, <val_param1>);
+  Atomics.store(x-I8, 1, <val_param1>);
+  Atomics.store(x-I8, 1, <val_param2>);
+  Atomics.store(x-I8, 2, <val_param2>);
+}
+
+Thread t2 {
+  print(Atomics.load(x-I32, 0));
+  print(Atomics.load(x-I16, 1));
+}
+
+Params {
+  val_param1 = 0,2,1;
+  val_param2 = 0,2,1;
+}

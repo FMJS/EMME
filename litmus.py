@@ -21,7 +21,7 @@ from six.moves import range
 K = "k"
 M = "M"
 
-def run_command(command, number):
+def run_command(command, number, silent):
 
     try:
         outputs_dic = {}
@@ -39,11 +39,11 @@ def run_command(command, number):
 
             if i > 0:
                 if (i%1000) == 0:
-                    sys.stdout.write('k')
+                    if not silent: sys.stdout.write('k')
                     sys.stdout.flush()
                 else:
                     if (i%100) == 0:
-                        sys.stdout.write('.')
+                        if not silent: sys.stdout.write('.')
                         sys.stdout.flush()
 
 
@@ -57,7 +57,7 @@ def run_command(command, number):
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
 
-def main(command, outputs, number, threads, percent):
+def main(command, outputs, number, threads, percent, silent):
 
     command = command.split(" ")
     outputs_dic = {}
@@ -102,10 +102,14 @@ def main(command, outputs, number, threads, percent):
     
         
     for i in range(num_t):
-        async_results.append(pool.apply_async(run_command, (command, number/num_t)))
+        async_results.append(pool.apply_async(run_command, (command, number/num_t, silent)))
 
+    if silent:
+        sys.stdout.write("Running (x%s) \"%s\"..."%(number, " ".join(command)))
+        sys.stdout.flush()
+        
     try:
-        print("Running...")
+        if not silent: print("Running...")
         time.sleep(5)
         
     except KeyboardInterrupt:
@@ -132,26 +136,33 @@ def main(command, outputs, number, threads, percent):
     results.sort()
     results.reverse()
 
-    sys.stdout.write('\n=== Results ===\n')
+    if not silent: sys.stdout.write('\n=== Results ===\n')
     sys.stdout.flush()
 
     for el in not_matched:
-        print("NOT MATCHED OUTPUT ERROR: \"%s\""%el)
+        if not silent: print("NOT MATCHED OUTPUT ERROR: \"%s\""%el)
                 
     matches = 0
     for result in results:
         if result[0] > 0:
             num = result[0] if not percent else float(float(result[0]*100)/float(number))
             if percent:
-                print("%.2f%%\t\"%s\""%(num, result[1]))
+                if not silent: print("%.2f%%\t\"%s\""%(num, result[1]))
             else:
-                print("%s\t\"%s\""%(num, result[1]))
+                if not silent: print("%s\t\"%s\""%(num, result[1]))
             matches += 1
 
     if percent:
-        print("Coverage: %.2f%%"%(float(float(matches*100)/float(len(results)))))
+        if not silent: print("Coverage: %.2f%%"%(float(float(matches*100)/float(len(results)))))
     else:
-        print("Coverage: %s/%s"%(matches, len(results)))
+        if not silent: print("Coverage: %s/%s"%(matches, len(results)))
+
+
+    if silent:
+        if len(not_matched) > 0:
+            print("FAIL")
+        else:
+            print("PASS")
 
             
 if __name__ == "__main__":
@@ -179,10 +190,15 @@ if __name__ == "__main__":
     parser.set_defaults(threads=1)
     parser.add_argument('-j', '--threads', metavar='number', type=int,
                        help='number of threads')
+
+    parser.set_defaults(silent=False)
+    parser.add_argument('-s', '--silent', dest='silent', action='store_true',
+                       help='show only PASS/FAIL')
     
     parser.set_defaults(percent=True)
-    parser.add_argument('-t', '--t', dest='percent', action='store_false',
-                       help='show total number of matches')
+    parser.add_argument('-t', '--total', dest='percent', action='store_false',
+                       help='show the total number of matches')
+
     
 
     args = parser.parse_args()
@@ -192,5 +208,6 @@ if __name__ == "__main__":
     number = args.number
     threads = args.threads
     percent = args.percent
-
-    main(command, outputs, number, threads, percent)
+    silent = args.silent
+    
+    main(command, outputs, number, threads, percent, silent)

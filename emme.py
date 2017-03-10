@@ -24,6 +24,8 @@ from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
 
+from ecmasab.logger import Logger
+
 
 FORMAL_MODEL = "./model/memory_model.cvc"
 
@@ -57,6 +59,8 @@ class Config(object):
     jsprinter = None
     printing_relations = None
     graphviz = None
+    jsdir = None
+    debug = None
     
     model = None
     model_ex = None
@@ -83,6 +87,8 @@ class Config(object):
         self.jsprinter = None
         self.graphviz = None
         self.printing_relations = ",".join([RF,HB,SW])
+        self.jsdir = None
+        self.debug = False
         
     def generate_filenames(self):
         if self.prefix:
@@ -98,6 +104,14 @@ class Config(object):
             self.execs = self.prefix+EXECS
             self.mm = FORMAL_MODEL
 
+            if not os.path.exists(self.prefix):
+                os.makedirs(self.prefix)
+
+            if self.jsdir:
+                if not os.path.exists(self.jsdir):
+                    os.makedirs(self.jsdir)
+                
+                    
 def graphviz_gen(gfile, pngfile):
     command = "neato -Tpng -o%s %s"%(pngfile, gfile)
     try:
@@ -111,32 +125,29 @@ def main(config):
     config.generate_filenames()
 
     parser = BeParser()
+    parser.DEBUG = DEBUG
+
+    logger = Logger(config.verbosity)
+    
     c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
 
     abspath = os.path.abspath(__file__)
     mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
 
-    if config.verbosity > 0:
-        print("** Running with path \"%s\" **\n"%(config.prefix))
+    logger.log("** Running with path \"%s\" **\n"%(config.prefix), 0)
 
     # Parsing of the bounded execution #
     with open(config.inputfile, "r") as f:
         program = parser.program_from_string(f.read())
 
-    if config.verbosity > 0:
-        sys.stdout.write("Generating bounded execution... ")
-        sys.stdout.flush()
+    logger.msg("Generating bounded execution... ", 0)
         
     if not os.path.exists(config.prefix):
         os.makedirs(config.prefix)
-        
-    if config.verbosity > 0:
-        sys.stdout.write("DONE\n")
-        sys.stdout.flush()
-        
-    if config.verbosity > 0:
-        sys.stdout.write("Generating SMT model... ")
-        sys.stdout.flush()
+
+    logger.log("DONE", 0)
+
+    logger.msg("Generating SMT model... ", 0)
 
     # Copy of Memory Model (CVC4) into the directory #
     with open(mm, "r") as inmm:
@@ -176,9 +187,7 @@ def main(config):
     with open(config.model_ex, "w") as f:
         f.write(strmodel)
 
-    if config.verbosity > 0:
-        sys.stdout.write("DONE\n")
-        sys.stdout.flush()
+    logger.log("DONE", 0)
 
     if config.only_model:
         sys.exit(0)
@@ -194,81 +203,95 @@ def main(config):
         c4solver.models_file = config.models
 
     totmodels = c4solver.get_models_size()
-        
-    if not config.skip_solving:
-        if config.verbosity > 0:
-            sys.stdout.write("Solving... ")
-            sys.stdout.flush()
+
+    if (not config.skip_solving) and (not c4solver.is_done()):
+        logger.msg("Solving... ", 0)
         
         if config.sat:
             totmodels = c4solver.solve_n(strmodel, 1)
         else:
             totmodels = c4solver.solve_all(strmodel)
 
-        if config.verbosity > 0:
-            sys.stdout.write("DONE\n")
-            sys.stdout.flush()
+        logger.log("DONE", 0)
 
-    if config.verbosity > 0:
-        if totmodels > 0:
-            print(" -> Found %s total models"%(totmodels))
-        else:
-            print(" -> No viable executions found")
-
-    if config.verbosity > 0:
-        sys.stdout.write("Generating JS program... ")
-        sys.stdout.flush()
+        if not config.debug:
+            os.remove(config.block_type)
+            os.remove(config.model)
+            os.remove(config.model_ex)
+            os.remove(config.id_type)
+            os.remove(config.instance)
+            
+    if totmodels > 0:
+        logger.log(" -> Found %s total models"%(totmodels), 0)
+    else:
+        logger.log(" -> No viable executions found", 0)
         
     # Generation of the JS litmus test #
     jprinter = PrintersFactory.printer_by_name(config.jsprinter)
     dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
     dprinter.set_printing_relations(config.printing_relations)
 
-    with open(config.jsprogram, "w") as f:
-        f.write(jprinter.print_program(program))
+    prefix = config.prefix
+    params = program.get_params()
+    models = config.models
+    for idparam in range(program.param_size()):
 
-    if config.verbosity > 0:
-        sys.stdout.write("DONE\n")
-        sys.stdout.flush()
-    
-    if (totmodels > 0) and (not config.sat):
-        if config.verbosity > 0:
-            sys.stdout.write("Generating expected outputs... ")
-            sys.stdout.flush()
+        if program.params:
+            config.prefix = "%sparam%03d/"%(prefix, idparam+1)
+            config.generate_filenames()
+            program.apply_param(dict(params[idparam]))
+
+            if config.verbosity > 0:
+                conf = params[idparam]
+                pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
+                logger.log("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))), 0)
+
 
         executions = None
-        jsexecs = []
+        if (totmodels > 0) and (not config.sat):
+            logger.msg("Computing expected outputs... ", 0)
+
+            with open(models, "r") as modelfile:
+                executions = parser.executions_from_string(modelfile.read(), program)
+                
+            logger.log("DONE", 0)
+                
+        logger.msg("Generating JS program... ", 0)
+
+        with open(config.jsprogram, "w") as f:
+            f.write(jprinter.print_program(program, executions))
         
-        with open(config.models, "r") as modelfile:
-            executions = parser.executions_from_string(modelfile.read())
-            
-        with open(config.execs, "w") as exefile:
-            jsexecs = jprinter.compute_possible_executions(program, executions)
-            exefile.write("\n".join(jsexecs))
-            
-        # Generation of all possible outputs for the JS litmus test #
-        with open(config.execs, "w") as exefile:
-            jsexecs = jprinter.compute_possible_executions(program, executions)
-            exefile.write("\n".join(jsexecs))
+        if config.jsdir:
+            jsprogram = "%s/%s"%(config.jsdir, config.jsprogram.replace("/","-"))
+            with open(jsprogram, "w") as f:
+                f.write(jprinter.print_program(program, executions))
 
-        # Generation of all possible MM interpretations #
-        mms = dprinter.print_executions(program, executions)
-        for i in range(len(mms)):
-            with open(config.dots%(str(i+1)), "w") as dot:
-                dot.write(mms[i])
-            if config.graphviz:
-                with open(config.grap%(str(i+1)), "w") as dot:
-                    graphviz_gen(config.dots%(str(i+1)), config.grap%(str(i+1)))
+        logger.log("DONE", 0)
 
-        if config.verbosity > 0:
-            sys.stdout.write("DONE\n")
-            sys.stdout.flush()
+        if (totmodels > 0) and (not config.sat):
+            logger.msg("Generating expected outputs... ", 0)
 
-        if config.verbosity > 0:
-            print(" -> Found %s total possible outputs"%(len(jsexecs)))
-            
-    if (config.verbosity > 0):
-        print("\nExiting...")
+            jsexecs = []
+
+            # Generation of all possible outputs for the JS litmus test #
+            with open(config.execs, "w") as exefile:
+                jsexecs = jprinter.compute_possible_executions(program, executions)
+                exefile.write("\n".join(jsexecs))
+
+            # Generation of all possible MM interpretations #
+            mms = dprinter.print_executions(program, executions)
+            for i in range(len(mms)):
+                with open(config.dots%(str(i+1)), "w") as dot:
+                    dot.write(mms[i])
+                if config.graphviz:
+                    with open(config.grap%(str(i+1)), "w") as dot:
+                        graphviz_gen(config.dots%(str(i+1)), config.grap%(str(i+1)))
+
+            logger.log("DONE", 0)
+
+            logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
+
+    logger.log("\nExiting...", 0)
         
         
 if __name__ == "__main__":
@@ -290,103 +313,101 @@ if __name__ == "__main__":
     djsprinter = JSV8Printer().NAME
 
     parser.set_defaults(jsprinter=djsprinter)
-    parser.add_argument('-j', '--jsprinter', metavar='jsprinter', type=str, nargs='?',
-                        help='select the JS printer between \"%s\", default is \"%s\"'%("|".join(jsprinters), djsprinter))
+    parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?',
+                        help='select the JS printer between \"%s\". (Default is \"%s\")'%("|".join(jsprinters), djsprinter))
 
-    parser.set_defaults(verbosity=1)
-    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
-                        help="verbosity level, default is 1")
-
-    parser.set_defaults(check_sat=False)
-    parser.add_argument('-s', dest='check_sat', action='store_true',
-                        help="performs only the satisfiability checking")
-
-
-    parser.set_defaults(only_model=False)
-    parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
-                        help="exists right after the model generation")
-
+    parser.set_defaults(jsdir=None)
+    parser.add_argument('-j', '--jsdir', metavar='jsdir', type=str, nargs='?',
+                        help='directory where to store all JS programs. (Default is the same as the input file)')
+ 
+    parser.set_defaults(graphviz=False)
+    parser.add_argument('-g', '--graphviz', dest='graphviz', action='store_true',
+                        help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
 
     parser.set_defaults(skip_solving=False)
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
-                        help="skips the solving part")
+                        help="skips the solving part. (Default is \"%s\")"%False)
 
+    parser.set_defaults(relations=",".join([RF,HB,SW]))
+    parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
+                        help='the (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
+    
+    parser.set_defaults(verbosity=1)
+    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
+                        help="verbosity level. (Default is \"%s\")"%1)
+    
+    parser.set_defaults(check_sat=False)
+    parser.add_argument('-s', '--only-sat', dest='check_sat', action='store_true',
+                        help="performs only the satisfiability checking. (Default is \"%s\")"%False)
+
+    parser.set_defaults(only_model=False)
+    parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
+                        help="exits right after the model generation. (Default is \"%s\")"%False)
+
+    parser.set_defaults(debug=False)
+    parser.add_argument('-d', '--debug', dest='debug', action='store_true',
+                        help="enables debugging setup. (Default is \"%s\")"%False)
     
     parser.set_defaults(expand_bounded_sets=True)
     parser.add_argument('-n','--no-exbounded', dest='expand_bounded_sets', action='store_false',
-                        help="disables the bounded sets quantifier expansion")
+                        help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%False)
 
-    parser.set_defaults(graphviz=False)
-    parser.add_argument('-g', '--graphvis', dest='graphviz', action='store_true',
-                        help="generates the png files of each execution (requires neato)")
-    
     parser.set_defaults(prefix=None)
-    parser.add_argument('-p', '--prefix', metavar='prefix', type=str, nargs='?',
-                        help='directory where to store the results. If none, it will be the same as the input file')
-
-    parser.set_defaults(printing_relations=",".join([RF,HB,SW]))
-    parser.add_argument('--printing-relations', metavar='printing_relations', type=str, nargs='?',
-                        help='the (comma separated) list of relations that have to be considered in the graphvis file')
+    parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
+                        help='directory where to store the results. (Default is the same as the input file)')
     
     parser.set_defaults(preproc=None)
     parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
-                        help='the memory model preprocessor, default is \"%s\"'%CPP)
+                        help='the memory model preprocessor. (Default is \"%s\")'%CPP)
 
     parser.set_defaults(defines=None)
     parser.add_argument('--defines', metavar='defines', type=str, nargs='?',
-                       help='the set of preprocessor\'s defines')
+                        help='the set of preprocessor\'s defines. (Default is none)')
     
     parser.set_defaults(cpp_preproc=True)
     parser.add_argument('--no-cpp', dest='cpp_preproc', action='store_false',
-                        help="disables the call of the cpp preprocessor")
+                        help="disables the call of the cpp preprocessor. (Default is \"%s\")"%False)
     
 
     args = parser.parse_args()
 
-    inputfile = args.input_file
     prefix = args.prefix
-    cpp_preproc = args.cpp_preproc
-    only_model = args.only_model
     preproc = args.preproc
-    verbosity = args.verbosity
-    expand_bounded_sets = args.expand_bounded_sets
-    defines = args.defines
-    check_sat = args.check_sat
-    skip_solving = args.skip_solving
-    jsprinter = args.jsprinter
-    printing_relations = args.printing_relations
-    graphviz = args.graphviz
     
-    if cpp_preproc and (not preproc):
+    if args.cpp_preproc and (not preproc):
         preproc = CPP
 
     if not prefix:
-        prefix = inputfile.split("/")
+        prefix = args.input_file.split("/")
         prefix[-1] = prefix[-1].split(".")[0]
         prefix = "/".join(prefix)
         prefix += "/"
-        
 
-    if not os.path.exists(inputfile):
-        print("File not found: \"%s\""%inputfile)
+    if not os.path.exists(args.input_file):
+        print("File not found: \"%s\""%args.input_file)
         sys.exit(1)
     
     config = Config()
-    config.inputfile = inputfile
+    config.inputfile = args.input_file
     config.prefix = prefix
     config.preproc = preproc
-    config.expand_bounded_sets = expand_bounded_sets
-    config.verbosity = verbosity
-    config.defines = defines
-    config.sat = check_sat
-    config.only_model = only_model
-    config.skip_solving = skip_solving
-    config.jsprinter = jsprinter
-    config.printing_relations = printing_relations
-    config.graphviz = graphviz
-    if printing_relations == ALL:
+    config.expand_bounded_sets = args.expand_bounded_sets
+    config.verbosity = args.verbosity
+    config.defines = args.defines
+    config.sat = args.check_sat
+    config.only_model = args.only_model
+    config.skip_solving = args.skip_solving
+    config.jsprinter = args.jsprinter
+    config.printing_relations = args.relations
+    if args.relations == ALL:
         config.printing_relations = None
 
+    config.graphviz = args.graphviz
+    config.jsdir = args.jsdir
+    config.debug = args.debug
+
+    DEBUG = config.debug
+    
     try:
         main(config)
     except Exception as e:

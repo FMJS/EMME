@@ -12,6 +12,8 @@ import struct
 import ast
 import operator
 import sys
+import itertools
+import re
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -91,13 +93,24 @@ def arit_eval(s):
 
     return _eval(node.body)
 
+def is_number(value):
+    assert(type(value) == list)
+    for el in value:
+        if re.search('[a-zA-Z]', el):
+            return False
+        if not len(el):
+            return False
+    return True
+
 class Executions(object):
     program = None
     executions = None
-
+    allexecs = None
+    
     def __init__(self):
         self.program = None
         self.executions = []
+        self.allexecs = False
 
     def add_execution(self, exe):
         if (not exe.program) and (self.program):
@@ -273,15 +286,65 @@ class Program(object):
     threads = []
     blocks = []
     conditions = None
+    params = None
     
     def __init__(self):
         self.threads = []
         self.blocks = []
         self.conditions = None
+        self.params = None
 
     def add_thread(self, thread):
         self.threads.append(thread)
 
+    def add_param(self, param, values):
+        if not self.params:
+            self.params = {}
+        self.params[param] = values
+
+    def param_size(self):
+        if not self.get_params():
+            return 1
+        return len(self.get_params())
+
+    def apply_param(self, pardic):
+        for thread in self.threads:
+            thread.apply_param(pardic)
+
+    def expand_events(self):
+        for thread in self.threads:
+            thread.expand_events()
+            
+    def get_params(self):
+        if not self.params:
+            return None
+
+        configs = []
+
+        for key in self.params:
+            param = []
+            for el in self.params[key]:
+                param.append([[key, el]])
+            configs.append(param)
+
+        ret = []
+        for el in configs:
+            ret = self.__combine_params(ret, el)
+
+        return ret
+            
+    def __combine_params(self, pl1, pl2):
+        if not pl1:
+            return pl2
+        if not pl2:
+            return pl1
+        ret = []
+        for p1 in  pl1:
+            for p2 in pl2:
+                ret.append(p1+p2)
+
+        return ret
+    
     def get_blocks(self):
         blocks = []
         for thread in self.threads:
@@ -353,6 +416,14 @@ class Thread(object):
                 conditions.append(event.condition_name)
         return list(set(conditions))
 
+    def apply_param(self, pardic):
+        for event in self.events:
+            event.apply_param(pardic)
+
+    def expand_events(self):
+        self.uevents = None
+        self.get_events(True)
+        
     def get_events(self, expand_loops, conditions=None):
         if not expand_loops:
             return self.events
@@ -404,10 +475,18 @@ class For_Loop(object):
         self.fromind = frind
         self.toind = toind
 
+    def apply_param(self, pardic):
+        for event in self.events:
+            event.apply_param(pardic)
+            
+        self.uevents = None
+        self.get_uevents()
+
     def get_uevents(self):
-        if not self.uevents:
-            self.uevents = []
-            self.__compute_events()
+        if self.uevents:
+            return self.uevents
+        self.uevents = []
+        self.__compute_events()
         return self.uevents
     
     def append(self, event):
@@ -436,16 +515,17 @@ class For_Loop(object):
                 me.ordering = event.ordering
                 me.address = address
                 me.block = event.block
-                
-                if value:
-                    value = value.replace(self.cname,str(i))
-                    if event.is_wtear():
-                        value = float(arit_eval(value))
-                        me.set_values_from_float(value, baddr, eaddr)
-                    else:
-                        value = int(arit_eval(value))
-                        me.set_values_from_int(value, baddr, eaddr)
 
+                if value:
+                    value = [x.replace(self.cname,str(i)) for x in value]
+                    me.value = value
+                    if is_number(value):
+                        if event.is_wtear():
+                            value = float(arit_eval("".join(value)))
+                            me.set_values_from_float(value, baddr, eaddr)
+                        else:
+                            value = int(arit_eval("".join(value)))
+                            me.set_values_from_int(value, baddr, eaddr)
                 self.uevents.append(me)
 
 class ITE_Statement(object):
@@ -454,7 +534,8 @@ class ITE_Statement(object):
     else_events = None
     condition_name = None
     global_id_cond = 1
-
+    pconditions = None
+    
     OP_ITE = "ITE"
     B_THEN = "THEN"
     B_ELSE = "ELSE"
@@ -467,6 +548,7 @@ class ITE_Statement(object):
         self.then_events = None
         self.else_events = None
         self.condition_name = None
+        self.pconditions = None
 
     @staticmethod        
     def get_unique_condition():
@@ -477,7 +559,29 @@ class ITE_Statement(object):
     @staticmethod        
     def reset_unique_names():
         ITE_Statement.global_id_cond = 1
-    
+        
+    def apply_param(self, pardic):
+        if not self.pconditions:
+            self.pconditions = self.conditions
+        self.conditions = self.pconditions
+        loc_conds = []
+        for cond in self.conditions:
+            newcond = []
+            for el in cond:
+                if el in pardic:
+                    newcond.append(pardic[el])
+                else:
+                    newcond.append(el)
+            loc_conds.append(tuple(newcond))
+
+        self.conditions = loc_conds
+
+        for el in self.then_events:
+            el.apply_param(pardic)
+
+        for el in self.else_events:
+            el.apply_param(pardic)
+            
     def append_condition(self, el1, op, el2):
         self.conditions.append((el1,op,el2))
         self.condition_name = "%s_cond"%(ITE_Statement.get_unique_condition())
@@ -531,6 +635,7 @@ class Memory_Event(object):
     offset = None
     size = None
     value = None
+    pvalue = None
     id_ev = None
     en_conditions = None
     
@@ -547,6 +652,7 @@ class Memory_Event(object):
         self.offset = None
         self.size = None
         self.value = None
+        self.pvalue = None
         self.en_conditions = None
         self.info = None
         
@@ -555,6 +661,28 @@ class Memory_Event(object):
     def __repr__(self):
         return self.name
 
+    def apply_param(self, pardic):
+        if not self.pvalue:
+            self.pvalue = self.value
+        self.value = self.pvalue
+        if self.value:
+            assert(type(self.value) == list)
+            value = []
+            for x in range(len(self.value)):
+                val = self.value[x]
+                value.append(str(pardic[val]) if val in pardic else str(val))
+            self.value = value
+            if is_number(value):
+                value = arit_eval("".join(value))
+                if self.is_wtear():
+                    self.set_values_from_float(float(value),\
+                                               self.address[0], \
+                                               self.address[-1])
+                else:
+                    self.set_values_from_int(float(value),\
+                                               self.address[0], \
+                                               self.address[-1])
+                
     @staticmethod        
     def reset_unique_names():
         Memory_Event.global_id_ev = 1
@@ -588,17 +716,18 @@ class Memory_Event(object):
 
     def is_init(self):
         return self.ordering == INIT
-    
-    def set_param_value(self, size, value):
-        self.size = size
-        self.value = value
-        
+
     def set_values(self, values):
         self.offset = None
         self.values = values
 
         self.block.update_size(len(values))
 
+    def get_values(self):
+        if self.is_init():
+            self.set_init_values()
+        return self.values
+        
     def get_size(self):
         if not self.size:
             self.size = len(self.address)
@@ -627,8 +756,8 @@ class Memory_Event(object):
         
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
-        size = (end-begin)+1
-        values = list(struct.pack(self.__get_int_type(size), int_value))
+        self.size = (end-begin)+1
+        values = list(struct.pack(self.__get_int_type(self.size), int_value))
         self.values = ([None] * begin) + values
 
         self.tear = NTEAR
@@ -637,8 +766,8 @@ class Memory_Event(object):
 
     def set_values_from_float(self, float_value, begin, end):
         self.offset = begin
-        size = (end-begin)+1
-        values = list(struct.pack(self.__get_float_type(size), float_value))
+        self.size = (end-begin)+1
+        values = list(struct.pack(self.__get_float_type(self.size), float_value))
         self.values = ([None] * begin) + values
 
         self.tear = WTEAR

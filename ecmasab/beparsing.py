@@ -9,6 +9,7 @@
 # limitations under the License.
 
 import copy
+import numpy
 from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
@@ -44,6 +45,8 @@ T_INT32 = "-I32"
 T_INT8 = "-I8"
 T_LEQ = "<="
 T_LT = "<"
+T_OPE = "op_"
+T_VAL = "val_"
 T_MIN = "-"
 T_MUL = "*"
 T_NEW = "new"
@@ -58,6 +61,8 @@ T_SUM = "+"
 T_THREAD = "Thread"
 T_US = "_"
 T_VAR = "var"
+T_PARAMS = "Params"
+T_DONE = "DONE"
 
 P_ACCESS = "access"
 P_ADDR = "address"
@@ -66,6 +71,8 @@ P_BCOND = "bcond"
 P_COMMENT = "comment"
 P_CSCOPE = "closescope"
 P_ELSE = "else"
+P_PARAM = "param"
+P_PARAMS = "params"
 P_EMPTY = "empty"
 P_EXPR = "expr"
 P_FLOOP = "floop"
@@ -75,6 +82,8 @@ P_LOAD = "load"
 P_OP = "operator"
 P_PRINT = "print"
 P_RANGE = "range"
+P_INTER = "interval"
+P_LIST = "list"
 P_READ = "read"
 P_SABASS = "sab-assign"
 P_SABDEF = "sabdef"
@@ -93,30 +102,18 @@ P_BIREL = "bi-relation"
 P_EMREL = "em-relation"
 P_TRREL = "tr-relation"
 
-DEBUG = False
-
 class ParsingErrorException(Exception):
     pass
 
 class BeParser(object):
-    program = None
     program_parser = None
-
-    executions = None
     execution_parser = None
     
-    commands = None
-    models = None
+    DEBUG = False
 
     def __init__(self):
         Memory_Event.reset_unique_names()
         ITE_Statement.reset_unique_names()
-
-        self.commands = []
-        self.models = []
-
-        self.program = None
-        self.executions = None
 
         self.program_parser = self.__init_program_parser()
         self.execution_parser = self.__init_execution_parser()
@@ -135,9 +132,10 @@ class BeParser(object):
         emrelation = (varname + T_EQ + T_OCB + (Empty()) + T_CCB)(P_EMREL)
 
         varassign = (T_OP + varname + T_EQ + varname + T_CP)(P_ASS)
-        
-        assign = trrelation | birelation | emrelation | varassign
-        
+
+        done = Literal(T_DONE)
+
+        assign = trrelation | birelation | emrelation | varassign | done
         assigns = assign + ZeroOrMore(T_AND + assign)
 
         return assigns
@@ -148,12 +146,16 @@ class BeParser(object):
         fvalue = Combine(ivalue + Optional(Literal(T_DOT) + Optional(ivalue)))
         nvalue = fvalue | ivalue
         strname = Word(alphas+nums+T_US)
+        
+        parval = (Combine(Literal(T_LT) + Literal(T_VAL) + Word(alphas+nums+T_US) + Literal(T_GT)))(P_PARAM)
+        parop = (Literal(T_LT) + Literal(T_OPE) + Word(alphas+nums+T_US) + Literal(T_GT))(P_PARAM)
+        
         varname = (strname)(P_VNAME)
 
         typeop = (Literal(T_FLO64) | Literal(T_FLO32) | Literal(T_INT8) | Literal(T_INT16) | Literal(T_INT32))(P_TYPEOP)
         sabname = varname + typeop
 
-        operand = nvalue | strname
+        operand = nvalue | parval | strname
 
         signop = Literal(T_SUM) | Literal(T_MIN)
         multop = Literal(T_MUL) | Literal(T_DIV)
@@ -165,7 +167,9 @@ class BeParser(object):
                                     (plusop, 2, opAssoc.LEFT),]
         )
         
-        nrange = (Word(nums) + T_DOTS + Word(nums))(P_RANGE)
+        interval = (Word(nums) + T_DOTS + Word(nums))(P_INTER)
+        nrange = (nvalue + T_CM + nvalue + T_CM + nvalue)(P_RANGE)
+        nlist = (Literal(T_OSB) + Word(nums) + ZeroOrMore(T_CM + Word(nums)) + Literal(T_CSB))(P_LIST)
         addr = (T_OSB + expr + T_CSB)(P_ADDR)
         
         emptyline = (ZeroOrMore(White(' \t')) + LineEnd())(P_EMPTY)
@@ -173,56 +177,61 @@ class BeParser(object):
 
         sab_def = (T_VAR + varname + T_EQ + T_NEW + T_SAB + T_OP + T_CP + T_SEMI)(P_SABDEF)
 
+        value = (expr)(P_VALUE)
+        
         ssaddr = (T_CM + expr)(P_ADDR)
-        ssval = (T_CM + expr)(P_VALUE)
-        sabstore = (T_ASTORE + T_OP + sabname + ssaddr + ssval + T_CP + T_SEMI)(P_STORE)
+        sabstore = (T_ASTORE + T_OP + sabname + ssaddr + T_CM + value + T_CP + T_SEMI)(P_STORE)
         
         sabaccess = (sabname + addr)(P_ACCESS)
         sabload  = (T_ALOAD + T_OP + sabname + ssaddr + T_CP)(P_LOAD)
 
         sabread = (sabload | sabaccess)
 
-        value = (expr)(P_VALUE)
         sabassign = (sabaccess + T_EQ + value + T_SEMI)(P_SABASS)
         printv = (T_PR + T_OP + sabread + T_CP + T_SEMI)(P_PRINT)
 
         threaddef = (T_THREAD + varname + Literal(T_OCB))(P_TRDB)
         closescope = (Literal(T_CCB))(P_CSCOPE)
 
-        floop = (Literal(T_FOR) + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
+        floop = (Literal(T_FOR) + T_OP + varname + T_EQ + interval + T_CP + T_OCB)(P_FLOOP)
 
         op = (Literal(T_BEQ) | Literal(T_GEQ) | Literal(T_LEQ) | Literal(T_LT) | Literal(T_GT))(P_OP)
+        oplist = (Literal(T_OSB) + op + ZeroOrMore(T_CM + op) + Literal(T_CSB))(P_LIST)
 
-        lft_val = Group(sabread | nvalue).setResultsName(P_VLEFT)
-        rgt_val = Group(sabread | nvalue).setResultsName(P_VRIGHT)
+        lft_val = Group(sabread | expr).setResultsName(P_VLEFT)
+        rgt_val = Group(sabread | expr).setResultsName(P_VRIGHT)
         
-        bcond = ((lft_val) + op + (rgt_val))(P_BCOND)
+        bcond = ((lft_val) + (parop | op) + (rgt_val))(P_BCOND)
         ite = (Literal(T_IF) + T_OP + bcond + T_CP + T_OCB)(P_IF)
         els = (T_CCB + Literal(T_ELSE) + T_OCB)(P_ELSE)
 
-        command = sabstore | sab_def | sabassign | threaddef | printv | floop | ite | els | closescope | comment | emptyline
+        command = sabstore | sab_def | sabassign | threaddef | printv | floop | \
+                  ite | els | closescope | comment | emptyline
 
-        return ZeroOrMore(command)
+        pardef = (strname + T_EQ + (interval | nrange | nlist | oplist) + T_SEMI)(P_PARAM)
+        params = (Literal(T_PARAMS) + Literal(T_OCB))(P_PARAMS)
+        
+        return pardef | params | ZeroOrMore(command)
 
         
     def program_from_string(self, strinput):
-        Memory_Event.reset_unique_names()
-        self.__parse_program(strinput)
-        self.__populate_program()
-        return self.program
+        self.__init__()
+        commands = self.__parse_program(strinput)
+        program = self.__populate_program(commands)
+        return program
 
-    def executions_from_string(self, strinput):
-        self.__parse_executions(strinput)
-        self.__populate_executions()
-        if self.program:
-            self.__compute_reads_values()
-        return self.executions
-
-
-    def __compute_reads_values(self):
-        executions = self.executions.executions
+    def executions_from_string(self, strinput, program=None):
+        (models, done) = self.__parse_executions(strinput)
+        executions = self.__populate_executions(models, program, done)
         
-        for exe in executions:
+        if program:
+            program.expand_events()
+            self.__compute_reads_values(executions)
+
+        return executions
+
+    def __compute_reads_values(self, executions):
+        for exe in executions.executions:
             events = exe.get_events()
             ev_map = dict((x.name, x) for x in events)
             read_evs = [x for x in events if x.is_read()]
@@ -232,28 +241,33 @@ class BeParser(object):
                 values = []
                 for i in read_event.address:
                     write_event = ev_map[rbf_map[(read_event.name, i)]]
-                    value = write_event.values[i]
+                    value = write_event.get_values()[i]
                     values.append(value)
                 new_read_event = copy.deepcopy(read_event)
                 new_read_event.set_values(values)
                 exe.add_read_values(new_read_event)
-
     
     def __parse_executions(self, strinput):
+        models = []
+        done = False
         for line in strinput.split(T_NL):
             if line == "": continue
+            if T_DONE in line:
+                done = True
+                continue
             rels = []
             for relation in line.split(T_AND):
                 if relation == "": continue
                 rels.append(self.execution_parser.parseString(relation))
-            self.models.append(rels)
+            models.append(rels)
 
-        return self
+        return (models, done)
 
-    def __populate_executions(self):
-        execs = Executions()
-        execs.program = self.program
-        for model in self.models:
+    def __populate_executions(self, models, program, done):
+        executions = Executions()
+        executions.allexecs = done
+        executions.program = program
+        for model in models:
             execution = Execution()
             for assign in model:
                 if assign.getName() == P_ASS:
@@ -269,10 +283,9 @@ class BeParser(object):
                         rel.add_tuple(self.__get_tuple(size, assign[i:i+size]))
 
                     self.__add_relation(execution, rel)
-            execs.add_execution(execution)
+            executions.add_execution(execution)
 
-        self.executions = execs
-
+        return executions
 
     def __add_relation(self, exe, rel):
 
@@ -301,18 +314,18 @@ class BeParser(object):
             return Relation.get_tr_tuple(ev1, ev2, addr)
 
         raise UnreachableCodeException()
-            
                 
     def __parse_program(self, strinput):
+        commands = []
         for line in strinput.split(T_NL):
             try:
                 pline = self.program_parser.parseString(line, parseAll=True)
             except ParseException:
-                if DEBUG: raise
-                raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(self.commands)+1, line.strip()))
-            self.commands.append(pline)
+                if self.DEBUG: raise
+                raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(commands)+1, line.strip()))
+            commands.append(pline)
 
-        return self
+        return commands
 
     def __get_var_size(self, typeop):
         if typeop == T_INT8:
@@ -365,18 +378,23 @@ class BeParser(object):
         block_name = command.varname
         varsize = self.__get_var_size(command.typeop)
 
-        if parametric:
-            address = None
-            offset = list(command.address.asList())[1:]
-            if ctype == P_SABASS:
-                offset = offset[:-1]
-            offset = "".join(offset[0])
-        else:
+        address = None
+        offset = None
+
+        try:
             addr = int(command.address[1])
             baddr = varsize*addr
             eaddr = (varsize*(addr+1))-1
             address = range(baddr, eaddr+1, 1)
             varsize = eaddr+1
+        except Exception:
+            pass
+
+        if parametric:
+            offset = list(command.address.asList())[1:]
+            if ctype == P_SABASS:
+                offset = offset[:-1]
+            offset = "".join(offset[0])
 
         me = Memory_Event()
 
@@ -389,47 +407,54 @@ class BeParser(object):
         if block_name not in blocks:
             raise ParsingErrorException("block \"%s\" is not defined"%(block_name))
         me.block = blocks[block_name]
-        
-        blocks[block_name].update_size(varsize)
 
-        if ctype == P_STORE:
-            value = "".join(command.value.asList()[1:][0])
-        else:
-            value = "".join(command.value)
+        blocks[block_name].update_size(varsize)
+        
+        for check_addr in [offset, address]:
+            if check_addr:
+                if T_VAL in str(check_addr):
+                    raise ParsingErrorException("Parametric address definition is not supported")
+
+
+        value = command.value            
 
         if parametric:
-            me.set_param_value(varsize, value)
+            me.size = varsize
+            me.value = list(value)
             me.offset = offset
             me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
         elif operation == WRITE:
             try:
                 if self.__var_type_is_float(command.typeop):
-                    me.set_values_from_float(float(value), baddr, eaddr)
+                    me.set_values_from_float(float("".join(value)), baddr, eaddr)
                 if self.__var_type_is_int(command.typeop):
-                    me.set_values_from_int(int(value), baddr, eaddr)
+                    me.set_values_from_int(int("".join(value)), baddr, eaddr)
             except:
-                if DEBUG: raise
+                if self.DEBUG: raise
                 raise ParsingErrorException("value %s cannot be encoded into %s bytes"%(value, varsize))
         else:
             pass
 
         return me
 
-    def __populate_program(self):
+    def __populate_program(self, commands):
         program = Program()
         thread = Thread(MAIN)
         floop = None
+        params = False
+        used_params = []
+        defined_params = {}
         ite = None
         blocks = {}
         sab_defs = []
         linenum = 0
         name = ""
-        while len(self.commands):
+        while len(commands):
             linenum += 1
-            command = self.commands[0]
-            self.commands = self.commands[1:]
+            command = commands[0]
+            commands = commands[1:]
             command_name = command.getName()
-            
+
             if command_name == P_TRDB:
                 thread_name = command[1]
                 if thread:
@@ -465,12 +490,26 @@ class BeParser(object):
                 if self.__var_type_is_float(command.typeop) and (command_name in [P_STORE, P_LOAD]):
                     raise ParsingErrorException("ERROR (L%s): Atomic operations not support the float type"%linenum)
 
-                try:                
-                    me = self.__gen_memory_event(command, command_name, floop, thread, blocks)
-                except ParsingErrorException as e:
-                    if DEBUG: raise
-                    raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
+                param = False
 
+                if type(command.value) == str:
+                    command.value = [command.value]
+
+                for i in range(len(command.value)):
+                    if T_VAL in command.value[i]:
+                        param = True
+                        pname = command.value[i][1:-1]
+                        command.value[i] = pname
+                        used_params.append(pname)
+                    
+                if floop:
+                    param = True
+
+                try:                
+                    me = self.__gen_memory_event(command, command_name, param, thread, blocks)
+                except ParsingErrorException as e:
+                    if self.DEBUG: raise
+                    raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
 
                 if floop:
                     floop.append(me)
@@ -484,10 +523,10 @@ class BeParser(object):
 
             elif command_name == P_PRINT:
                 if command.access:
-                    self.commands.insert(0, command.access)
+                    commands.insert(0, command.access)
 
                 if command.load:
-                    self.commands.insert(0, command.load)
+                    commands.insert(0, command.load)
                 
             elif command_name == P_CSCOPE:
                 if floop:
@@ -497,6 +536,15 @@ class BeParser(object):
                 elif ite:
                     thread.append(ite)
                     ite = None
+                elif params:
+                    params = False
+                    diff = set(used_params) - set([x for x in defined_params])
+                    if len(diff):
+                        raise ParsingErrorException("ERROR: parameters not defined \"%s\""%(", ".join(list(diff))))
+
+                    for par in used_params:
+                        program.add_param(par, defined_params[par])
+
                 else:
                     program.add_thread(thread)
                     thread = None
@@ -506,8 +554,8 @@ class BeParser(object):
                     raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not yet supported"%(linenum))
                 
                 floop = For_Loop()
-                frind = int(command.range[0])
-                toind = int(command.range[2])
+                frind = int(command.interval[0])
+                toind = int(command.interval[2])
                 cname = command.varname
                 floop.set_values(cname, frind, toind)
             
@@ -519,6 +567,11 @@ class BeParser(object):
                 condition = command.bcond
                 op = None
 
+                if P_PARAM in dict(command):
+                    command.param = "".join(command.param[1:3])
+                    command.operator = command.param
+                    used_params.append(command.param)
+                
                 ldict = dict(condition.vleft)
                 rdict = dict(condition.vright)
 
@@ -531,31 +584,55 @@ class BeParser(object):
                         lval = self.__gen_memory_event(condition.vleft, op, False, thread, blocks)
                     else:
                         lval = "".join(condition.vleft)
+                        if P_PARAM in ldict:
+                            lval = lval[1:-1]
+                            used_params.append(lval)
+
 
                     if len([k for k in rdict if k in (P_LOAD, P_ACCESS)]):
                         op = P_LOAD if P_LOAD in rdict else P_ACCESS
                         rval = self.__gen_memory_event(condition.vright, op, False, thread, blocks)
                     else:
                         rval = "".join(condition.vright)
+                        if P_PARAM in rdict:
+                            rval = rval[1:-1]
+                            used_params.append(rval)
                         
                 except ParsingErrorException as e:
-                    if DEBUG: raise
+                    if self.DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
+
 
                 ite.append_condition(lval, command.operator, rval)
 
             elif command_name == P_ELSE:
                 ite.else_events = []
-            
+
+            elif command_name == P_PARAM:
+                params = True
+
+                if P_INTER in dict(command):
+                    values = range(int(command.interval[0]), int(command.interval[2])+1, 1)
+                elif P_RANGE in dict(command):
+                    start = float(command.range[0])
+                    end = float(command.range[2])
+                    step = float(command.range[4])
+                    values = [float(x) for x in numpy.arange(start, end+step, step) if x <=end]
+                elif P_LIST in dict(command):
+                    values = [x for x in command.list[1:-1] if x != T_CM]
+
+                defined_params[command.param[0]] = values
+
+            elif command_name == P_PARAMS:
+                pass
+                
             elif (command_name == P_COMMENT) or (command_name == P_EMPTY):
-                continue
+                pass
             else:
                 raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\" (%s)"%(linenum, " ".join(command), name))
 
         for sdef in sab_defs:
             sdef.set_init_values()
-
-        self.program = program
 
         return program
 

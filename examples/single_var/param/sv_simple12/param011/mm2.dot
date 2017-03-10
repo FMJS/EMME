@@ -1,0 +1,23 @@
+digraph memory_model {
+rankdir=LR;
+splines=true; esep=0.5;
+id2_W_t1 -> id3_W_t1 [label = "HB", color="black"];
+id4_W_t2 -> id5_W_t2 [label = "HB", color="black"];
+id6_R_t3 -> id7_R_t3 [label = "HB", color="black"];
+id1_W_main -> id2_W_t1 [label = "HB", color="black"];
+id1_W_main -> id4_W_t2 [label = "HB", color="black"];
+id1_W_main -> id6_R_t3 [label = "HB", color="black"];
+id4_W_t2 -> id6_R_t3 [label = "HB", color="black"];
+id4_W_t2 -> id7_R_t3 [label = "HB", color="black"];
+id6_R_t3 -> id1_W_main [label = "RF", color="red"];
+id6_R_t3 -> id4_W_t2 [label = "RF", color="red"];
+id7_R_t3 -> id1_W_main [label = "RF", color="red"];
+id1_W_main -> id7_R_t3 [label = "SW", color="blue"];
+id1_W_main [label=<id1_W_main<br/><B>x-init := 0</B>>, pos="5.0,4!"]
+id2_W_t1 [label=<id2_W_t1<br/><B>x-F32[0] := 0.00</B>>, pos="0,2!"]
+id3_W_t1 [label=<id3_W_t1<br/><B>x-F32[4] := 0.00</B>>, pos="0,0!"]
+id4_W_t2 [label=<id4_W_t2<br/><B>x-F32[4] := 1.00</B>>, pos="5,2!"]
+id5_W_t2 [label=<id5_W_t2<br/><B>x-F32[8] := 1.00</B>>, pos="5,0!"]
+id6_R_t3 [label=<id6_R_t3<br/><B>x-F64[0] = 0.01</B>>, pos="10,2!"]
+id7_R_t3 [label=<id7_R_t3<br/><B>x-F32[0] = 0.00</B>>, pos="10,0!"]
+}
