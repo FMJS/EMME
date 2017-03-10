@@ -26,7 +26,7 @@ LICENSE += "// Unless required by applicable law or agreed to in writing, softwa
 LICENSE += "// distributed under the License is distributed on an \"AS IS\" BASIS,\n"
 LICENSE += "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"
 LICENSE += "// See the License for the specific language governing permissions and\n"
-LICENSE += "// limitations under the License.\n"
+LICENSE += "// limitations under the License.\n\n"
 
 
 class NotRegisteredPrinterException(Exception):
@@ -525,6 +525,8 @@ class JST262Printer(JSPrinter):
 
     waiting_time = 0
     agent_prefix = "$262"
+
+    indent = "   "
     
     def print_executions(self, program, interps):
         return "\n".join(self.compute_possible_executions(program, interps))
@@ -550,17 +552,19 @@ class JST262Printer(JSPrinter):
 
     def print_program(self, program, executions=None):
         program.sort_threads()
+
+        ind = self.indent
         
         ret = LICENSE
 
         for thread in program.threads:
             if thread.name == MAIN:
                 continue
-            ret += "// Thread %s\n"%thread.name
+            ret += "\n// Thread %s\n"%thread.name
             ret += "%s.agent.start(\n"%self.agent_prefix
-            ret += "`\n"
-            ret += "%s.agent.receiveBroadcast(function (data) {\n"%self.agent_prefix
-            ret += "var report = [];\n"
+            ret += (ind*1)+"`\n"
+            ret += (ind*1)+"%s.agent.receiveBroadcast(function (data) {\n"%self.agent_prefix
+            ret += (ind*2)+"var report = [];\n"
 
             for ev in thread.get_events(False):
                 if isinstance(ev, For_Loop):
@@ -568,14 +572,16 @@ class JST262Printer(JSPrinter):
                 elif isinstance(ev, ITE_Statement):
                     ret += self.print_ite(ev)
                 else:
-                    ret += self.print_event(ev)
+                    ret += (ind*2)+self.print_event(ev)
 
-            ret += "%s.agent.report(report);\n"%self.agent_prefix
-            ret += "%s.agent.leaving();\n"%self.agent_prefix
-            ret += "})\n"
-            ret += "`);\n"
+            ret += (ind*2)+"%s.agent.report(report);\n"%self.agent_prefix
+            ret += (ind*2)+"%s.agent.leaving();\n"%self.agent_prefix
+            ret += (ind*1)+"})\n"
+            ret += (ind*1)+"`);\n"
 
 
+        ret += "\n// MAIN Thread\n"
+            
         blocks = [(x.name, x.size) for x in program.get_blocks()]
         blocks.sort()
         ret += "var data = {\n"
@@ -583,7 +589,7 @@ class JST262Printer(JSPrinter):
             size = sab[1]
             if (size % 8) != 0:
                 size = (int(size / 8)+1) * 8
-            ret += "%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
+            ret += (ind*1)+"%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
         ret += "}\n"
 
         for thread in program.threads:
@@ -600,15 +606,15 @@ class JST262Printer(JSPrinter):
 
         ret += "var reports = 0;\n"
         ret += "while (true) {\n"
-        ret += "report = %s.agent.getReport();\n"%self.agent_prefix
-        ret += "if (report != null) {\n"
-        ret += "for(var i=0; i < report.length; i++){\n"
-        ret += "res.push(report[i]);\n"
-        ret += "print(report[i]);\n"
-        ret += "}\n"
-        ret += "reports += 1;\n"
-        ret += "if (reports >= %s) break;\n"%(len(program.threads)-1)
-        ret += "}\n"
+        ret += (ind*1)+"report = %s.agent.getReport();\n"%self.agent_prefix
+        ret += (ind*1)+"if (report != null) {\n"
+        ret += (ind*2)+"for(var i=0; i < report.length; i++){\n"
+        ret += (ind*3)+"res.push(report[i]);\n"
+        ret += (ind*3)+"print(report[i]);\n"
+        ret += (ind*2)+"}\n"
+        ret += (ind*2)+"reports += 1;\n"
+        ret += (ind*2)+"if (reports >= %s) break;\n"%(len(program.threads)-1)
+        ret += (ind*1)+"}\n"
         ret += "}\n"
         
         if executions:
@@ -616,55 +622,57 @@ class JST262Printer(JSPrinter):
             ret += "res = res.join(\";\");\n"
 
             ret += "var ex = [];\n"
-            ind = 0
+            i = 0
             for ex_out in self.compute_possible_executions(program, executions):
-                ret += "ex[%s] = \"%s\"\n"%(ind, ex_out)
-                ind += 1
+                ret += "ex[%s] = \"%s\"\n"%(i, ex_out)
+                i += 1
 
             ret += "var ok = false;\n"
             ret += "for(var i=0; i < ex.length; i++){\n"
-            ret += "if (res == ex[i]) {\n"
-            ret += "ok = true;\n"
-            ret += "}\n"
+            ret += (ind*1)+"if (res == ex[i]) {\n"
+            ret += (ind*2)+"ok = true;\n"
+            ret += (ind*1)+"}\n"
             ret += "}\n"
             ret += "assert(ok);\n"
 
         return ret
 
     def print_floop(self, floop):
+        ind = self.indent
         ret = ""
-        ret += "for(%s = %s; %s <= %s; %s++){\n"%(floop.cname, \
+        ret += (ind*2)+"for(%s = %s; %s <= %s; %s++){\n"%(floop.cname, \
                                                  floop.fromind, \
                                                  floop.cname, \
                                                  floop.toind,
                                                  floop.cname)
         for ev in floop.events:
-            ret += self.print_event(ev, floop.cname)
+            ret += (ind*3)+self.print_event(ev, floop.cname)
 
-        ret += "}\n"
+        ret += (ind*2)+"}\n"
 
         return ret
 
     def print_ite(self, ite):
+        ind = self.indent
         ret = ""
 
         for cond in ite.conditions:
-            for ind in [0,2]:
-                if isinstance(cond[ind], Memory_Event):
-                    ret += self.print_event(cond[ind])
+            for i in [0,2]:
+                if isinstance(cond[i], Memory_Event):
+                    ret += (ind*2)+self.print_event(cond[i])
 
         conditions = ["%s %s %s"%x for x in ite.conditions]
-        ret += "if(%s) {\n"%(" AND ".join(conditions))
+        ret += (ind*2)+"if(%s) {\n"%(" AND ".join(conditions))
 
         for ev in ite.then_events:
-            ret += self.print_event(ev)
+            ret += (ind*3)+self.print_event(ev)
 
-        ret += "} else {\n"
+        ret += (ind*2)+"} else {\n"
             
         for ev in ite.else_events:
-            ret += self.print_event(ev)
+            ret += (ind*3)+self.print_event(ev)
             
-        ret += "}\n"
+        ret += (ind*2)+"}\n"
 
         return ret
     
