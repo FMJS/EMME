@@ -1,6 +1,6 @@
 import sys
 
-class Logger():
+class Logger(object):
     verbosity = 0
     
     def __init__(self, verbosity):

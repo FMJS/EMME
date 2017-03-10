@@ -12,7 +12,6 @@ import struct
 import ast
 import operator
 import sys
-import itertools
 import re
 from six.moves import range
 

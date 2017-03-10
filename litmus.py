@@ -21,6 +21,23 @@ from six.moves import range
 K = "k"
 M = "M"
 
+class Config(object):
+    command = None
+    outputs = None
+    number = None
+    threads = None
+    percent = None
+    silent = None
+
+    def __init__(self):
+        self.command = None
+        self.outputs = None
+        self.number = None
+        self.threads = None
+        self.percent = None
+        self.silent = None
+    
+
 def run_command(command, number, silent):
 
     try:
@@ -57,9 +74,15 @@ def run_command(command, number, silent):
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
 
-def main(command, outputs, number, threads, percent, silent):
+def main(config):
 
-    command = command.split(" ")
+    command = config.command.split(" ")
+    outputs = config.outputs
+    number = config.number
+    threads = config.threads
+    percent = config.percent
+    silent = config.silent
+    
     outputs_dic = {}
 
     factor = 1
@@ -203,11 +226,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    command = args.command
-    outputs = args.outputs
-    number = args.number
-    threads = args.threads
-    percent = args.percent
-    silent = args.silent
+    config = Config()
     
-    main(command, outputs, number, threads, percent, silent)
+    config.command = args.command
+    config.outputs = args.outputs
+    config.number = args.number
+    config.threads = args.threads
+    config.percent = args.percent
+    config.silent = args.silent
+    
+    main(config)
