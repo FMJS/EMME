@@ -1,0 +1,83 @@
+# Single variable
+examples/single_var/sv_simple01;fast
+examples/single_var/sv_simple02;fast
+examples/single_var/sv_simple03;fast
+examples/single_var/sv_simple04;fast
+examples/single_var/sv_simple05;fast
+examples/single_var/sv_simple06;fast
+examples/single_var/sv_simple07;fast
+examples/single_var/sv_simple08;fast
+examples/single_var/sv_simple09;fast
+examples/single_var/sv_simple10;fast
+examples/single_var/sv_simple11;
+examples/single_var/sv_simple12;
+examples/single_var/sv_simple13;
+examples/single_var/sv_simple14;
+examples/single_var/sv_simple15;
+examples/single_var/sv_simple16;
+examples/single_var/sv_simple17;
+examples/single_var/sv_simple18;
+examples/single_var/sv_simple19;
+examples/single_var/sv_simple20;
+examples/single_var/sv_simple21;
+examples/single_var/sv_simple22;
+examples/single_var/sv_simple23;
+
+# Single variable with For-Loop
+examples/single_var/for/sv_f_simple01;
+examples/single_var/for/sv_f_simple02;
+examples/single_var/for/sv_f_simple03;
+
+# Single variable with IF-Statement
+examples/single_var/ite/sv_i_simple01;
+examples/single_var/ite/sv_i_simple02;
+examples/single_var/ite/sv_i_simple03;
+
+# Single variable parametric
+examples/single_var/param/for/sv_f_simple01;param
+examples/single_var/param/for/sv_f_simple02;param
+examples/single_var/param/for/sv_f_simple03;param
+examples/single_var/param/ite/sv_i_simple01;param
+examples/single_var/param/ite/sv_i_simple02;param
+examples/single_var/param/ite/sv_i_simple03;param
+examples/single_var/param/sv_simple01;param
+examples/single_var/param/sv_simple02;param
+examples/single_var/param/sv_simple03;param
+examples/single_var/param/sv_simple04;param
+examples/single_var/param/sv_simple05;param
+examples/single_var/param/sv_simple06;param
+examples/single_var/param/sv_simple07;param
+examples/single_var/param/sv_simple08;param
+examples/single_var/param/sv_simple09;param
+examples/single_var/param/sv_simple10;param
+examples/single_var/param/sv_simple11;param
+examples/single_var/param/sv_simple12;param
+examples/single_var/param/sv_simple13;param
+examples/single_var/param/sv_simple14;param
+examples/single_var/param/sv_simple15;param
+examples/single_var/param/sv_simple16;param
+examples/single_var/param/sv_simple17;param
+examples/single_var/param/sv_simple18;param
+examples/single_var/param/sv_simple19;param
+examples/single_var/param/sv_simple20;param
+examples/single_var/param/sv_simple21;param
+examples/single_var/param/sv_simple22;param
+examples/single_var/param/sv_simple23;param
+
+# Double variables
+examples/double_vars/dv_simple01;param
+
+# Triple variables
+examples/triple_vars/tv_simple01;param
+
+# Invalid tests
+tests/invalid_inputs/test01;invalid
+tests/invalid_inputs/test02;invalid
+tests/invalid_inputs/test03;invalid
+tests/invalid_inputs/test04;invalid
+tests/invalid_inputs/test05;invalid
+tests/invalid_inputs/test06;invalid
+tests/invalid_inputs/test07;invalid
+tests/invalid_inputs/test08;invalid
+tests/invalid_inputs/test09;invalid
+tests/invalid_inputs/test10;invalid

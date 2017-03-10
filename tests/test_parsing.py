@@ -28,6 +28,9 @@ def parse_and_generate(example, valid):
         parser = BeParser()
         program = parser.program_from_string(strp)
 
+        if program.params:
+            program.apply_param(dict(program.get_params()[0]))
+        
         c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
         cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
         assert(c4printer in cprinters)
@@ -46,12 +49,12 @@ def parse_and_generate(example, valid):
             print(e)
             return
         else:
-            raise e
+            raise
 
     if not valid:
         assert(False)
         
-    if valid:
+    if valid and not program.params:
         with open("%s/program.js"%example,"r") as f:
             a = f.read()
             b = jprog
@@ -87,8 +90,12 @@ def be_parsing(example):
 
     strp = strp.replace(" ","")
     beprogram = beprogram.replace(" ", "")
-
+    
+    strp = re.sub(re.compile("Params\{.*\}", re.MULTILINE|re.DOTALL), '', strp)
+    beprogram = re.sub(re.compile("Params\{.*\}", re.MULTILINE|re.DOTALL), '', beprogram)
+    
     if not(strp == beprogram):
+        print(example)
         print(strp)
         print(beprogram)
     

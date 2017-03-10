@@ -376,15 +376,16 @@ class BeParser(object):
             raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
         
         block_name = command.varname
-        varsize = self.__get_var_size(command.typeop)
-
+        opsize = self.__get_var_size(command.typeop)
+        varsize = None
+        
         address = None
         offset = None
 
         try:
             addr = int(command.address[1])
-            baddr = varsize*addr
-            eaddr = (varsize*(addr+1))-1
+            baddr = opsize*addr
+            eaddr = (opsize*(addr+1))-1
             address = range(baddr, eaddr+1, 1)
             varsize = eaddr+1
         except Exception:
@@ -419,7 +420,7 @@ class BeParser(object):
         value = command.value            
 
         if parametric:
-            me.size = varsize
+            me.size = opsize
             me.value = list(value)
             me.offset = offset
             me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR

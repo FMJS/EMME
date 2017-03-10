@@ -728,7 +728,10 @@ class Memory_Event(object):
         return self.values
         
     def get_size(self):
-        if not self.size:
+        if self.size:
+            return self.size
+
+        if self.address:
             self.size = len(self.address)
         return self.size
 
@@ -760,7 +763,7 @@ class Memory_Event(object):
         self.values = ([None] * begin) + values
 
         self.tear = NTEAR
-
+        
         self.block.update_size(end+1)
 
     def set_values_from_float(self, float_value, begin, end):

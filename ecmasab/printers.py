@@ -14,7 +14,7 @@ from six.moves import range
 
 from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
-from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE
+from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
 
 LICENSE = ""
@@ -967,7 +967,12 @@ class BePrinter(object):
                     ret += self.print_event(ev)
 
             ret += "}\n"
-                
+
+        if  program.params:
+            ret += "Params {\n"
+            ret += self.print_params(program.params)
+            ret += "\n}\n"
+            
         return ret
 
     def print_event(self, event, pure=False):
@@ -984,10 +989,13 @@ class BePrinter(object):
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
-                event_values = "".join(event.value)
+                event_values = []
+                event_values = "".join(self.__solve_param_names(event.value))
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
+                if not event_values and event.value:
+                    event_values = "".join(self.__solve_param_names(event.value))
 
             if operation == WRITE:
                 ret = "Atomics.store(%s%s, %s, %s)"%(block_name, \
@@ -1004,16 +1012,21 @@ class BePrinter(object):
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
-                event_values = "".join(event.value)
+                event_values = []
+                event_values = "".join(self.__solve_param_names(event.value))
             else:
                 addr = int(event_address[0]/block_size)
                 event_values = event.get_correct_value()
+                if not event_values and event.value:
+                    event_values = "".join(self.__solve_param_names(event.value))
 
             if operation == WRITE:
                 if is_float and event_address:
-                    event_values = self.float_pri_js%event_values
-                    event_values = re.sub("0+\Z","", event_values)
-                
+                    if type(event_values) == list:
+                        event_values = "".join(event_values)
+                    else:
+                        event_values = self.__get_round_value(event_values)
+
                 ret = ("%s%s[%s] = %s")%(block_name, \
                                          self.__get_block_size(block_size, is_float),\
                                          addr, \
@@ -1033,6 +1046,37 @@ class BePrinter(object):
         return ret
 
 
+    def __solve_param_names(self, value):
+        if type(value) != list:
+            return value
+        ret = []
+        for i in range(len(value)):
+            if (T_VAL in value[i]) or (T_OPE in value[i]):
+                ret.append("<%s>"%value[i])
+            else:
+                ret.append(value[i])
+
+        return ret
+
+    
+    def __get_round_value(self, value):
+        if type(value) == int:
+            return value
+
+        if type(value) == str:
+            return value
+        
+        if type(value) == list:
+            return "".join(value)
+
+        values = self.float_pri_js%float(value)
+        val1 = int(re.search("[0-9]+\.", values).group(0)[:-1])
+        val2 = re.search("\.[0-9]+", values).group(0)
+        val2 = re.sub("0+\Z", "", val2)[1:]
+        val2 = int(val2) if val2 != "" else 0
+        return "%s.%s"%(val1,val2)
+
+    
     def __get_block_size(self, size, isfloat):
         if not isfloat:
             if size == 1:
@@ -1079,7 +1123,9 @@ class BePrinter(object):
                 rgt = self.print_event(cond[2], True)
             else:
                 rgt = cond[2]
-            conditions.append("%s %s %s"%(lft, cond[1], rgt))
+
+            con = self.__solve_param_names([lft, cond[1], rgt])
+            conditions.append("%s %s %s"%(con[0],con[1],con[2]))
 
         ret += "if(%s) {\n"%(" AND ".join(conditions))
         
@@ -1096,4 +1142,9 @@ class BePrinter(object):
         return ret
 
     
-    
+    def print_params(self, params):
+        ret = []
+        for el in params:
+            ret.append("%s = [%s];"%(el, ",".join([str(self.__get_round_value(x)) for x in params[el]])))
+
+        return "\n".join(ret)
