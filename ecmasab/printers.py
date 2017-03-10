@@ -629,10 +629,7 @@ class JST262Printer(JSPrinter):
 
             ret += "var ok = false;\n"
             ret += "for(var i=0; i < ex.length; i++){\n"
-            ret += (ind*1)+"if (report == ex[i]) ok = true; break;\n"
-            # ret += (ind*1)+"if (report == ex[i]) {\n"
-            # ret += (ind*2)+"ok = true;\n"
-            # ret += (ind*1)+"}\n"
+            ret += (ind*1)+"if (report == ex[i]) {ok = true; break;}\n"
             ret += "}\n"
             ret += "assert(ok);\n"
 
