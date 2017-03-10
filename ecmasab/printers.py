@@ -562,8 +562,7 @@ class JST262Printer(JSPrinter):
                 continue
             ret += "\n// Thread %s\n"%thread.name
             ret += "%s.agent.start(\n"%self.agent_prefix
-            ret += (ind*1)+"`\n"
-            ret += (ind*1)+"%s.agent.receiveBroadcast(function (data) {\n"%self.agent_prefix
+            ret += (ind*1)+"`%s.agent.receiveBroadcast(function (data) {\n"%self.agent_prefix
             ret += (ind*2)+"var report = [];\n"
 
             for ev in thread.get_events(False):
