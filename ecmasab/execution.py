@@ -759,7 +759,7 @@ class Memory_Event(object):
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
         self.size = (end-begin)+1
-        values = list(struct.pack(self.__get_int_type(self.size), int_value))
+        values = list(struct.pack(self.__get_int_type(self.size), int(int_value)))
         self.values = ([None] * begin) + values
 
         self.tear = NTEAR
@@ -769,7 +769,7 @@ class Memory_Event(object):
     def set_values_from_float(self, float_value, begin, end):
         self.offset = begin
         self.size = (end-begin)+1
-        values = list(struct.pack(self.__get_float_type(self.size), float_value))
+        values = list(struct.pack(self.__get_float_type(self.size), float(float_value)))
         self.values = ([None] * begin) + values
 
         self.tear = WTEAR
