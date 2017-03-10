@@ -264,8 +264,7 @@ def main(config):
                 sys.stdout.flush()
 
             with open(models, "r") as modelfile:
-                executions = parser.executions_from_string(modelfile.read())
-
+                executions = parser.executions_from_string(modelfile.read(), program)
             if config.verbosity > 0:
                 sys.stdout.write("DONE\n")
                 sys.stdout.flush()

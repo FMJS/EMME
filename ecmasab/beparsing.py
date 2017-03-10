@@ -108,8 +108,6 @@ class ParsingErrorException(Exception):
 class BeParser(object):
     program_parser = None
     execution_parser = None
-
-    program = None    
     
     DEBUG = False
 
@@ -117,8 +115,6 @@ class BeParser(object):
         Memory_Event.reset_unique_names()
         ITE_Statement.reset_unique_names()
 
-        self.program = None
-        
         self.program_parser = self.__init_program_parser()
         self.execution_parser = self.__init_execution_parser()
 
@@ -221,15 +217,15 @@ class BeParser(object):
     def program_from_string(self, strinput):
         self.__init__()
         commands = self.__parse_program(strinput)
-        self.program = self.__populate_program(commands)
-        return self.program
+        program = self.__populate_program(commands)
+        return program
 
-    def executions_from_string(self, strinput):
+    def executions_from_string(self, strinput, program=None):
         (models, done) = self.__parse_executions(strinput)
-        executions = self.__populate_executions(models, self.program, done)
+        executions = self.__populate_executions(models, program, done)
         
-        if self.program:
-            self.program.expand_events()
+        if program:
+            program.expand_events()
             self.__compute_reads_values(executions)
 
         return executions
