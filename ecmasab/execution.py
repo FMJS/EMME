@@ -395,6 +395,8 @@ class Block(object):
         return self.name
 
     def update_size(self, size):
+        if not self.size:
+            self.size = size
         if size > self.size:
             self.size = size
         
