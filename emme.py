@@ -399,7 +399,7 @@ if __name__ == "__main__":
     config.skip_solving = args.skip_solving
     config.jsprinter = args.jsprinter
     config.printing_relations = args.relations
-    if args.printing_relations == ALL:
+    if args.relations == ALL:
         config.printing_relations = None
 
     config.graphviz = args.graphviz
