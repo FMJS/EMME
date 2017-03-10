@@ -106,13 +106,10 @@ class ParsingErrorException(Exception):
     pass
 
 class BeParser(object):
-    program = None
     program_parser = None
-
-    executions = None
     execution_parser = None
-    
-    commands = None
+
+    program = None    
     
     DEBUG = False
 
@@ -120,10 +117,7 @@ class BeParser(object):
         Memory_Event.reset_unique_names()
         ITE_Statement.reset_unique_names()
 
-        self.commands = []
-
         self.program = None
-        self.executions = None
         
         self.program_parser = self.__init_program_parser()
         self.execution_parser = self.__init_execution_parser()
@@ -226,25 +220,22 @@ class BeParser(object):
         
     def program_from_string(self, strinput):
         self.__init__()
-        self.__parse_program(strinput)
-        self.__populate_program()
+        commands = self.__parse_program(strinput)
+        self.program = self.__populate_program(commands)
         return self.program
 
     def executions_from_string(self, strinput):
-        self.executions = Executions()
         (models, done) = self.__parse_executions(strinput)
-        self.__populate_executions(models, done)
+        executions = self.__populate_executions(models, self.program, done)
         
         if self.program:
             self.program.expand_events()
-            self.__compute_reads_values()
+            self.__compute_reads_values(executions)
 
-        return self.executions
+        return executions
 
-
-    def __compute_reads_values(self):
-        executions = self.executions.executions
-        for exe in executions:
+    def __compute_reads_values(self, executions):
+        for exe in executions.executions:
             events = exe.get_events()
             ev_map = dict((x.name, x) for x in events)
             read_evs = [x for x in events if x.is_read()]
@@ -276,9 +267,10 @@ class BeParser(object):
 
         return (models, done)
 
-    def __populate_executions(self, models, done):
-        self.executions.allexecs = done
-        self.executions.program = self.program
+    def __populate_executions(self, models, program, done):
+        executions = Executions()
+        executions.allexecs = done
+        executions.program = program
         for model in models:
             execution = Execution()
             for assign in model:
@@ -295,7 +287,9 @@ class BeParser(object):
                         rel.add_tuple(self.__get_tuple(size, assign[i:i+size]))
 
                     self.__add_relation(execution, rel)
-            self.executions.add_execution(execution)
+            executions.add_execution(execution)
+
+        return executions
 
     def __add_relation(self, exe, rel):
 
@@ -326,15 +320,16 @@ class BeParser(object):
         raise UnreachableCodeException()
                 
     def __parse_program(self, strinput):
+        commands = []
         for line in strinput.split(T_NL):
             try:
                 pline = self.program_parser.parseString(line, parseAll=True)
             except ParseException:
                 if self.DEBUG: raise
-                raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(self.commands)+1, line.strip()))
-            self.commands.append(pline)
+                raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(commands)+1, line.strip()))
+            commands.append(pline)
 
-        return self
+        return commands
 
     def __get_var_size(self, typeop):
         if typeop == T_INT8:
@@ -446,7 +441,7 @@ class BeParser(object):
 
         return me
 
-    def __populate_program(self):
+    def __populate_program(self, commands):
         program = Program()
         thread = Thread(MAIN)
         floop = None
@@ -458,10 +453,10 @@ class BeParser(object):
         sab_defs = []
         linenum = 0
         name = ""
-        while len(self.commands):
+        while len(commands):
             linenum += 1
-            command = self.commands[0]
-            self.commands = self.commands[1:]
+            command = commands[0]
+            commands = commands[1:]
             command_name = command.getName()
 
             if command_name == P_TRDB:
@@ -532,10 +527,10 @@ class BeParser(object):
 
             elif command_name == P_PRINT:
                 if command.access:
-                    self.commands.insert(0, command.access)
+                    commands.insert(0, command.access)
 
                 if command.load:
-                    self.commands.insert(0, command.load)
+                    commands.insert(0, command.load)
                 
             elif command_name == P_CSCOPE:
                 if floop:
@@ -642,8 +637,6 @@ class BeParser(object):
 
         for sdef in sab_defs:
             sdef.set_init_values()
-
-        self.program = program
 
         return program
 
