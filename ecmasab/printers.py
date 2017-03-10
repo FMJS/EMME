@@ -592,16 +592,17 @@ class JST262Printer(JSPrinter):
             ret += (ind*1)+"%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
         ret += "}\n"
 
+        ret += "%s.agent.broadcast(data);\n"%self.agent_prefix
+        ret += "var res = [];\n"
+        
         for thread in program.threads:
             if thread.name != MAIN:
                 continue
             for ev in thread.get_events(True):
-                ret += self.print_event(ev)
+                ret += self.print_event(ev, main=True)
 
-        ret += "%s.agent.broadcast(data);\n"%self.agent_prefix
         if self.waiting_time > 0:
             ret += "%s.agent.sleep(%s);\n"%(self.agent_prefix, self.waiting_time)
-        ret += "var res = [];\n"
         ret += "var report;\n"
 
         ret += "var reports = 0;\n"
@@ -615,7 +616,7 @@ class JST262Printer(JSPrinter):
         ret += (ind*2)+"reports += 1;\n"
         ret += (ind*2)+"if (reports >= %s) break;\n"%(len(program.threads)-1)
         ret += (ind*1)+"}\n"
-        ret += "}\n"
+        ret += "}\n\n"
         
         if executions:
             ret += "res.sort();\n"
@@ -646,7 +647,7 @@ class JST262Printer(JSPrinter):
                                                  floop.toind,
                                                  floop.cname)
         for ev in floop.events:
-            ret += (ind*3)+self.print_event(ev, floop.cname)
+            ret += (ind*3)+self.print_event(ev, postfix=floop.cname)
 
         ret += (ind*2)+"}\n"
 
@@ -676,7 +677,7 @@ class JST262Printer(JSPrinter):
 
         return ret
     
-    def print_event(self, event, postfix=None):
+    def print_event(self, event, postfix=None, main=False):
         operation = event.operation
         ordering = event.ordering
         block_name = event.block.name
@@ -687,6 +688,11 @@ class JST262Printer(JSPrinter):
         var_def = ""
         prt = ""
 
+        if main:
+            report = "res"
+        else:
+            report = "report"
+        
         if (operation == WRITE) and (ordering == INIT):
             return ""
         
@@ -719,9 +725,9 @@ class JST262Printer(JSPrinter):
                                                           block_name, \
                                                           addr)
                 if postfix:
-                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
+                    prt = report+".push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
                 else:
-                    prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
+                    prt = report+".push(\"%s: \"+%s)"%(event_name, event_name)
 
         if (ordering == UNORD) or is_float:
             if not event_address:
@@ -747,9 +753,9 @@ class JST262Printer(JSPrinter):
                                             addr)
 
                 if postfix:
-                    prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
+                    prt = report+".push(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
                 else:
-                    prt = "report.push(\"%s: \"+%s%s)"%(event_name, event_name, approx)
+                    prt = report+".push(\"%s: \"+%s%s)"%(event_name, event_name, approx)
 
         if operation == READ:
             return "%s;\n"%("; ".join([var_def,mop,prt]))
