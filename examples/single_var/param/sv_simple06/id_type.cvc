@@ -1,0 +1,1 @@
+DATATYPE ID_TYPE = id1_W_main_Type | id2_W_t1_Type | id3_R_t2_Type END;

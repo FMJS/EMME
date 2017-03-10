@@ -1,0 +1,54 @@
+
+main : THREAD_TYPE;
+t1 : THREAD_TYPE;
+t2 : THREAD_TYPE;
+t3 : THREAD_TYPE;
+id1_W_main : MEM_OP_TYPE;
+ASSERT (id1_W_main.ID = id1_W_main_Type) AND
+       (id1_W_main.O = W) AND
+       (id1_W_main.T = NT) AND
+       (id1_W_main.R = I) AND
+       (id1_W_main.M = {Int(0), Int(1), Int(2), Int(3)}) AND
+       (id1_W_main.B = x);
+
+id2_W_t1 : MEM_OP_TYPE;
+ASSERT (id2_W_t1.ID = id2_W_t1_Type) AND
+       (id2_W_t1.O = W) AND
+       (id2_W_t1.T = WT) AND
+       (id2_W_t1.R = SC) AND
+       (id2_W_t1.M = {Int(0), Int(1), Int(2), Int(3)}) AND
+       (id2_W_t1.B = x);
+
+id3_W_t2 : MEM_OP_TYPE;
+ASSERT (id3_W_t2.ID = id3_W_t2_Type) AND
+       (id3_W_t2.O = W) AND
+       (id3_W_t2.T = WT) AND
+       (id3_W_t2.R = SC) AND
+       (id3_W_t2.M = {Int(0), Int(1), Int(2), Int(3)}) AND
+       (id3_W_t2.B = x);
+
+id4_R_t3 : MEM_OP_TYPE;
+ASSERT (id4_R_t3.ID = id4_R_t3_Type) AND
+       (id4_R_t3.O = R) AND
+       (id4_R_t3.T = WT) AND
+       (id4_R_t3.R = SC) AND
+       (id4_R_t3.M = {Int(0), Int(1), Int(2), Int(3)}) AND
+       (id4_R_t3.B = x);
+
+ASSERT main.E = {id1_W_main};
+ASSERT main.PO = empty_rel_set;
+ASSERT t1.E = {id2_W_t1};
+ASSERT t1.PO = empty_rel_set;
+ASSERT t2.E = {id3_W_t2};
+ASSERT t2.PO = empty_rel_set;
+ASSERT t3.E = {id4_R_t3};
+ASSERT t3.PO = empty_rel_set;
+ASSERT ev_set = {id1_W_main, id2_W_t1, id3_W_t2, id4_R_t3};
+ASSERT rom_ev_set = {id4_R_t3};
+ASSERT wom_ev_set = {id1_W_main, id2_W_t1, id3_W_t2};
+ASSERT pair_ev_set = {(id1_W_main, id2_W_t1), (id1_W_main, id3_W_t2), (id1_W_main, id4_R_t3), (id2_W_t1, id1_W_main), (id2_W_t1, id3_W_t2), (id2_W_t1, id4_R_t3), (id3_W_t2, id1_W_main), (id3_W_t2, id2_W_t1), (id3_W_t2, id4_R_t3), (id4_R_t3, id1_W_main), (id4_R_t3, id2_W_t1), (id4_R_t3, id3_W_t2)};
+
+ASSERT AO = main.PO | t1.PO | t2.PO | t3.PO;
+ASSERT locs = {Int(0), Int(1), Int(2), Int(3)};
+ASSERT comp_RF = {(id4_R_t3, id1_W_main), (id4_R_t3, id2_W_t1), (id4_R_t3, id3_W_t2)};
+ASSERT comp_RBF = {((id4_R_t3, id1_W_main), Int(0)), ((id4_R_t3, id1_W_main), Int(1)), ((id4_R_t3, id1_W_main), Int(2)), ((id4_R_t3, id1_W_main), Int(3)), ((id4_R_t3, id2_W_t1), Int(0)), ((id4_R_t3, id2_W_t1), Int(1)), ((id4_R_t3, id2_W_t1), Int(2)), ((id4_R_t3, id2_W_t1), Int(3)), ((id4_R_t3, id3_W_t2), Int(0)), ((id4_R_t3, id3_W_t2), Int(1)), ((id4_R_t3, id3_W_t2), Int(2)), ((id4_R_t3, id3_W_t2), Int(3))};

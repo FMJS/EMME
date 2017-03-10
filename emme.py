@@ -236,14 +236,14 @@ def main(config):
     for idparam in range(program.param_size()):
 
         if program.params:
-            config.prefix = "%sparam%02d/"%(prefix, idparam+1)
+            config.prefix = "%sparam%03d/"%(prefix, idparam+1)
             config.generate_filenames()
             program.apply_param(dict(params[idparam]))
 
             if config.verbosity > 0:
                 conf = params[idparam]
                 pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
-                print("\nParameter configuration (%02d): %s"%(idparam+1, (", ".join(pconf))))
+                print("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))))
 
 
         executions = None

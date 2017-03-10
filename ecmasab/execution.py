@@ -322,20 +322,27 @@ class Program(object):
         for key in self.params:
             param = []
             for el in self.params[key]:
-                param.append((key, el))
+                param.append([[key, el]])
             configs.append(param)
 
-        ret = configs[0]
-        configs = configs[1:]
+        ret = []
+        for el in configs:
+            ret = self.__combine_params(ret, el)
 
-        if not len(configs):
-            return [[list(x)] for x in ret]
-        
-        for conf in configs:
-            ret  = itertools.product(ret,conf)
+        return ret
             
-        return list(ret)
-        
+    def __combine_params(self, pl1, pl2):
+        if not pl1:
+            return pl2
+        if not pl2:
+            return pl1
+        ret = []
+        for p1 in  pl1:
+            for p2 in pl2:
+                ret.append(p1+p2)
+
+        return ret
+    
     def get_blocks(self):
         blocks = []
         for thread in self.threads:
@@ -525,8 +532,7 @@ class ITE_Statement(object):
     else_events = None
     condition_name = None
     global_id_cond = 1
-
-    param_conds = None
+    pconditions = None
     
     OP_ITE = "ITE"
     B_THEN = "THEN"
@@ -540,7 +546,7 @@ class ITE_Statement(object):
         self.then_events = None
         self.else_events = None
         self.condition_name = None
-        self.param_conds = None
+        self.pconditions = None
 
     @staticmethod        
     def get_unique_condition():
@@ -551,15 +557,11 @@ class ITE_Statement(object):
     @staticmethod        
     def reset_unique_names():
         ITE_Statement.global_id_cond = 1
-
-    def __switch_conditions(self):
-        if self.param_conds:
-            self.conditions = self.param_conds
-        else:
-            self.param_conds = self.conditions
         
     def apply_param(self, pardic):
-        self.__switch_conditions()
+        if not self.pconditions:
+            self.pconditions = self.conditions
+        self.conditions = self.pconditions
         loc_conds = []
         for cond in self.conditions:
             newcond = []
@@ -569,9 +571,15 @@ class ITE_Statement(object):
                 else:
                     newcond.append(el)
             loc_conds.append(tuple(newcond))
-                    
+
         self.conditions = loc_conds
-        
+
+        for el in self.then_events:
+            el.apply_param(pardic)
+
+        for el in self.else_events:
+            el.apply_param(pardic)
+            
     def append_condition(self, el1, op, el2):
         self.conditions.append((el1,op,el2))
         self.condition_name = "%s_cond"%(ITE_Statement.get_unique_condition())
@@ -713,6 +721,11 @@ class Memory_Event(object):
 
         self.block.update_size(len(values))
 
+    def get_values(self):
+        if self.is_init():
+            self.set_init_values()
+        return self.values
+        
     def get_size(self):
         if not self.size:
             self.size = len(self.address)

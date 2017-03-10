@@ -1,0 +1,14 @@
+digraph memory_model {
+rankdir=LR;
+splines=true; esep=0.5;
+id2_W_t1 -> id3_W_t1 [label = "HB", color="black"];
+id1_W_main -> id2_W_t1 [label = "HB", color="black"];
+id1_W_main -> id4_R_t2 [label = "HB", color="black"];
+id2_W_t1 -> id4_R_t2 [label = "HB", color="black"];
+id4_R_t2 -> id1_W_main [label = "RF", color="red"];
+id4_R_t2 -> id2_W_t1 [label = "RF", color="red"];
+id1_W_main [label=<id1_W_main<br/><B>x-init := 0</B>>, pos="2.5,4!"]
+id2_W_t1 [label=<id2_W_t1<br/><B>x-F32[0] := 0.50</B>>, pos="0,2!"]
+id3_W_t1 [label=<id3_W_t1<br/><B>x-F32[4] := 1.00</B>>, pos="0,0!"]
+id4_R_t2 [label=<id4_R_t2<br/><B>x-F64[0] = 0.00</B>>, pos="5,2!"]
+}

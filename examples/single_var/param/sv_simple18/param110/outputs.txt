@@ -1,0 +1,9 @@
+id6_R_t2: 3;id7_R_t2: 0
+id6_R_t2: 3;id7_R_t2: 1
+id6_R_t2: 0;id7_R_t2: 1
+id6_R_t2: 0;id7_R_t2: 0
+id6_R_t2: 0;id7_R_t2: 257
+id6_R_t2: 515;id7_R_t2: 0
+id6_R_t2: 515;id7_R_t2: 1
+id6_R_t2: 3;id7_R_t2: 257
+id6_R_t2: 515;id7_R_t2: 257

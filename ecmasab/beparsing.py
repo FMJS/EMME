@@ -9,6 +9,7 @@
 # limitations under the License.
 
 import copy
+import numpy
 from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
@@ -80,6 +81,7 @@ P_LOAD = "load"
 P_OP = "operator"
 P_PRINT = "print"
 P_RANGE = "range"
+P_INTER = "interval"
 P_LIST = "list"
 P_READ = "read"
 P_SABASS = "sab-assign"
@@ -175,7 +177,8 @@ class BeParser(object):
                                     (plusop, 2, opAssoc.LEFT),]
         )
         
-        nrange = (Word(nums) + T_DOTS + Word(nums))(P_RANGE)
+        interval = (Word(nums) + T_DOTS + Word(nums))(P_INTER)
+        nrange = (nvalue + T_CM + nvalue + T_CM + nvalue)(P_RANGE)
         nlist = (Literal(T_OSB) + Word(nums) + ZeroOrMore(T_CM + Word(nums)) + Literal(T_CSB))(P_LIST)
         addr = (T_OSB + expr + T_CSB)(P_ADDR)
         
@@ -184,23 +187,23 @@ class BeParser(object):
 
         sab_def = (T_VAR + varname + T_EQ + T_NEW + T_SAB + T_OP + T_CP + T_SEMI)(P_SABDEF)
 
+        value = (expr)(P_VALUE)
+        
         ssaddr = (T_CM + expr)(P_ADDR)
-        ssval = (T_CM + expr)(P_VALUE)
-        sabstore = (T_ASTORE + T_OP + sabname + ssaddr + ssval + T_CP + T_SEMI)(P_STORE)
+        sabstore = (T_ASTORE + T_OP + sabname + ssaddr + T_CM + value + T_CP + T_SEMI)(P_STORE)
         
         sabaccess = (sabname + addr)(P_ACCESS)
         sabload  = (T_ALOAD + T_OP + sabname + ssaddr + T_CP)(P_LOAD)
 
         sabread = (sabload | sabaccess)
 
-        value = (expr)(P_VALUE)
         sabassign = (sabaccess + T_EQ + value + T_SEMI)(P_SABASS)
         printv = (T_PR + T_OP + sabread + T_CP + T_SEMI)(P_PRINT)
 
         threaddef = (T_THREAD + varname + Literal(T_OCB))(P_TRDB)
         closescope = (Literal(T_CCB))(P_CSCOPE)
 
-        floop = (Literal(T_FOR) + T_OP + varname + T_EQ + nrange + T_CP + T_OCB)(P_FLOOP)
+        floop = (Literal(T_FOR) + T_OP + varname + T_EQ + interval + T_CP + T_OCB)(P_FLOOP)
 
         op = (Literal(T_BEQ) | Literal(T_GEQ) | Literal(T_LEQ) | Literal(T_LT) | Literal(T_GT))(P_OP)
         oplist = (Literal(T_OSB) + op + ZeroOrMore(T_CM + op) + Literal(T_CSB))(P_LIST)
@@ -215,7 +218,7 @@ class BeParser(object):
         command = sabstore | sab_def | sabassign | threaddef | printv | floop | \
                   ite | els | closescope | comment | emptyline
 
-        pardef = (strname + T_EQ + (nrange | nlist | oplist) + T_SEMI)(P_PARAM)
+        pardef = (strname + T_EQ + (interval | nrange | nlist | oplist) + T_SEMI)(P_PARAM)
         params = (Literal(T_PARAMS) + Literal(T_OCB))(P_PARAMS)
         
         return pardef | params | ZeroOrMore(command)
@@ -250,7 +253,7 @@ class BeParser(object):
                 values = []
                 for i in read_event.address:
                     write_event = ev_map[rbf_map[(read_event.name, i)]]
-                    value = write_event.values[i]
+                    value = write_event.get_values()[i]
                     values.append(value)
                 new_read_event = copy.deepcopy(read_event)
                 new_read_event.set_values(values)
@@ -385,6 +388,7 @@ class BeParser(object):
         varsize = self.__get_var_size(command.typeop)
 
         address = None
+        offset = None
 
         try:
             addr = int(command.address[1])
@@ -414,11 +418,14 @@ class BeParser(object):
         me.block = blocks[block_name]
 
         blocks[block_name].update_size(varsize)
+        
+        for check_addr in [offset, address]:
+            if check_addr:
+                if T_VAL in str(check_addr):
+                    raise ParsingErrorException("Parametric address definition is not supported")
 
-        if ctype == P_STORE:
-            value = command.value.asList()[1:][0]
-        else:
-            value = command.value
+
+        value = command.value            
 
         if parametric:
             me.size = varsize
@@ -496,7 +503,7 @@ class BeParser(object):
 
                 if type(command.value) == str:
                     command.value = [command.value]
-                    
+
                 for i in range(len(command.value)):
                     if T_VAL in command.value[i]:
                         param = True
@@ -506,7 +513,7 @@ class BeParser(object):
                     
                 if floop:
                     param = True
-                    
+
                 try:                
                     me = self.__gen_memory_event(command, command_name, param, thread, blocks)
                 except ParsingErrorException as e:
@@ -556,8 +563,8 @@ class BeParser(object):
                     raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not yet supported"%(linenum))
                 
                 floop = For_Loop()
-                frind = int(command.range[0])
-                toind = int(command.range[2])
+                frind = int(command.interval[0])
+                toind = int(command.interval[2])
                 cname = command.varname
                 floop.set_values(cname, frind, toind)
             
@@ -613,8 +620,13 @@ class BeParser(object):
             elif command_name == P_PARAM:
                 params = True
 
-                if P_RANGE in dict(command):
-                    values = range(int(command.range[0]), int(command.range[2])+1, 1)
+                if P_INTER in dict(command):
+                    values = range(int(command.interval[0]), int(command.interval[2])+1, 1)
+                elif P_RANGE in dict(command):
+                    start = float(command.range[0])
+                    end = float(command.range[2])
+                    step = float(command.range[4])
+                    values = [float(x) for x in numpy.arange(start, end+step, step) if x <=end]
                 elif P_LIST in dict(command):
                     values = [x for x in command.list[1:-1] if x != T_CM]
 
