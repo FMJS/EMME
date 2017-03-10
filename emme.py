@@ -24,6 +24,8 @@ from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
 
+from ecmasab.logger import Logger
+
 
 FORMAL_MODEL = "./model/memory_model.cvc"
 
@@ -109,7 +111,7 @@ class Config(object):
                 if not os.path.exists(self.jsdir):
                     os.makedirs(self.jsdir)
                 
-
+                    
 def graphviz_gen(gfile, pngfile):
     command = "neato -Tpng -o%s %s"%(pngfile, gfile)
     try:
@@ -124,33 +126,28 @@ def main(config):
 
     parser = BeParser()
     parser.DEBUG = DEBUG
+
+    logger = Logger(config.verbosity)
     
     c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
 
     abspath = os.path.abspath(__file__)
     mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
 
-    if config.verbosity > 0:
-        print("** Running with path \"%s\" **\n"%(config.prefix))
+    logger.log("** Running with path \"%s\" **\n"%(config.prefix), 0)
 
     # Parsing of the bounded execution #
     with open(config.inputfile, "r") as f:
         program = parser.program_from_string(f.read())
 
-    if config.verbosity > 0:
-        sys.stdout.write("Generating bounded execution... ")
-        sys.stdout.flush()
+    logger.msg("Generating bounded execution... ", 0)
         
     if not os.path.exists(config.prefix):
         os.makedirs(config.prefix)
-        
-    if config.verbosity > 0:
-        sys.stdout.write("DONE\n")
-        sys.stdout.flush()
-        
-    if config.verbosity > 0:
-        sys.stdout.write("Generating SMT model... ")
-        sys.stdout.flush()
+
+    logger.log("DONE", 0)
+
+    logger.msg("Generating SMT model... ", 0)
 
     # Copy of Memory Model (CVC4) into the directory #
     with open(mm, "r") as inmm:
@@ -190,9 +187,7 @@ def main(config):
     with open(config.model_ex, "w") as f:
         f.write(strmodel)
 
-    if config.verbosity > 0:
-        sys.stdout.write("DONE\n")
-        sys.stdout.flush()
+    logger.log("DONE", 0)
 
     if config.only_model:
         sys.exit(0)
@@ -210,18 +205,14 @@ def main(config):
     totmodels = c4solver.get_models_size()
 
     if (not config.skip_solving) and (not c4solver.is_done()):
-        if config.verbosity > 0:
-            sys.stdout.write("Solving... ")
-            sys.stdout.flush()
+        logger.msg("Solving... ", 0)
         
         if config.sat:
             totmodels = c4solver.solve_n(strmodel, 1)
         else:
             totmodels = c4solver.solve_all(strmodel)
 
-        if config.verbosity > 0:
-            sys.stdout.write("DONE\n")
-            sys.stdout.flush()
+        logger.log("DONE", 0)
 
         if not config.debug:
             os.remove(config.block_type)
@@ -230,11 +221,10 @@ def main(config):
             os.remove(config.id_type)
             os.remove(config.instance)
             
-    if config.verbosity > 0:
-        if totmodels > 0:
-            print(" -> Found %s total models"%(totmodels))
-        else:
-            print(" -> No viable executions found")
+    if totmodels > 0:
+        logger.log(" -> Found %s total models"%(totmodels), 0)
+    else:
+        logger.log(" -> No viable executions found", 0)
         
     # Generation of the JS litmus test #
     jprinter = PrintersFactory.printer_by_name(config.jsprinter)
@@ -254,25 +244,19 @@ def main(config):
             if config.verbosity > 0:
                 conf = params[idparam]
                 pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
-                print("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))))
+                logger.log("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))), 0)
 
 
         executions = None
         if (totmodels > 0) and (not config.sat):
-            if config.verbosity > 0:
-                sys.stdout.write("Computing expected outputs... ")
-                sys.stdout.flush()
+            logger.msg("Computing expected outputs... ", 0)
 
             with open(models, "r") as modelfile:
                 executions = parser.executions_from_string(modelfile.read(), program)
-            if config.verbosity > 0:
-                sys.stdout.write("DONE\n")
-                sys.stdout.flush()
                 
+            logger.log("DONE", 0)
                 
-        if config.verbosity > 0:
-            sys.stdout.write("Generating JS program... ")
-            sys.stdout.flush()
+        logger.msg("Generating JS program... ", 0)
 
         with open(config.jsprogram, "w") as f:
             f.write(jprinter.print_program(program, executions))
@@ -282,20 +266,12 @@ def main(config):
             with open(jsprogram, "w") as f:
                 f.write(jprinter.print_program(program, executions))
 
-        if config.verbosity > 0:
-            sys.stdout.write("DONE\n")
-            sys.stdout.flush()
+        logger.log("DONE", 0)
 
         if (totmodels > 0) and (not config.sat):
-            if config.verbosity > 0:
-                sys.stdout.write("Generating expected outputs... ")
-                sys.stdout.flush()
+            logger.msg("Generating expected outputs... ", 0)
 
             jsexecs = []
-
-            with open(config.execs, "w") as exefile:
-                jsexecs = jprinter.compute_possible_executions(program, executions)
-                exefile.write("\n".join(jsexecs))
 
             # Generation of all possible outputs for the JS litmus test #
             with open(config.execs, "w") as exefile:
@@ -311,15 +287,11 @@ def main(config):
                     with open(config.grap%(str(i+1)), "w") as dot:
                         graphviz_gen(config.dots%(str(i+1)), config.grap%(str(i+1)))
 
-            if config.verbosity > 0:
-                sys.stdout.write("DONE\n")
-                sys.stdout.flush()
+            logger.log("DONE", 0)
 
-            if config.verbosity > 0:
-                print(" -> Found %s total possible outputs"%(len(jsexecs)))
-            
-    if (config.verbosity > 0):
-        print("\nExiting...")
+            logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
+
+    logger.log("\nExiting...", 0)
         
         
 if __name__ == "__main__":
@@ -410,7 +382,6 @@ if __name__ == "__main__":
         prefix[-1] = prefix[-1].split(".")[0]
         prefix = "/".join(prefix)
         prefix += "/"
-        
 
     if not os.path.exists(args.input_file):
         print("File not found: \"%s\""%args.input_file)
