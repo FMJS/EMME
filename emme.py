@@ -58,6 +58,7 @@ class Config(object):
     printing_relations = None
     graphviz = None
     jsdir = None
+    debug = None
     
     model = None
     model_ex = None
@@ -85,6 +86,7 @@ class Config(object):
         self.graphviz = None
         self.printing_relations = ",".join([RF,HB,SW])
         self.jsdir = None
+        self.debug = False
         
     def generate_filenames(self):
         if self.prefix:
@@ -219,6 +221,13 @@ def main(config):
             sys.stdout.write("DONE\n")
             sys.stdout.flush()
 
+        if not config.debug:
+            os.remove(config.block_type)
+            os.remove(config.model)
+            os.remove(config.model_ex)
+            os.remove(config.id_type)
+            os.remove(config.instance)
+            
     if config.verbosity > 0:
         if totmodels > 0:
             print(" -> Found %s total models"%(totmodels))
@@ -264,12 +273,13 @@ def main(config):
             sys.stdout.write("Generating JS program... ")
             sys.stdout.flush()
 
-        jsprogram = config.jsprogram
+        with open(config.jsprogram, "w") as f:
+            f.write(jprinter.print_program(program, executions))
+        
         if config.jsdir:
             jsprogram = "%s/%s"%(config.jsdir, config.jsprogram.replace("/","-"))
-            
-        with open(jsprogram, "w") as f:
-            f.write(jprinter.print_program(program, executions))
+            with open(jsprogram, "w") as f:
+                f.write(jprinter.print_program(program, executions))
 
         if config.verbosity > 0:
             sys.stdout.write("DONE\n")
@@ -334,7 +344,7 @@ if __name__ == "__main__":
                         help='select the JS printer between \"%s\". (Default is \"%s\")'%("|".join(jsprinters), djsprinter))
 
     parser.set_defaults(jsdir=None)
-    parser.add_argument('-d', '--jsdir', metavar='jsdir', type=str, nargs='?',
+    parser.add_argument('-a', '--jsdir', metavar='jsdir', type=str, nargs='?',
                         help='directory where to store all JS programs. (Default is the same as the input file)')
     
     parser.set_defaults(verbosity=1)
@@ -353,6 +363,10 @@ if __name__ == "__main__":
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
                         help="skips the solving part. (Default is \"%s\")"%False)
 
+    parser.set_defaults(debug=False)
+    parser.add_argument('-d', '--debug', dest='debug', action='store_true',
+                        help="enables debugging setup. (Default is \"%s\")"%False)
+    
     parser.set_defaults(expand_bounded_sets=True)
     parser.add_argument('-n','--no-exbounded', dest='expand_bounded_sets', action='store_false',
                         help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%True)
@@ -418,7 +432,10 @@ if __name__ == "__main__":
 
     config.graphviz = args.graphviz
     config.jsdir = args.jsdir
-        
+    config.debug = args.debug
+
+    DEBUG = config.debug
+    
     try:
         main(config)
     except Exception as e:

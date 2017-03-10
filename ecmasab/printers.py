@@ -17,6 +17,17 @@ from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
 from ecmasab.exceptions import UnreachableCodeException
 
+LICENSE = ""
+LICENSE += "// Copyright 2017 Cristian Mattarei\n"
+LICENSE += "//\n"
+LICENSE += "// Licensed under the modified BSD (3-clause BSD) License.\n"
+LICENSE += "//\n"
+LICENSE += "// Unless required by applicable law or agreed to in writing, software\n"
+LICENSE += "// distributed under the License is distributed on an \"AS IS\" BASIS,\n"
+LICENSE += "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"
+LICENSE += "// See the License for the specific language governing permissions and\n"
+LICENSE += "// limitations under the License.\n"
+
 
 class NotRegisteredPrinterException(Exception):
     pass
@@ -330,7 +341,7 @@ class JSV8Printer(JSPrinter):
     def print_program(self, program, executions=None):
         program.sort_threads()
         
-        ret = ""
+        ret = LICENSE
         ret += "if (this.Worker) {\n"
         ret += "(function execution() {\n"
 
@@ -540,7 +551,7 @@ class JST262Printer(JSPrinter):
     def print_program(self, program, executions=None):
         program.sort_threads()
         
-        ret = ""
+        ret = LICENSE
 
         for thread in program.threads:
             if thread.name == MAIN:
