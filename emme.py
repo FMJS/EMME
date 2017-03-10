@@ -208,8 +208,8 @@ def main(config):
         c4solver.models_file = config.models
 
     totmodels = c4solver.get_models_size()
-        
-    if not config.skip_solving:
+
+    if (not config.skip_solving) and (not c4solver.is_done()):
         if config.verbosity > 0:
             sys.stdout.write("Solving... ")
             sys.stdout.flush()

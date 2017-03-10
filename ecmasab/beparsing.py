@@ -62,6 +62,7 @@ T_THREAD = "Thread"
 T_US = "_"
 T_VAR = "var"
 T_PARAMS = "Params"
+T_DONE = "DONE"
 
 P_ACCESS = "access"
 P_ADDR = "address"
@@ -112,8 +113,7 @@ class BeParser(object):
     execution_parser = None
     
     commands = None
-    models = None
-
+    
     DEBUG = False
 
     def __init__(self):
@@ -121,11 +121,10 @@ class BeParser(object):
         ITE_Statement.reset_unique_names()
 
         self.commands = []
-        self.models = []
 
         self.program = None
         self.executions = None
-
+        
         self.program_parser = self.__init_program_parser()
         self.execution_parser = self.__init_execution_parser()
 
@@ -143,9 +142,10 @@ class BeParser(object):
         emrelation = (varname + T_EQ + T_OCB + (Empty()) + T_CCB)(P_EMREL)
 
         varassign = (T_OP + varname + T_EQ + varname + T_CP)(P_ASS)
-        
-        assign = trrelation | birelation | emrelation | varassign
-        
+
+        done = Literal(T_DONE)
+
+        assign = trrelation | birelation | emrelation | varassign | done
         assigns = assign + ZeroOrMore(T_AND + assign)
 
         return assigns
@@ -231,8 +231,9 @@ class BeParser(object):
         return self.program
 
     def executions_from_string(self, strinput):
-        self.__parse_executions(strinput)
-        self.__populate_executions()
+        self.executions = Executions()
+        (models, done) = self.__parse_executions(strinput)
+        self.__populate_executions(models, done)
         
         if self.program:
             self.program.expand_events()
@@ -258,24 +259,27 @@ class BeParser(object):
                 new_read_event = copy.deepcopy(read_event)
                 new_read_event.set_values(values)
                 exe.add_read_values(new_read_event)
-
     
     def __parse_executions(self, strinput):
-        self.models = []
+        models = []
+        done = False
         for line in strinput.split(T_NL):
             if line == "": continue
+            if T_DONE in line:
+                done = True
+                continue
             rels = []
             for relation in line.split(T_AND):
                 if relation == "": continue
                 rels.append(self.execution_parser.parseString(relation))
-            self.models.append(rels)
+            models.append(rels)
 
-        return self
+        return (models, done)
 
-    def __populate_executions(self):
-        execs = Executions()
-        execs.program = self.program
-        for model in self.models:
+    def __populate_executions(self, models, done):
+        self.executions.allexecs = done
+        self.executions.program = self.program
+        for model in models:
             execution = Execution()
             for assign in model:
                 if assign.getName() == P_ASS:
@@ -291,10 +295,7 @@ class BeParser(object):
                         rel.add_tuple(self.__get_tuple(size, assign[i:i+size]))
 
                     self.__add_relation(execution, rel)
-            execs.add_execution(execution)
-
-        self.executions = execs
-
+            self.executions.add_execution(execution)
 
     def __add_relation(self, exe, rel):
 

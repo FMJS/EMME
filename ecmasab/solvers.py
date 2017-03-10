@@ -135,15 +135,23 @@ class CVC4Solver(object):
     def __load_models(self):
         c4printer = CVC4Printer()
         parser = BeParser()
+        executions = None
         if self.models_file:
             if os.path.exists(self.models_file):
                 with open(self.models_file, "r") as f:
                     executions = parser.executions_from_string(f.read())
                     self.assertions = c4printer.print_assertions(executions)
+        return executions
 
     def get_models_size(self):
         self.__load_models()
         return len(self.assertions)
+
+    def is_done(self):
+        executions = self.__load_models()
+        if not executions:
+            return False
+        return executions.allexecs
     
     def __solve(self, model, num):
         opts = Options()
@@ -195,6 +203,10 @@ class CVC4Solver(object):
                 print("sat: %s, uns: %s, unk: %s"%(sat, uns, unk))
             
             exitcond = (not sat) if exit_with_unknown else uns
+
+            if uns:
+                with open(self.models_file, "a") as f:
+                    f.write("%s\n"%c4printer.print_done())
             
             if exitcond:
                 return [ind+pre_ind, 0]

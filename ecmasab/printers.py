@@ -14,7 +14,7 @@ from six.moves import range
 
 from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
-from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64
+from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE
 from ecmasab.exceptions import UnreachableCodeException
 
 LICENSE = ""
@@ -106,6 +106,9 @@ class CVC4Printer(object):
 
         return "\n".join(ret)
 
+    def print_done(self):
+        return T_DONE
+    
     def print_assertions(self, interps):
         ret = []
         for interp in interps.executions:

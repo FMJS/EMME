@@ -105,10 +105,12 @@ def is_number(value):
 class Executions(object):
     program = None
     executions = None
+    allexecs = None
     
     def __init__(self):
         self.program = None
         self.executions = []
+        self.allexecs = False
 
     def add_execution(self, exe):
         if (not exe.program) and (self.program):
