@@ -319,11 +319,23 @@ if __name__ == "__main__":
     parser.set_defaults(jsdir=None)
     parser.add_argument('-j', '--jsdir', metavar='jsdir', type=str, nargs='?',
                         help='directory where to store all JS programs. (Default is the same as the input file)')
+ 
+    parser.set_defaults(graphviz=False)
+    parser.add_argument('-g', '--graphviz', dest='graphviz', action='store_true',
+                        help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
+
+    parser.set_defaults(skip_solving=False)
+    parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
+                        help="skips the solving part. (Default is \"%s\")"%False)
+
+    parser.set_defaults(relations=",".join([RF,HB,SW]))
+    parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
+                        help='the (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
     
     parser.set_defaults(verbosity=1)
     parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
                         help="verbosity level. (Default is \"%s\")"%1)
-
+    
     parser.set_defaults(check_sat=False)
     parser.add_argument('-s', '--only-sat', dest='check_sat', action='store_true',
                         help="performs only the satisfiability checking. (Default is \"%s\")"%False)
@@ -332,29 +344,17 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
                         help="exists right after the model generation. (Default is \"%s\")"%False)
 
-    parser.set_defaults(skip_solving=False)
-    parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
-                        help="skips the solving part. (Default is \"%s\")"%False)
-
     parser.set_defaults(debug=False)
     parser.add_argument('-d', '--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
     
     parser.set_defaults(expand_bounded_sets=True)
     parser.add_argument('-n','--no-exbounded', dest='expand_bounded_sets', action='store_false',
-                        help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%True)
-
-    parser.set_defaults(graphviz=False)
-    parser.add_argument('-g', '--graphvis', dest='graphviz', action='store_true',
-                        help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
+                        help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%False)
 
     parser.set_defaults(prefix=None)
     parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. (Default is the same as the input file)')
-
-    parser.set_defaults(printing_relations=",".join([RF,HB,SW]))
-    parser.add_argument('--printing-relations', metavar='printing_relations', type=str, nargs='?',
-                        help='the (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
     
     parser.set_defaults(preproc=None)
     parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
@@ -366,7 +366,7 @@ if __name__ == "__main__":
     
     parser.set_defaults(cpp_preproc=True)
     parser.add_argument('--no-cpp', dest='cpp_preproc', action='store_false',
-                        help="disables the call of the cpp preprocessor. (Default is \"%s\")"%True)
+                        help="disables the call of the cpp preprocessor. (Default is \"%s\")"%False)
     
 
     args = parser.parse_args()
@@ -398,7 +398,7 @@ if __name__ == "__main__":
     config.only_model = args.only_model
     config.skip_solving = args.skip_solving
     config.jsprinter = args.jsprinter
-    config.printing_relations = args.printing_relations
+    config.printing_relations = args.relations
     if args.printing_relations == ALL:
         config.printing_relations = None
 
