@@ -101,8 +101,6 @@ P_BIREL = "bi-relation"
 P_EMREL = "em-relation"
 P_TRREL = "tr-relation"
 
-DEBUG = True
-
 class ParsingErrorException(Exception):
     pass
 
@@ -115,6 +113,8 @@ class BeParser(object):
     
     commands = None
     models = None
+
+    DEBUG = False
 
     def __init__(self):
         Memory_Event.reset_unique_names()
@@ -323,14 +323,13 @@ class BeParser(object):
             return Relation.get_tr_tuple(ev1, ev2, addr)
 
         raise UnreachableCodeException()
-            
                 
     def __parse_program(self, strinput):
         for line in strinput.split(T_NL):
             try:
                 pline = self.program_parser.parseString(line, parseAll=True)
             except ParseException:
-                if DEBUG: raise
+                if self.DEBUG: raise
                 raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\""%(len(self.commands)+1, line.strip()))
             self.commands.append(pline)
 
@@ -439,7 +438,7 @@ class BeParser(object):
                 if self.__var_type_is_int(command.typeop):
                     me.set_values_from_int(int("".join(value)), baddr, eaddr)
             except:
-                if DEBUG: raise
+                if self.DEBUG: raise
                 raise ParsingErrorException("value %s cannot be encoded into %s bytes"%(value, varsize))
         else:
             pass
@@ -517,7 +516,7 @@ class BeParser(object):
                 try:                
                     me = self.__gen_memory_event(command, command_name, param, thread, blocks)
                 except ParsingErrorException as e:
-                    if DEBUG: raise
+                    if self.DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
 
                 if floop:
@@ -608,7 +607,7 @@ class BeParser(object):
                             used_params.append(rval)
                         
                 except ParsingErrorException as e:
-                    if DEBUG: raise
+                    if self.DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
 
 

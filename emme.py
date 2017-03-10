@@ -123,6 +123,8 @@ def main(config):
     config.generate_filenames()
 
     parser = BeParser()
+    parser.DEBUG = DEBUG
+    
     c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
 
     abspath = os.path.abspath(__file__)
@@ -340,11 +342,11 @@ if __name__ == "__main__":
     djsprinter = JSV8Printer().NAME
 
     parser.set_defaults(jsprinter=djsprinter)
-    parser.add_argument('-j', '--jsprinter', metavar='jsprinter', type=str, nargs='?',
+    parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?',
                         help='select the JS printer between \"%s\". (Default is \"%s\")'%("|".join(jsprinters), djsprinter))
 
     parser.set_defaults(jsdir=None)
-    parser.add_argument('-a', '--jsdir', metavar='jsdir', type=str, nargs='?',
+    parser.add_argument('-j', '--jsdir', metavar='jsdir', type=str, nargs='?',
                         help='directory where to store all JS programs. (Default is the same as the input file)')
     
     parser.set_defaults(verbosity=1)
@@ -376,7 +378,7 @@ if __name__ == "__main__":
                         help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
 
     parser.set_defaults(prefix=None)
-    parser.add_argument('-p', '--prefix', metavar='prefix', type=str, nargs='?',
+    parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. (Default is the same as the input file)')
 
     parser.set_defaults(printing_relations=",".join([RF,HB,SW]))
