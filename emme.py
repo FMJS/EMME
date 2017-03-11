@@ -61,7 +61,8 @@ class Config(object):
     graphviz = None
     jsdir = None
     debug = None
-    
+    force_solving = None
+
     model = None
     model_ex = None
     instance = None
@@ -89,6 +90,7 @@ class Config(object):
         self.printing_relations = ",".join([RF,HB,SW])
         self.jsdir = None
         self.debug = False
+        self.force_solving = False
         
     def generate_filenames(self):
         if self.prefix:
@@ -198,6 +200,9 @@ def main(config):
 
     if program.has_conditions:
         c4solver.set_additional_variables(program.get_conditions())
+
+    if config.force_solving:
+        os.remove(config.models)
         
     if True: #not config.sat:
         c4solver.models_file = config.models
@@ -324,6 +329,10 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--graphviz', dest='graphviz', action='store_true',
                         help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
 
+    parser.set_defaults(force_solving=False)
+    parser.add_argument('-f', '--force-solving', dest='force_solving', action='store_true',
+                        help="restarts the solving and discharges the previous models. (Default is \"%s\")"%False)
+    
     parser.set_defaults(skip_solving=False)
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
                         help="skips the solving part. (Default is \"%s\")"%False)
@@ -405,6 +414,7 @@ if __name__ == "__main__":
     config.graphviz = args.graphviz
     config.jsdir = args.jsdir
     config.debug = args.debug
+    config.force_solving = args.force_solving
 
     DEBUG = config.debug
     
