@@ -432,7 +432,7 @@ class BeParser(object):
                     me.set_values_from_int(int("".join(value)), baddr, eaddr)
             except:
                 if self.DEBUG: raise
-                raise ParsingErrorException("value %s cannot be encoded into %s bytes"%(value, varsize))
+                raise ParsingErrorException("value \"%s\" cannot be encoded into %s bytes"%("".join(value), varsize))
         else:
             pass
 

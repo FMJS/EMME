@@ -19,7 +19,8 @@ from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, JSV8Printer, JST262Printer, BePrinter
 from tests.input_tests import examples, invalids
 
-def parse_and_generate(example, valid):
+
+def parse(example, valid):
     try:
         strp = open("%s.txt"%example,"r").read()
 
@@ -31,24 +32,6 @@ def parse_and_generate(example, valid):
         if program.params:
             program.apply_param(dict(program.get_params()[0]))
         
-        c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
-        cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
-        assert(c4printer in cprinters)
-
-        c4printer.print_program(program)
-        c4printer.print_data_type(program)
-        c4printer.print_block_type(program)
-
-        jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
-
-        jprinterV8 = PrintersFactory.printer_by_name(JST262Printer().NAME)
-        assert(jprinterV8 in jprinters)
-        jprog = jprinterV8.print_program(program)
-        
-        jprinterT2 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
-        assert(jprinterT2 in jprinters)
-        jprog = jprinterT2.print_program(program)
-        
     except Exception as e:
         if not valid:
             print(e)
@@ -58,8 +41,36 @@ def parse_and_generate(example, valid):
 
     if not valid:
         assert(False)
+
+    return program
         
-    if valid and not program.params:
+
+def parse_and_generate(example):
+    strp = open("%s.txt"%example,"r").read()
+
+    printers = PrintersFactory.get_printers()
+
+    parser = BeParser()
+    program = parser.program_from_string(strp)
+
+    if program.params:
+        program.apply_param(dict(program.get_params()[0]))
+
+    c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
+    cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
+    assert(c4printer in cprinters)
+
+    c4printer.print_program(program)
+    c4printer.print_data_type(program)
+    c4printer.print_block_type(program)
+
+    jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
+
+    jprinterV8 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
+    assert(jprinterV8 in jprinters)
+    jprog = jprinterV8.print_program(program)
+        
+    if not program.params:
         with open("%s/program.js"%example,"r") as f:
             a = f.read()
             b = jprog
@@ -79,17 +90,35 @@ def parse_and_generate(example, valid):
             a.sort()
             b.sort()
             assert a == b
-
-        jprinterV8.print_program(program, execs)
-        jprinterT2.print_program(program, execs)
-
-        a = jprinterV8.compute_possible_executions(program, execs)
-        b = jprinterT2.compute_possible_executions(program, execs)
-
-        assert a == b
         
     assert True
 
+def printers_coherence(example):
+    strp = open("%s.txt"%example,"r").read()
+
+    parser = BeParser()
+    program = parser.program_from_string(strp)
+
+    if program.params:
+        program.apply_param(dict(program.get_params()[0]))
+
+    jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
+        
+    if not program.params:
+        execsstr = open("%s/models.txt"%example,"r").read()
+        execs = parser.executions_from_string(execsstr, program)
+        
+        jprinterV8 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
+        jprog = jprinterV8.compute_possible_executions(program, execs)
+        
+        for jprinter in jprinters:
+            assert jprinter.compute_possible_executions(program, execs) == jprog
+
+        for jprinter in jprinters:
+            assert jprinter.print_program(program, execs)
+        
+    assert True
+    
 def be_parsing(example):
     strp = open("%s.txt"%example,"r").read()
 
@@ -116,19 +145,21 @@ def be_parsing(example):
     
 def test_parsing():
     for example in examples:
-        yield parse_and_generate, example, True
+        yield parse, example, True
+        yield parse_and_generate, example
         yield be_parsing, example
+        yield printers_coherence, example
 
     for invalid in invalids:
-        yield parse_and_generate, invalid, False
+        yield parse, invalid, False
         
 if __name__ == "__main__":
     for example in examples:
         be_parsing(example)
 
     for example in examples:
-        parse_and_generate(example, True)
+        parse_and_generate(example)
 
     for invalid in invalids:
-        parse_and_generate(invalid, False)
+        parse(invalid, False)
         
