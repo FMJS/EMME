@@ -16,7 +16,7 @@ import re
 
 from ecmasab.beparsing import BeParser, ParsingErrorException
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, JSV8Printer, BePrinter
+from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, JSV8Printer, JST262Printer, BePrinter
 from tests.input_tests import examples, invalids
 
 def parse_and_generate(example, valid):
@@ -39,11 +39,16 @@ def parse_and_generate(example, valid):
         c4printer.print_data_type(program)
         c4printer.print_block_type(program)
 
-        jprinter = PrintersFactory.printer_by_name(JSV8Printer().NAME)
         jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
-        assert(jprinter in jprinters)
 
-        jprog = jprinter.print_program(program)
+        jprinterV8 = PrintersFactory.printer_by_name(JST262Printer().NAME)
+        assert(jprinterV8 in jprinters)
+        jprog = jprinterV8.print_program(program)
+        
+        jprinterT2 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
+        assert(jprinterT2 in jprinters)
+        jprog = jprinterT2.print_program(program)
+        
     except Exception as e:
         if not valid:
             print(e)
@@ -70,11 +75,19 @@ def parse_and_generate(example, valid):
 
         with open("%s/outputs.txt"%example,"r") as f:
             a = f.read().split("\n")
-            b = jprinter.print_executions(program, execs).split("\n")
+            b = jprinterV8.print_executions(program, execs).split("\n")
             a.sort()
             b.sort()
             assert a == b
-    
+
+        jprinterV8.print_program(program, execs)
+        jprinterT2.print_program(program, execs)
+
+        a = jprinterV8.compute_possible_executions(program, execs)
+        b = jprinterT2.compute_possible_executions(program, execs)
+
+        assert a == b
+        
     assert True
 
 def be_parsing(example):
