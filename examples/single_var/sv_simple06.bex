@@ -1,0 +1,10 @@
+// Single variable, Simple06
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  x-F32[0] = 1.1;
+}
+
+Thread t2 {
+  print(x-F32[0]);
+}

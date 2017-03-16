@@ -1,0 +1,12 @@
+var x = new SharedArrayBuffer();
+var y = new SharedArrayBuffer();
+
+Thread t1 {
+  Atomics.store(x-I16, 0, 1);
+  Atomics.store(y-I16, 0, 1);
+}
+
+Thread t2 {
+  print(Atomics.load(x-I16, 0));
+  print(Atomics.load(y-I16, 0));
+}

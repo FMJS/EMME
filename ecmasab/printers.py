@@ -10,6 +10,7 @@
 
 import itertools
 import re
+import math
 from six.moves import range
 
 from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
@@ -48,6 +49,7 @@ class PrintersFactory(object):
         PrintersFactory.register_printer(JSV8Printer())
         PrintersFactory.register_printer(JST262Printer())
         PrintersFactory.register_printer(JSV8T262Printer())
+        PrintersFactory.register_printer(JSV8T262NAPrinter())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
@@ -77,12 +79,22 @@ class JSPrinter(object):
     NAME = "JS-PRINTER"
     TYPE = PrinterType.JS
 
+    float_app_js = ".toFixed(4)"
+    float_pri_js = "%.4f"
+    
     def __init__(self):
         pass
 
     def print_executions(self, program, interps):
-        pass
+        return "\n".join(self.compute_possible_executions(program, interps))
 
+    def compute_possible_executions(self, program, interps):
+        ret = set([])
+        for interp in interps.get_coherent_executions():
+            ret.add(self.print_execution(program, interp))
+
+        return list(ret)
+    
     def print_execution(self, program, interp):
         pass
     
@@ -316,19 +328,6 @@ class CVC4Printer(object):
 class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
 
-    float_app_js = ".toFixed(2)"
-    float_pri_js = "%.2f"
-    
-    def print_executions(self, program, interps):
-        return "\n".join(self.compute_possible_executions(program, interps))
-
-    def compute_possible_executions(self, program, interps):
-        ret = set([])
-        for interp in interps.get_coherent_executions():
-            ret.add(self.print_execution(program, interp))
-
-        return list(ret)
-    
     def print_execution(self, program, interp):
         reads = []
         for el in interp.reads_values:
@@ -339,8 +338,10 @@ class JSV8Printer(JSPrinter):
                 reads.append(("%s: "+self.float_pri_js)%(el.name, value))
             else:
                 reads.append("%s: %s"%(el.name, value))
-        return ";".join(reads)
-
+        ret = ";".join(reads)
+        ret = ret.replace("nan", "NaN")
+        return ret
+    
     def print_program(self, program, executions=None):
         program.sort_threads()
         
@@ -458,16 +459,19 @@ class JSV8Printer(JSPrinter):
                                                            block_name+"_sab")
 
         if (operation == WRITE) and (ordering == INIT):
-            mop = None
+            return var_def+"\n"
 
+        if (operation == WRITE):
+            if event.value_is_number():
+                event_values = event.get_correct_value()
+            else:
+                event_values = "".join(event.value)
 
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
-                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
-                event_values = event.get_correct_value()
 
             if operation == WRITE:
                 mop = "Atomics.store(%s, %s, %s)"%(block_name, \
@@ -487,10 +491,8 @@ class JSV8Printer(JSPrinter):
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
-                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
-                event_values = event.get_correct_value()
                     
             if operation == WRITE:
                 if is_float and event_address:
@@ -515,32 +517,18 @@ class JSV8Printer(JSPrinter):
         if operation == READ:
             return "%s;\n"%("; ".join([var_def,mop,prt]))
         else:
-            if not mop:
-                return var_def+"\n"
             return "%s;\n"%("; ".join([var_def,mop]))
 
 
 class JST262Printer(JSPrinter):
     NAME = "JS-TEST262"
 
-    float_app_js = ".toFixed(2)"
-    float_pri_js = "%.2f"
-
     waiting_time = 0
     agent_prefix = "$262"
 
+    asserts = True
     indent = "   "
-    
-    def print_executions(self, program, interps):
-        return "\n".join(self.compute_possible_executions(program, interps))
 
-    def compute_possible_executions(self, program, interps):
-        ret = set([])
-        for interp in interps.get_coherent_executions():
-            ret.add(self.print_execution(program, interp))
-
-        return list(ret)
-    
     def print_execution(self, program, interp):
         reads = []
         for el in interp.reads_values:
@@ -551,8 +539,10 @@ class JST262Printer(JSPrinter):
                 reads.append(("%s: "+self.float_pri_js)%(el.name, value))
             else:
                 reads.append("%s: %s"%(el.name, value))
-        return ";".join(reads)
-
+        ret = ";".join(reads)
+        ret = ret.replace("nan", "NaN")
+        return ret
+    
     def print_program(self, program, executions=None):
         program.sort_threads()
 
@@ -620,7 +610,7 @@ class JST262Printer(JSPrinter):
         ret += (ind*1)+"}\n"
         ret += "}\n\n"
         
-        if executions:
+        if self.asserts and executions:
             ret += "report.sort();\n"
             ret += "report = report.join(\";\");\n"
 
@@ -684,6 +674,7 @@ class JST262Printer(JSPrinter):
         var_def = ""
         prt = ""
 
+        
         if (operation == WRITE) and (ordering == INIT):
             return ""
         
@@ -697,24 +688,28 @@ class JST262Printer(JSPrinter):
                                                            block_size*8, \
                                                            block_name+"_sab")
 
+        if (operation == WRITE):
+            if event.value_is_number():
+                event_values = event.get_correct_value()
+            else:
+                event_values = "".join(event.value)
+
         if (ordering == SC) and not is_float:
             if not event_address:
                 addr = event.offset
-                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
-                event_values = event.get_correct_value()
 
             if operation == WRITE:
                 mop = "Atomics.store(%s, %s, %s)"%(block_name, \
-                                                        addr, \
-                                                        event_values)
+                                                   addr, \
+                                                   event_values)
 
 
             if operation == READ:
                 mop = "%s = Atomics.load(%s, %s)"%(event_name, \
-                                                          block_name, \
-                                                          addr)
+                                                   block_name, \
+                                                   addr)
                 if postfix:
                     prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
                 else:
@@ -723,10 +718,8 @@ class JST262Printer(JSPrinter):
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
-                event_values = "".join(event.value)
             else:
                 addr = int(event_address[0]/block_size)
-                event_values = event.get_correct_value()
                     
             if operation == WRITE:
                 if is_float and event_address:
@@ -761,6 +754,12 @@ class JSV8T262Printer(JST262Printer):
 
     agent_prefix = "$"
 
+class JSV8T262NAPrinter(JST262Printer):
+    NAME = "JSV8NA-TEST262"
+
+    agent_prefix = "$"
+    asserts = False
+    
 
 class DotPrinter(object):
     NAME = "DOT"

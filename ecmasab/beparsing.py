@@ -552,7 +552,7 @@ class BeParser(object):
             
             elif command_name == P_FLOOP:
                 if ite or floop:
-                    raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not yet supported"%(linenum))
+                    raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not supported"%(linenum))
                 
                 floop = For_Loop()
                 frind = int(command.interval[0])
@@ -562,7 +562,7 @@ class BeParser(object):
             
             elif command_name == P_IF:
                 if ite or floop:
-                    raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not yet supported"%(linenum))
+                    raise ParsingErrorException("ERROR (L%s): nested ifs or for-loops are not supported"%(linenum))
                 
                 ite = ITE_Statement()
                 condition = command.bcond

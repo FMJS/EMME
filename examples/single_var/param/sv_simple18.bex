@@ -1,0 +1,21 @@
+// Single Variable Simple 18
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  x-I8[0] = <val_param1>;
+  x-I8[1] = <val_param2>;
+  x-I8[2] = <val_param3>;
+  x-I8[3] = <val_param4>;
+}
+
+Thread t2 {
+  print(x-I16[0]);
+  print(x-I16[1]);
+}
+
+Params {
+  val_param1 = 0,3,1;
+  val_param2 = 0,3,1;
+  val_param3 = 0,3,1;
+  val_param4 = 0,3,1;
+}

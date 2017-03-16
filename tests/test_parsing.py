@@ -143,13 +143,23 @@ def be_parsing(example):
     
     assert(strp == beprogram)
     
-def test_parsing():
+def test_parse_valid():
     for example in examples:
         yield parse, example, True
+
+def test_parse_and_generate():
+    for example in examples:
         yield parse_and_generate, example
+
+def test_parsing():
+    for example in examples:
         yield be_parsing, example
+
+def test_printers_coherence():
+    for example in examples:
         yield printers_coherence, example
 
+def test_parse_invalid():
     for invalid in invalids:
         yield parse, invalid, False
         
