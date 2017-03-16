@@ -16,6 +16,8 @@ import sys
 from six.moves import range
 import subprocess
 
+from argparse import RawTextHelpFormatter
+
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
 from ecmasab.execution import RF, HB, SW
@@ -307,19 +309,20 @@ if __name__ == "__main__":
     verbosity = 0
     defines = ""
         
-    parser = argparse.ArgumentParser(description='EMME: ECMAScript Memory Model Evaluatior')
+    parser = argparse.ArgumentParser(description='EMME: ECMAScript Memory Model Evaluatior', formatter_class=RawTextHelpFormatter)
 
     
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
     
 
-    jsprinters = [x.NAME for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
+    jsprinters = ["\"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
+    jsprinters.sort()
     djsprinter = JSV8Printer().NAME
 
     parser.set_defaults(jsprinter=djsprinter)
-    parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?',
-                        help='select the JS printer between \"%s\". (Default is \"%s\")'%("|".join(jsprinters), djsprinter))
+    parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?', 
+                        help='select the JS printer between (Default is \"%s\"):\n%s'%(djsprinter, "\n".join(jsprinters)))
 
     parser.set_defaults(jsdir=None)
     parser.add_argument('-j', '--jsdir', metavar='jsdir', type=str, nargs='?',

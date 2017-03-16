@@ -30,6 +30,9 @@ LICENSE += "// See the License for the specific language governing permissions a
 LICENSE += "// limitations under the License.\n\n"
 
 
+def float_approx(value, approx=4):
+    return float(math.ceil(value*(10**approx))/(10**approx))
+
 class NotRegisteredPrinterException(Exception):
     pass
 
@@ -48,8 +51,8 @@ class PrintersFactory(object):
         PrintersFactory.register_printer(CVC4Printer())
         PrintersFactory.register_printer(JSV8Printer())
         PrintersFactory.register_printer(JST262Printer())
-        PrintersFactory.register_printer(JSV8T262Printer())
-        PrintersFactory.register_printer(JSV8T262NAPrinter())
+        PrintersFactory.register_printer(JST262_NP_Printer())
+        PrintersFactory.register_printer(JST262_NPNA_Printer())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
@@ -77,6 +80,7 @@ class PrintersFactory(object):
     
 class JSPrinter(object):
     NAME = "JS-PRINTER"
+    DESC = "MISSING DESCRIPTION!"
     TYPE = PrinterType.JS
 
     float_app_js = ".toFixed(4)"
@@ -327,6 +331,7 @@ class CVC4Printer(object):
 
 class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
+    DESC = "Google V8 format"
 
     def print_execution(self, program, interp):
         reads = []
@@ -335,7 +340,7 @@ class JSV8Printer(JSPrinter):
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                reads.append(("%s: "+self.float_pri_js)%(el.name, value))
+                reads.append(("%s: "+self.float_pri_js)%(el.name, float_approx(value)))
             else:
                 reads.append("%s: %s"%(el.name, value))
         ret = ";".join(reads)
@@ -496,7 +501,7 @@ class JSV8Printer(JSPrinter):
                     
             if operation == WRITE:
                 if is_float and event_address:
-                    event_values = self.float_pri_js%event_values
+                    event_values = self.float_pri_js%(float_approx(event_values))
 
                 mop = ("%s[%s] = %s")%(block_name, \
                                               addr, \
@@ -522,6 +527,7 @@ class JSV8Printer(JSPrinter):
 
 class JST262Printer(JSPrinter):
     NAME = "JS-TEST262"
+    DESC = "TEST262 format"
 
     waiting_time = 0
     agent_prefix = "$262"
@@ -536,7 +542,7 @@ class JST262Printer(JSPrinter):
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                reads.append(("%s: "+self.float_pri_js)%(el.name, value))
+                reads.append(("%s: "+self.float_pri_js)%(el.name, float_approx(value)))
             else:
                 reads.append("%s: %s"%(el.name, value))
         ret = ";".join(reads)
@@ -723,7 +729,7 @@ class JST262Printer(JSPrinter):
                     
             if operation == WRITE:
                 if is_float and event_address:
-                    event_values = self.float_pri_js%event_values
+                    event_values = self.float_pri_js%(float_approx(event_values))
 
                 mop = ("%s[%s] = %s")%(block_name, \
                                               addr, \
@@ -749,13 +755,15 @@ class JST262Printer(JSPrinter):
             return "%s;\n"%("; ".join([var_def,mop]))
     
 
-class JSV8T262Printer(JST262Printer):
-    NAME = "JSV8-TEST262"
+class JST262_NP_Printer(JST262Printer):
+    NAME = "JS-TEST262-NP"
+    DESC = "TEST262 format (without $262 prefix)"
 
     agent_prefix = "$"
 
-class JSV8T262NAPrinter(JST262Printer):
-    NAME = "JSV8NA-TEST262"
+class JST262_NPNA_Printer(JST262Printer):
+    NAME = "JS-TEST262-NPNA"
+    DESC = "TEST262 format (without assertions and $262 prefix)"
 
     agent_prefix = "$"
     asserts = False
@@ -764,7 +772,7 @@ class JSV8T262NAPrinter(JST262Printer):
 class DotPrinter(object):
     NAME = "DOT"
     TYPE = PrinterType.GRAPH
-    float_pri_js = "%.2f"
+    float_pri_js = "%.4f"
     printing_relations = None
 
     def __init__(self):
@@ -892,7 +900,7 @@ class DotPrinter(object):
                 value = event.get_correct_value()
                 bname = "%s%s[%s]"%(event.block.name, self.__get_block_size(event), event.address[0])
             
-        value = self.float_pri_js%value if event.is_wtear() else value
+        value = self.float_pri_js%(float_approx(value)) if event.is_wtear() else value
         oper = "=" if event.is_read() else ":="
 
         label = "%s<br/><B>%s %s %s</B>"%(event.name, bname, oper, value)
@@ -1068,7 +1076,7 @@ class BePrinter(object):
         if type(value) == list:
             return "".join(value)
 
-        values = self.float_pri_js%float(value)
+        values = self.float_pri_js%(float_approx(value))
         val1 = int(re.search("[0-9]+\.", values).group(0)[:-1])
         val2 = re.search("\.[0-9]+", values).group(0)
         val2 = re.sub("0+\Z", "", val2)[1:]
