@@ -22,7 +22,7 @@ from tests.input_tests import examples, invalids
 
 def parse(example, valid):
     try:
-        strp = open("%s.txt"%example,"r").read()
+        strp = open("%s.bex"%example,"r").read()
 
         printers = PrintersFactory.get_printers()
 
@@ -46,7 +46,7 @@ def parse(example, valid):
         
 
 def parse_and_generate(example):
-    strp = open("%s.txt"%example,"r").read()
+    strp = open("%s.bex"%example,"r").read()
 
     printers = PrintersFactory.get_printers()
 
@@ -94,7 +94,7 @@ def parse_and_generate(example):
     assert True
 
 def printers_coherence(example):
-    strp = open("%s.txt"%example,"r").read()
+    strp = open("%s.bex"%example,"r").read()
 
     parser = BeParser()
     program = parser.program_from_string(strp)
@@ -120,7 +120,7 @@ def printers_coherence(example):
     assert True
     
 def be_parsing(example):
-    strp = open("%s.txt"%example,"r").read()
+    strp = open("%s.bex"%example,"r").read()
 
     parser = BeParser()
     program = parser.program_from_string(strp)
