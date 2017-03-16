@@ -8,76 +8,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-// Thread t1
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
-      var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 1;
-      var x = new Int8Array(data.x_sab); x[1] = 1;
-      var x = new Int8Array(data.x_sab); x[2] = 1;
-      $.agent.report(report);
-      $.agent.leaving();
-   })
-   `);
-
-// Thread t2
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
-      var report = [];
-      var x = new Int8Array(data.x_sab); x[1] = 0;
-      var x = new Int8Array(data.x_sab); x[2] = 0;
-      var x = new Int8Array(data.x_sab); x[3] = 0;
-      $.agent.report(report);
-      $.agent.leaving();
-   })
-   `);
-
-// Thread t3
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
-      var report = [];
-      var x = new Int32Array(data.x_sab); id8_R_t3 = x[0]; report.push("id8_R_t3: "+id8_R_t3);
-      var x = new Int16Array(data.x_sab); id9_R_t3 = x[1]; report.push("id9_R_t3: "+id9_R_t3);
-      $.agent.report(report);
-      $.agent.leaving();
-   })
-   `);
-
+if (this.Worker) {
+(function execution() {
+var t1 =
+`onmessage = function(data) {
+var x = new Int8Array(data.x_sab); x[0] = 1;
+var x = new Int8Array(data.x_sab); x[1] = 1;
+var x = new Int8Array(data.x_sab); x[2] = 1;
+};`;
+var t2 =
+`onmessage = function(data) {
+var x = new Int8Array(data.x_sab); x[1] = 0;
+var x = new Int8Array(data.x_sab); x[2] = 0;
+var x = new Int8Array(data.x_sab); x[3] = 0;
+};`;
+var t3 =
+`onmessage = function(data) {
+var x = new Int32Array(data.x_sab); id8_R_t3 = x[0]; print("id8_R_t3: "+id8_R_t3);
+var x = new Int16Array(data.x_sab); id9_R_t3 = x[1]; print("id9_R_t3: "+id9_R_t3);
+};`;
 var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$.agent.broadcast(data);
-var report = [];
-
-// MAIN Thread
-
-var thread_report;
-var reports = 0;
-var i = 0;
-while (true) {
-   thread_report = $.agent.getReport();
-   if (thread_report != null) {
-      for(i=0; i < thread_report.length; i++){
-         report.push(thread_report[i]);
-         print(thread_report[i]);
-      }
-      reports += 1;
-      if (reports >= 3) break;
-   }
+x_sab : new SharedArrayBuffer(8),
 }
 
-report.sort();
-report = report.join(";");
-var outputs = [];
-outputs[0] = "id8_R_t3: 1;id9_R_t3: 0";
-outputs[1] = "id8_R_t3: 65537;id9_R_t3: 0";
-outputs[2] = "id8_R_t3: 257;id9_R_t3: 0";
-outputs[3] = "id8_R_t3: 65793;id9_R_t3: 1";
-outputs[4] = "id8_R_t3: 65793;id9_R_t3: 0";
-outputs[5] = "id8_R_t3: 257;id9_R_t3: 1";
-outputs[6] = "id8_R_t3: 1;id9_R_t3: 1";
-outputs[7] = "id8_R_t3: 65537;id9_R_t3: 1";
-outputs[8] = "id8_R_t3: 0;id9_R_t3: 1";
-outputs[9] = "id8_R_t3: 0;id9_R_t3: 0";
-assert(-1 != outputs.indexOf(report));
+var wt1 = new Worker(t1);
+var wt2 = new Worker(t2);
+var wt3 = new Worker(t3);
+wt1.postMessage(data, [data.x_sab]);
+wt2.postMessage(data, [data.x_sab]);
+wt3.postMessage(data, [data.x_sab]);
+})();
+}

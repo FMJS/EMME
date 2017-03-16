@@ -8,59 +8,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-// Thread t1
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
-      var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 3;
-      var x = new Int8Array(data.x_sab); x[1] = 0;
-      var x = new Int8Array(data.x_sab); x[2] = 0;
-      var x = new Int8Array(data.x_sab); x[3] = 3;
-      $.agent.report(report);
-      $.agent.leaving();
-   })
-   `);
-
-// Thread t2
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
-      var report = [];
-      var x = new Int16Array(data.x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
-      var x = new Int16Array(data.x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
-      $.agent.report(report);
-      $.agent.leaving();
-   })
-   `);
-
+if (this.Worker) {
+(function execution() {
+var t1 =
+`onmessage = function(data) {
+var x = new Int8Array(data.x_sab); x[0] = 3;
+var x = new Int8Array(data.x_sab); x[1] = 0;
+var x = new Int8Array(data.x_sab); x[2] = 0;
+var x = new Int8Array(data.x_sab); x[3] = 3;
+};`;
+var t2 =
+`onmessage = function(data) {
+var x = new Int16Array(data.x_sab); id6_R_t2 = x[0]; print("id6_R_t2: "+id6_R_t2);
+var x = new Int16Array(data.x_sab); id7_R_t2 = x[1]; print("id7_R_t2: "+id7_R_t2);
+};`;
 var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$.agent.broadcast(data);
-var report = [];
-
-// MAIN Thread
-
-var thread_report;
-var reports = 0;
-var i = 0;
-while (true) {
-   thread_report = $.agent.getReport();
-   if (thread_report != null) {
-      for(i=0; i < thread_report.length; i++){
-         report.push(thread_report[i]);
-         print(thread_report[i]);
-      }
-      reports += 1;
-      if (reports >= 2) break;
-   }
+x_sab : new SharedArrayBuffer(8),
 }
 
-report.sort();
-report = report.join(";");
-var outputs = [];
-outputs[0] = "id6_R_t2: 3;id7_R_t2: 0";
-outputs[1] = "id6_R_t2: 0;id7_R_t2: 0";
-outputs[2] = "id6_R_t2: 0;id7_R_t2: 768";
-outputs[3] = "id6_R_t2: 3;id7_R_t2: 768";
-assert(-1 != outputs.indexOf(report));
+var wt1 = new Worker(t1);
+var wt2 = new Worker(t2);
+wt1.postMessage(data, [data.x_sab]);
+wt2.postMessage(data, [data.x_sab]);
+})();
+}
