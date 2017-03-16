@@ -10,7 +10,6 @@
 
 import itertools
 import re
-import math
 from six.moves import range
 
 from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
@@ -30,8 +29,13 @@ LICENSE += "// See the License for the specific language governing permissions a
 LICENSE += "// limitations under the License.\n\n"
 
 
-def float_approx(value, approx=4):
-    return float(math.ceil(value*(10**approx))/(10**approx))
+FLOAT_APPROX = 4
+
+def float_approx(value, approx=FLOAT_APPROX):
+    val = value*(10**approx)
+    if (value*(10**approx)) % 1 >= float(0.5):
+        val += 1
+    return float(val/(10**approx))
 
 class NotRegisteredPrinterException(Exception):
     pass
@@ -83,8 +87,8 @@ class JSPrinter(object):
     DESC = "MISSING DESCRIPTION!"
     TYPE = PrinterType.JS
 
-    float_app_js = ".toFixed(4)"
-    float_pri_js = "%.4f"
+    float_app_js = ".toFixed("+str(FLOAT_APPROX)+")"
+    float_pri_js = "%."+str(FLOAT_APPROX)+"f"
     
     def __init__(self):
         pass
@@ -772,7 +776,7 @@ class JST262_NPNA_Printer(JST262Printer):
 class DotPrinter(object):
     NAME = "DOT"
     TYPE = PrinterType.GRAPH
-    float_pri_js = "%.4f"
+    float_pri_js = "%."+str(FLOAT_APPROX)+"f"
     printing_relations = None
 
     def __init__(self):

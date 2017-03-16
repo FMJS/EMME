@@ -12,7 +12,7 @@ if (this.Worker) {
 (function execution() {
 var t1 =
 `onmessage = function(data) {
-var x = new Float32Array(data.x_sab); x[0] = 2.1000;
+var x = new Float32Array(data.x_sab); x[0] = 2.1001;
 };`;
 var t2 =
 `onmessage = function(data) {

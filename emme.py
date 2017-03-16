@@ -316,7 +316,7 @@ if __name__ == "__main__":
                        help='the input file describing the program')
     
 
-    jsprinters = ["\"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
+    jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
     jsprinters.sort()
     djsprinter = JSV8Printer().NAME
 
@@ -334,7 +334,7 @@ if __name__ == "__main__":
 
     parser.set_defaults(force_solving=False)
     parser.add_argument('-f', '--force-solving', dest='force_solving', action='store_true',
-                        help="restarts the solving and discharges the previous models. (Default is \"%s\")"%False)
+                        help="forces the solving part by discharging the previous models. (Default is \"%s\")"%False)
     
     parser.set_defaults(skip_solving=False)
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
@@ -342,7 +342,11 @@ if __name__ == "__main__":
 
     parser.set_defaults(relations=",".join([RF,HB,SW]))
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
-                        help='the (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
+                        help='a (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
+
+    parser.set_defaults(prefix=None)
+    parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
+                        help='directory where to store the results. (Default is the same as the input file)')
     
     parser.set_defaults(verbosity=1)
     parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
@@ -360,34 +364,22 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
     
-    parser.set_defaults(expand_bounded_sets=True)
-    parser.add_argument('-n','--no-exbounded', dest='expand_bounded_sets', action='store_false',
+    parser.set_defaults(no_expand_bounded_sets=False)
+    parser.add_argument('-n','--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
                         help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%False)
-
-    parser.set_defaults(prefix=None)
-    parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
-                        help='directory where to store the results. (Default is the same as the input file)')
     
-    parser.set_defaults(preproc=None)
-    parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
-                        help='the memory model preprocessor. (Default is \"%s\")'%CPP)
-
     parser.set_defaults(defines=None)
     parser.add_argument('--defines', metavar='defines', type=str, nargs='?',
                         help='the set of preprocessor\'s defines. (Default is none)')
-    
-    parser.set_defaults(cpp_preproc=True)
-    parser.add_argument('--no-cpp', dest='cpp_preproc', action='store_false',
-                        help="disables the call of the cpp preprocessor. (Default is \"%s\")"%False)
-    
 
+    parser.set_defaults(preproc=CPP)
+    parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
+                        help='the memory model preprocessor. (Default is \"%s\")'%CPP)
+    
     args = parser.parse_args()
 
     prefix = args.prefix
     preproc = args.preproc
-    
-    if args.cpp_preproc and (not preproc):
-        preproc = CPP
 
     if not prefix:
         prefix = args.input_file.split("/")
@@ -403,7 +395,7 @@ if __name__ == "__main__":
     config.inputfile = args.input_file
     config.prefix = prefix
     config.preproc = preproc
-    config.expand_bounded_sets = args.expand_bounded_sets
+    config.expand_bounded_sets = not args.no_expand_bounded_sets
     config.verbosity = args.verbosity
     config.defines = args.defines
     config.sat = args.check_sat
