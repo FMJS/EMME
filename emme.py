@@ -115,6 +115,9 @@ class Config(object):
                 if not os.path.exists(self.jsdir):
                     os.makedirs(self.jsdir)
                 
+def del_file(path):
+    if os.path.exists(path):
+        os.remove(path)
                     
 def graphviz_gen(gfile, pngfile):
     command = "neato -Tpng -o%s %s"%(pngfile, gfile)
@@ -124,35 +127,25 @@ def graphviz_gen(gfile, pngfile):
         if DEBUG: raise
         raise UnreachableCodeException("ERROR: execution of \"%s\" failed"%(command))
 
-            
-def main(config):
-    config.generate_filenames()
-
+def parse_program(logger, config):
     parser = BeParser()
-    parser.DEBUG = DEBUG
-
-    logger = Logger(config.verbosity)
+    parser.DEBUG = config.debug
     
-    c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
-
-    abspath = os.path.abspath(__file__)
-    mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
-
-    logger.log("** Running with path \"%s\" **\n"%(config.prefix), 0)
-
     # Parsing of the bounded execution #
     with open(config.inputfile, "r") as f:
         program = parser.program_from_string(f.read())
-
-    logger.msg("Generating bounded execution... ", 0)
         
     if not os.path.exists(config.prefix):
         os.makedirs(config.prefix)
 
-    logger.log("DONE", 0)
+    return program
+    
+def generate_model(logger, config, program):
+    abspath = os.path.abspath(__file__)
+    mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
 
-    logger.msg("Generating SMT model... ", 0)
-
+    c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
+    
     # Copy of Memory Model (CVC4) into the directory #
     with open(mm, "r") as inmm:
         with open(config.model, "w") as outmm:
@@ -191,42 +184,61 @@ def main(config):
     with open(config.model_ex, "w") as f:
         f.write(strmodel)
 
-    logger.log("DONE", 0)
+    return strmodel
 
-    if config.only_model:
-        sys.exit(0)
-
-    # Running the solver to generate all sat models #
+def solve(logger, config, program, strmodel):
     c4solver = CVC4Solver()
     c4solver.verbosity = config.verbosity
+    c4solver.models_file = config.models
 
-    if program.has_conditions:
-        c4solver.set_additional_variables(program.get_conditions())
-
-    if config.force_solving:
-        os.remove(config.models)
-        
-    if True: #not config.sat:
-        c4solver.models_file = config.models
-
+    if (not config.skip_solving) and (config.force_solving):
+        del_file(config.models)
+    
     totmodels = c4solver.get_models_size()
 
     if (not config.skip_solving) and (not c4solver.is_done()):
-        logger.msg("Solving... ", 0)
-        
+        if program.has_conditions:
+            c4solver.set_additional_variables(program.get_conditions())
+
         if config.sat:
             totmodels = c4solver.solve_n(strmodel, 1)
         else:
             totmodels = c4solver.solve_all(strmodel)
 
-        logger.log("DONE", 0)
-
         if not config.debug:
-            os.remove(config.block_type)
-            os.remove(config.model)
-            os.remove(config.model_ex)
-            os.remove(config.id_type)
-            os.remove(config.instance)
+            del_file(config.block_type)
+            del_file(config.model)
+            del_file(config.model_ex)
+            del_file(config.id_type)
+            del_file(config.instance)
+
+    return totmodels
+
+def analyze_program(config):
+    config.generate_filenames()
+    
+    logger = Logger(config.verbosity)
+    
+    logger.log("** Running with path \"%s\" **\n"%(config.prefix), 0)
+
+    logger.msg("Generating bounded execution... ", 0)
+    program = parse_program(logger, config)
+    logger.log("DONE", 0)
+
+    logger.msg("Generating SMT model... ", 0)
+    strmodel = generate_model(logger, config, program)
+    logger.log("DONE", 0)
+
+    if config.only_model:
+        return 0
+
+    if (not config.skip_solving):
+        logger.msg("Solving... ", 0)
+
+    totmodels = solve(logger, config, program, strmodel)
+
+    if (not config.skip_solving):
+        logger.log("DONE", 0)
             
     if totmodels > 0:
         logger.log(" -> Found %s total models"%(totmodels), 0)
@@ -258,6 +270,9 @@ def main(config):
         if (totmodels > 0) and (not config.sat):
             logger.msg("Computing expected outputs... ", 0)
 
+            parser = BeParser()
+            parser.DEBUG = config.debug
+            
             with open(models, "r") as modelfile:
                 executions = parser.executions_from_string(modelfile.read(), program)
                 
@@ -299,10 +314,11 @@ def main(config):
             logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
 
     logger.log("\nExiting...", 0)
+    
+    return 0
         
-        
-if __name__ == "__main__":
 
+def main(args):
     preproc = None
     cpp_preproc = True
     expand_bounded_sets = True
@@ -351,6 +367,10 @@ if __name__ == "__main__":
     parser.set_defaults(verbosity=1)
     parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
                         help="verbosity level. (Default is \"%s\")"%1)
+
+    parser.set_defaults(silent=False)
+    parser.add_argument('-l', '--silent', dest='silent', action='store_true',
+                        help="silent mode. (Default is \"%s\")"%False)
     
     parser.set_defaults(check_sat=False)
     parser.add_argument('-s', '--only-sat', dest='check_sat', action='store_true',
@@ -375,8 +395,8 @@ if __name__ == "__main__":
     parser.set_defaults(preproc=CPP)
     parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
                         help='the memory model preprocessor. (Default is \"%s\")'%CPP)
-    
-    args = parser.parse_args()
+
+    args = parser.parse_args(args)
 
     prefix = args.prefix
     preproc = args.preproc
@@ -389,7 +409,7 @@ if __name__ == "__main__":
 
     if not os.path.exists(args.input_file):
         print("File not found: \"%s\""%args.input_file)
-        sys.exit(1)
+        return 1
     
     config = Config()
     config.inputfile = args.input_file
@@ -411,12 +431,20 @@ if __name__ == "__main__":
     config.debug = args.debug
     config.force_solving = args.force_solving
 
+    if args.silent:
+        config.verbosity = 0
+    
     DEBUG = config.debug
+
     
     try:
-        main(config)
+        return analyze_program(config)
     except Exception as e:
         if DEBUG: raise
         print(e)
-        sys.exit(1)
+        return 1
+    
+    
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
 
