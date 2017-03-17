@@ -26,12 +26,12 @@ def run(config):
     config.verbosity = 3
     config.jsprinter = JSV8Printer().NAME
     config.defines = "enc_RF=0,enc_RBF1=0,enc_RBF2=0"
+    config.debug = True
     
     analyze_program(config)
     
 def run_fresh(example, skip_solving, expand):
     config = Config()
-    config.debug = True
     config.inputfile = example+".bex"
     
     config.prefix = tmp_dir+example+"/"
