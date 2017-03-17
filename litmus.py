@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import commands
+import subprocess
 import argparse
 import sys
 import multiprocessing
@@ -49,9 +49,8 @@ def run_command(command, number, silent):
 
         for i in range(number):
 
-            out = commands.getoutput(" ".join(command))
-            # process = subprocess.Popen(command, stdout=subprocess.PIPE)
-            # out, err = process.communicate()
+            process = subprocess.Popen(command, stdout=subprocess.PIPE)
+            out, err = process.communicate()
 
             out = out.split("\n")
             out = [x for x in out if x != ""]

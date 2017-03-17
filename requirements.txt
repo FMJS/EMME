@@ -2,4 +2,3 @@ pyparsing
 six
 nose
 numpy
-commands
