@@ -32,3 +32,8 @@ wt1.postMessage(data, [data.x_sab]);
 wt2.postMessage(data, [data.x_sab]);
 })();
 }
+
+// Expected outputs //
+//output// id2_R_t1: 257;id5_R_t2: 0
+//output// id2_R_t1: 1;id5_R_t2: 0
+//output// id2_R_t1: 0;id5_R_t2: 0

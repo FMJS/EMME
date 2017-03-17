@@ -29,7 +29,7 @@ LICENSE += "// See the License for the specific language governing permissions a
 LICENSE += "// limitations under the License.\n\n"
 
 
-FLOAT_APPROX = 4
+FLOAT_APPROX = 6
 
 def float_approx(value, approx=FLOAT_APPROX):
     val = value*(10**approx)
@@ -87,6 +87,8 @@ class JSPrinter(object):
     DESC = "MISSING DESCRIPTION!"
     TYPE = PrinterType.JS
 
+    OUT = "//output// "
+    
     float_app_js = ".toFixed("+str(FLOAT_APPROX)+")"
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
     

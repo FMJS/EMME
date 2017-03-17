@@ -12,18 +12,18 @@ if (this.Worker) {
 (function execution() {
 var t1 =
 `onmessage = function(data) {
-var x = new Float32Array(data.x_sab); x[0] = 1.1000;
-var x = new Float32Array(data.x_sab); x[1] = 1.1000;
+var x = new Float32Array(data.x_sab); x[0] = 1.100000;
+var x = new Float32Array(data.x_sab); x[1] = 1.100000;
 };`;
 var t2 =
 `onmessage = function(data) {
-var x = new Float32Array(data.x_sab); x[1] = 2.2000;
-var x = new Float32Array(data.x_sab); x[2] = 2.2000;
+var x = new Float32Array(data.x_sab); x[1] = 2.200000;
+var x = new Float32Array(data.x_sab); x[2] = 2.200000;
 };`;
 var t3 =
 `onmessage = function(data) {
-var x = new Float64Array(data.x_sab); id6_R_t3 = x[0]; print("id6_R_t3: "+id6_R_t3.toFixed(4));
-var x = new Float32Array(data.x_sab); id7_R_t3 = x[0]; print("id7_R_t3: "+id7_R_t3.toFixed(4));
+var x = new Float64Array(data.x_sab); id6_R_t3 = x[0]; print("id6_R_t3: "+id6_R_t3.toFixed(6));
+var x = new Float32Array(data.x_sab); id7_R_t3 = x[0]; print("id7_R_t3: "+id7_R_t3.toFixed(6));
 };`;
 var data = {
 x_sab : new SharedArrayBuffer(16),
@@ -37,3 +37,12 @@ wt2.postMessage(data, [data.x_sab]);
 wt3.postMessage(data, [data.x_sab]);
 })();
 }
+
+// Expected outputs //
+//output// id6_R_t3: 3.600002;id7_R_t3: 1.100000
+//output// id6_R_t3: 0.000000;id7_R_t3: 1.100000
+//output// id6_R_t3: 921.600220;id7_R_t3: 1.100000
+//output// id6_R_t3: 3.600000;id7_R_t3: 1.100000
+//output// id6_R_t3: 0.014064;id7_R_t3: 1.100000
+//output// id6_R_t3: 3.600000;id7_R_t3: 0.000000
+//output// id6_R_t3: 0.000000;id7_R_t3: 0.000000

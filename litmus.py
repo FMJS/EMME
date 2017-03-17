@@ -18,12 +18,15 @@ import signal
 import time
 from six.moves import range
 
+from ecmasab.printers import JSPrinter
+
 K = "k"
 M = "M"
 
 class Config(object):
     command = None
     outputs = None
+    input_file = None
     number = None
     threads = None
     percent = None
@@ -32,6 +35,7 @@ class Config(object):
     def __init__(self):
         self.command = None
         self.outputs = None
+        self.input_file = None
         self.number = None
         self.threads = None
         self.percent = None
@@ -78,10 +82,14 @@ def main(config):
 
     command = config.command.split(" ")
     outputs = config.outputs
+    input_file = config.input_file
     number = config.number
     threads = config.threads
     percent = config.percent
     silent = config.silent
+
+    if input_file:
+        command.append(input_file)
     
     outputs_dic = {}
 
@@ -102,18 +110,34 @@ def main(config):
         
     number = int(number)*factor
 
-    try:
-        with open(outputs, "r") as f:
-            for line in f.readlines():
-                line = line.replace("\n","")
-                line = line.split(";")
-                line.sort()
-                line = ";".join(line)
-                outputs_dic[line] = 0
-    except Exception:
-        print("File not found \"%s\""%outputs)
-        sys.exit(1)
+    if outputs:
+        try:
+            with open(outputs, "r") as f:
+                for line in f.readlines():
+                    line = line.replace("\n","")
+                    line = line.split(";")
+                    line.sort()
+                    line = ";".join(line)
+                    outputs_dic[line] = 0
+        except Exception:
+            print("File not found \"%s\""%outputs)
+            return 1
+    else:
+        try:
+            with open(input_file, "r") as f:
+                for line in f.readlines():
+                    if JSPrinter.OUT in line:
+                        line = line.replace(JSPrinter.OUT,"")                        
+                        line = line.replace("\n","")
+                        line = line.split(";")
+                        line.sort()
+                        line = ";".join(line)
+                        outputs_dic[line] = 0
+        except Exception:
+            print("File not found \"%s\""%input_file)
+            return 1
 
+            
     original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
             
     num_t = threads
@@ -138,7 +162,7 @@ def main(config):
     except KeyboardInterrupt:
         print("Caught KeyboardInterrupt, terminating workers")
         pool.terminate()
-        sys.exit(1)
+        return 1
 
 
     for i in range(num_t):
@@ -202,8 +226,12 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--command', metavar='command', type=str, required=True,
                        help='the command to be executed')
 
+    parser.set_defaults(input_file=None)
+    parser.add_argument('-i', '--input_file', metavar='input_file', type=str, required=False,
+                       help='input_file')
+    
     parser.set_defaults(outputs=None)
-    parser.add_argument('-o', '--outputs', metavar='outputs', type=str, required=True,
+    parser.add_argument('-o', '--outputs', metavar='outputs', type=str, required=False,
                        help='possible outputs')
 
     parser.set_defaults(number="100")
@@ -230,9 +258,10 @@ if __name__ == "__main__":
     
     config.command = args.command
     config.outputs = args.outputs
+    config.input_file = args.input_file
     config.number = args.number
     config.threads = args.threads
     config.percent = args.percent
     config.silent = args.silent
-    
-    main(config)
+
+    sys.exit(main(config))

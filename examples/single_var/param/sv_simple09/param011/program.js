@@ -12,15 +12,15 @@ if (this.Worker) {
 (function execution() {
 var t1 =
 `onmessage = function(data) {
-var x = new Float32Array(data.x_sab); x[0] = 0.0000;
+var x = new Float32Array(data.x_sab); x[0] = 0.000000;
 };`;
 var t2 =
 `onmessage = function(data) {
-var x = new Float32Array(data.x_sab); x[1] = 1.0000;
+var x = new Float32Array(data.x_sab); x[1] = 1.000000;
 };`;
 var t3 =
 `onmessage = function(data) {
-var x = new Float64Array(data.x_sab); id4_R_t3 = x[0]; print("id4_R_t3: "+id4_R_t3.toFixed(4));
+var x = new Float64Array(data.x_sab); id4_R_t3 = x[0]; print("id4_R_t3: "+id4_R_t3.toFixed(6));
 };`;
 var data = {
 x_sab : new SharedArrayBuffer(8),
@@ -34,3 +34,7 @@ wt2.postMessage(data, [data.x_sab]);
 wt3.postMessage(data, [data.x_sab]);
 })();
 }
+
+// Expected outputs //
+//output// id4_R_t3: 0.000000
+//output// id4_R_t3: 0.007813

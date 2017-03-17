@@ -19,7 +19,7 @@ var x = new Int32Array(data.x_sab); id3_R_t1 = x[0]; print("id3_R_t1: "+id3_R_t1
 };`;
 var t2 =
 `onmessage = function(data) {
-var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; print("id4_R_t2: "+id4_R_t2.toFixed(4));
+var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; print("id4_R_t2: "+id4_R_t2.toFixed(6));
 };`;
 var data = {
 x_sab : new SharedArrayBuffer(8),
@@ -31,3 +31,10 @@ wt1.postMessage(data, [data.x_sab]);
 wt2.postMessage(data, [data.x_sab]);
 })();
 }
+
+// Expected outputs //
+//output// id3_R_t1: 1140850688;id4_R_t2: 0.000000
+//output// id3_R_t1: 1140850688;id4_R_t2: 32.000000
+//output// id3_R_t1: 1140850688;id4_R_t2: 512.000000
+//output// id3_R_t1: 1140850688;id4_R_t2: 128.000000
+//output// id3_R_t1: 1140850688;id4_R_t2: 8.000000

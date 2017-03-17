@@ -1,6 +1,0 @@
-id6_R_t2: 0;id7_R_t2: 1
-id6_R_t2: 0;id7_R_t2: 0
-id6_R_t2: 0;id7_R_t2: 513
-id6_R_t2: 256;id7_R_t2: 0
-id6_R_t2: 256;id7_R_t2: 1
-id6_R_t2: 256;id7_R_t2: 513

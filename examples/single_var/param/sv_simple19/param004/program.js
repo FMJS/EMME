@@ -39,3 +39,29 @@ wt2.postMessage(data, [data.x_sab]);
 wt3.postMessage(data, [data.x_sab]);
 })();
 }
+
+// Expected outputs //
+//output// id8_R_t3: 0;id9_R_t3: 0
+//output// id8_R_t3: 65536;id9_R_t3: 0
+//output// id8_R_t3: 65536;id9_R_t3: 1
+//output// id8_R_t3: 256;id9_R_t3: 0
+//output// id8_R_t3: 256;id9_R_t3: 1
+//output// id8_R_t3: 0;id9_R_t3: 1
+//output// id8_R_t3: 16843008;id9_R_t3: 256
+//output// id8_R_t3: 16843008;id9_R_t3: 257
+//output// id8_R_t3: 65536;id9_R_t3: 256
+//output// id8_R_t3: 65792;id9_R_t3: 0
+//output// id8_R_t3: 65792;id9_R_t3: 1
+//output// id8_R_t3: 16842752;id9_R_t3: 256
+//output// id8_R_t3: 16777472;id9_R_t3: 257
+//output// id8_R_t3: 256;id9_R_t3: 257
+//output// id8_R_t3: 256;id9_R_t3: 256
+//output// id8_R_t3: 65536;id9_R_t3: 257
+//output// id8_R_t3: 16777472;id9_R_t3: 256
+//output// id8_R_t3: 16842752;id9_R_t3: 257
+//output// id8_R_t3: 0;id9_R_t3: 256
+//output// id8_R_t3: 0;id9_R_t3: 257
+//output// id8_R_t3: 16777216;id9_R_t3: 256
+//output// id8_R_t3: 16777216;id9_R_t3: 257
+//output// id8_R_t3: 65792;id9_R_t3: 257
+//output// id8_R_t3: 65792;id9_R_t3: 256

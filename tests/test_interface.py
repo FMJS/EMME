@@ -31,6 +31,7 @@ def run(config):
     
 def run_fresh(example, skip_solving, expand):
     config = Config()
+    config.debug = True
     config.inputfile = example+".bex"
     
     config.prefix = tmp_dir+example+"/"

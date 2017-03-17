@@ -46,8 +46,6 @@ ALL = "all"
 
 E_CONDITIONS = ",ENCODE_CONDITIONS=1"
 
-DEBUG = False
-
 class Config(object):
     inputfile = None
     preproc = None
@@ -119,12 +117,12 @@ def del_file(path):
     if os.path.exists(path):
         os.remove(path)
                     
-def graphviz_gen(gfile, pngfile):
+def graphviz_gen(config, gfile, pngfile):
     command = "neato -Tpng -o%s %s"%(pngfile, gfile)
     try:
         subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     except:
-        if DEBUG: raise
+        if config.debug: raise
         raise UnreachableCodeException("ERROR: execution of \"%s\" failed"%(command))
 
 def parse_program(logger, config):
@@ -265,9 +263,8 @@ def analyze_program(config):
                 pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
                 logger.log("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))), 0)
 
-
         executions = None
-        if (totmodels > 0) and (not config.sat):
+        if (totmodels > 0):
             logger.msg("Computing expected outputs... ", 0)
 
             parser = BeParser()
@@ -280,25 +277,33 @@ def analyze_program(config):
                 
         logger.msg("Generating JS program... ", 0)
 
-        with open(config.jsprogram, "w") as f:
-            f.write(jprinter.print_program(program, executions))
-        
+        jsfiles = [config.jsprogram]
         if config.jsdir:
             jsprogram = "%s/%s"%(config.jsdir, config.jsprogram.replace("/","-"))
-            with open(jsprogram, "w") as f:
+            jsfiles.append(jsprogram)
+
+        for jsfile in jsfiles:    
+            with open(jsfile, "w") as f:
                 f.write(jprinter.print_program(program, executions))
 
         logger.log("DONE", 0)
 
-        if (totmodels > 0) and (not config.sat):
+        if (totmodels > 0):
             logger.msg("Generating expected outputs... ", 0)
 
             jsexecs = []
 
             # Generation of all possible outputs for the JS litmus test #
-            with open(config.execs, "w") as exefile:
-                jsexecs = jprinter.compute_possible_executions(program, executions)
-                exefile.write("\n".join(jsexecs))
+            for jsfile in jsfiles:    
+                with open(jsfile, "a") as f:
+                    jsexecs = jprinter.compute_possible_executions(program, executions)
+                    jsexecs = ["%s%s"%(jprinter.OUT, x) for x in jsexecs]
+                    f.write("\n// Expected outputs //\n%s"%"\n".join(jsexecs))
+
+            if config.debug:
+                with open(config.execs, "w") as exefile:
+                    jsexecs = jprinter.compute_possible_executions(program, executions)
+                    exefile.write("\n".join(jsexecs))
 
             # Generation of all possible MM interpretations #
             mms = dprinter.print_executions(program, executions)
@@ -307,7 +312,7 @@ def analyze_program(config):
                     dot.write(mms[i])
                 if config.graphviz:
                     with open(config.grap%(str(i+1)), "w") as dot:
-                        graphviz_gen(config.dots%(str(i+1)), config.grap%(str(i+1)))
+                        graphviz_gen(config, config.dots%(str(i+1)), config.grap%(str(i+1)))
 
             logger.log("DONE", 0)
 
@@ -434,16 +439,12 @@ def main(args):
     if args.silent:
         config.verbosity = 0
     
-    DEBUG = config.debug
-
-    
     try:
         return analyze_program(config)
     except Exception as e:
-        if DEBUG: raise
+        if config.debug: raise
         print(e)
         return 1
-    
     
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

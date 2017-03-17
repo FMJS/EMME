@@ -32,3 +32,9 @@ wt1.postMessage(data, [data.x_sab, data.y_sab]);
 wt2.postMessage(data, [data.x_sab, data.y_sab]);
 })();
 }
+
+// Expected outputs //
+//output// id5_R_t2: 0;id6_R_t2: 1
+//output// id5_R_t2: 0;id6_R_t2: 0
+//output// id5_R_t2: 1;id6_R_t2: 0
+//output// id5_R_t2: 1;id6_R_t2: 1

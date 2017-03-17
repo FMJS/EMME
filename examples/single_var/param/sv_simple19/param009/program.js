@@ -39,3 +39,23 @@ wt2.postMessage(data, [data.x_sab]);
 wt3.postMessage(data, [data.x_sab]);
 })();
 }
+
+// Expected outputs //
+//output// id8_R_t3: 33686016;id9_R_t3: 514
+//output// id8_R_t3: 131584;id9_R_t3: 514
+//output// id8_R_t3: 2;id9_R_t3: 0
+//output// id8_R_t3: 2;id9_R_t3: 2
+//output// id8_R_t3: 512;id9_R_t3: 0
+//output// id8_R_t3: 512;id9_R_t3: 2
+//output// id8_R_t3: 0;id9_R_t3: 514
+//output// id8_R_t3: 131586;id9_R_t3: 514
+//output// id8_R_t3: 2;id9_R_t3: 514
+//output// id8_R_t3: 131584;id9_R_t3: 2
+//output// id8_R_t3: 514;id9_R_t3: 2
+//output// id8_R_t3: 514;id9_R_t3: 0
+//output// id8_R_t3: 33686018;id9_R_t3: 514
+//output// id8_R_t3: 512;id9_R_t3: 514
+//output// id8_R_t3: 514;id9_R_t3: 514
+//output// id8_R_t3: 0;id9_R_t3: 2
+//output// id8_R_t3: 131586;id9_R_t3: 2
+//output// id8_R_t3: 0;id9_R_t3: 0
