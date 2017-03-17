@@ -291,18 +291,12 @@ def analyze_program(config):
         if (totmodels > 0):
             logger.msg("Generating expected outputs... ", 0)
 
-            jsexecs = []
-
             # Generation of all possible outputs for the JS litmus test #
-            for jsfile in jsfiles:    
-                with open(jsfile, "a") as f:
-                    jsexecs = jprinter.compute_possible_executions(program, executions)
-                    jsexecs = ["%s%s"%(jprinter.OUT, x) for x in jsexecs]
-                    f.write("\n// Expected outputs //\n%s"%"\n".join(jsexecs))
+            
+            jsexecs = jprinter.compute_possible_executions(program, executions)
 
             if config.debug:
                 with open(config.execs, "w") as exefile:
-                    jsexecs = jprinter.compute_possible_executions(program, executions)
                     exefile.write("\n".join(jsexecs))
 
             # Generation of all possible MM interpretations #

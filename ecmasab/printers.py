@@ -409,6 +409,11 @@ class JSV8Printer(JSPrinter):
         ret += "})();\n"
         ret += "}\n"
 
+        if executions:
+            execs = self.compute_possible_executions(program, executions)
+            execs = ["%s%s"%(self.OUT, x) for x in execs]
+            ret += "\n// Expected outputs //\n%s\n"%"\n".join(execs)
+        
         return ret
 
     def print_floop(self, floop):
@@ -634,6 +639,12 @@ class JST262Printer(JSPrinter):
 
             ret += "assert(-1 != outputs.indexOf(report));\n"
 
+
+        if executions:
+            execs = self.compute_possible_executions(program, executions)
+            execs = ["%s%s"%(self.OUT, x) for x in execs]
+            ret += "\n// Expected outputs //\n%s\n"%"\n".join(execs)
+            
         return ret
 
     def print_floop(self, floop):
