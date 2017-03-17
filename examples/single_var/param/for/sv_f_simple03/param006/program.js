@@ -8,31 +8,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-if (this.Worker) {
-(function execution() {
-var t1 =
-`onmessage = function(data) {
-var x = new Int8Array(data.x_sab); x[0] = 2;
-for(i = 0; i <= 2; i++){
-var x = new Int8Array(data.x_sab); x[i+1] = i+1;
-}
-};`;
-var t2 =
-`onmessage = function(data) {
-for(i = 0; i <= 1; i++){
-var x = new Int16Array(data.x_sab); id4_R_t2 = x[i]; print("id4_R_t2_"+i+": "+id4_R_t2);
-}
-};`;
+
+// Thread t1
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
+      var report = [];
+      var x = new Int8Array(data.x_sab); x[0] = 2;
+      for(i = 0; i <= 2; i++){
+         var x = new Int8Array(data.x_sab); x[i+1] = i+1;
+      }
+      $262.agent.report(report);
+      $262.agent.leaving();
+   })
+   `);
+
+// Thread t2
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
+      var report = [];
+      for(i = 0; i <= 1; i++){
+         var x = new Int16Array(data.x_sab); id4_R_t2 = x[i]; report.push("id4_R_t2_"+i+": "+id4_R_t2);
+      }
+      $262.agent.report(report);
+      $262.agent.leaving();
+   })
+   `);
+
 var data = {
-x_sab : new SharedArrayBuffer(8),
+   x_sab : new SharedArrayBuffer(8),
+}
+$262.agent.broadcast(data);
+var report = [];
+
+// MAIN Thread
+
+var thread_report;
+var reports = 0;
+var i = 0;
+while (true) {
+   thread_report = $262.agent.getReport();
+   if (thread_report != null) {
+      for(i=0; i < thread_report.length; i++){
+         report.push(thread_report[i]);
+         print(thread_report[i]);
+      }
+      reports += 1;
+      if (reports >= 2) break;
+   }
 }
 
-var wt1 = new Worker(t1);
-var wt2 = new Worker(t2);
-wt1.postMessage(data, [data.x_sab]);
-wt2.postMessage(data, [data.x_sab]);
-})();
-}
+report.sort();
+report = report.join(";");
+var outputs = [];
+outputs[0] = "id4_R_t2_0: 2;id4_R_t2_1: 770";
+outputs[1] = "id4_R_t2_0: 0;id4_R_t2_1: 770";
+outputs[2] = "id4_R_t2_0: 258;id4_R_t2_1: 770";
+outputs[3] = "id4_R_t2_0: 2;id4_R_t2_1: 2";
+outputs[4] = "id4_R_t2_0: 2;id4_R_t2_1: 0";
+outputs[5] = "id4_R_t2_0: 0;id4_R_t2_1: 0";
+outputs[6] = "id4_R_t2_0: 0;id4_R_t2_1: 2";
+outputs[7] = "id4_R_t2_0: 258;id4_R_t2_1: 2";
+outputs[8] = "id4_R_t2_0: 258;id4_R_t2_1: 0";
+assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id4_R_t2_0: 2;id4_R_t2_1: 770

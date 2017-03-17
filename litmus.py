@@ -78,7 +78,7 @@ def run_command(command, number, silent):
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
 
-def main(config):
+def litmus(config):
 
     command = config.command.split(" ")
     outputs = config.outputs
@@ -208,9 +208,10 @@ def main(config):
     if silent:
         if len(not_matched) > 0:
             print("FAIL")
+            return 1
         else:
             print("PASS")
-
+            return 0
             
 if __name__ == "__main__":
 
@@ -264,4 +265,4 @@ if __name__ == "__main__":
     config.percent = args.percent
     config.silent = args.silent
 
-    sys.exit(main(config))
+    sys.exit(litmus(config))

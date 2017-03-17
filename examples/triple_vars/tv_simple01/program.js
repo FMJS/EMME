@@ -8,34 +8,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-if (this.Worker) {
-(function execution() {
-var t1 =
-`onmessage = function(data) {
-var x = new Int8Array(data.x_sab); Atomics.store(x, 0, 1);
-var y = new Int8Array(data.y_sab); Atomics.store(y, 0, 1);
-var z = new Int8Array(data.z_sab); Atomics.store(z, 0, 1);
-};`;
-var t2 =
-`onmessage = function(data) {
-var x = new Int8Array(data.x_sab); id7_R_t2 = Atomics.load(x, 0); print("id7_R_t2: "+id7_R_t2);
-var y = new Int8Array(data.y_sab); id8_R_t2 = Atomics.load(y, 0); print("id8_R_t2: "+id8_R_t2);
-var z = new Int8Array(data.z_sab); id9_R_t2 = Atomics.load(z, 0); print("id9_R_t2: "+id9_R_t2);
-};`;
+
+// Thread t1
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
+      var report = [];
+      var x = new Int8Array(data.x_sab); Atomics.store(x, 0, 1);
+      var y = new Int8Array(data.y_sab); Atomics.store(y, 0, 1);
+      var z = new Int8Array(data.z_sab); Atomics.store(z, 0, 1);
+      $262.agent.report(report);
+      $262.agent.leaving();
+   })
+   `);
+
+// Thread t2
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
+      var report = [];
+      var x = new Int8Array(data.x_sab); id7_R_t2 = Atomics.load(x, 0); report.push("id7_R_t2: "+id7_R_t2);
+      var y = new Int8Array(data.y_sab); id8_R_t2 = Atomics.load(y, 0); report.push("id8_R_t2: "+id8_R_t2);
+      var z = new Int8Array(data.z_sab); id9_R_t2 = Atomics.load(z, 0); report.push("id9_R_t2: "+id9_R_t2);
+      $262.agent.report(report);
+      $262.agent.leaving();
+   })
+   `);
+
 var data = {
-x_sab : new SharedArrayBuffer(8),
-y_sab : new SharedArrayBuffer(8),
-z_sab : new SharedArrayBuffer(8),
+   x_sab : new SharedArrayBuffer(8),
+   y_sab : new SharedArrayBuffer(8),
+   z_sab : new SharedArrayBuffer(8),
+}
+$262.agent.broadcast(data);
+var report = [];
+
+// MAIN Thread
+
+var thread_report;
+var reports = 0;
+var i = 0;
+while (true) {
+   thread_report = $262.agent.getReport();
+   if (thread_report != null) {
+      for(i=0; i < thread_report.length; i++){
+         report.push(thread_report[i]);
+         print(thread_report[i]);
+      }
+      reports += 1;
+      if (reports >= 2) break;
+   }
 }
 
-
-
-var wt1 = new Worker(t1);
-var wt2 = new Worker(t2);
-wt1.postMessage(data, [data.x_sab, data.y_sab, data.z_sab]);
-wt2.postMessage(data, [data.x_sab, data.y_sab, data.z_sab]);
-})();
-}
+report.sort();
+report = report.join(";");
+var outputs = [];
+outputs[0] = "id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 1";
+outputs[1] = "id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 0";
+outputs[2] = "id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 0";
+outputs[3] = "id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 1";
+outputs[4] = "id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 0";
+outputs[5] = "id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 1";
+outputs[6] = "id7_R_t2: 0;id8_R_t2: 1;id9_R_t2: 1";
+outputs[7] = "id7_R_t2: 0;id8_R_t2: 1;id9_R_t2: 0";
+assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 1

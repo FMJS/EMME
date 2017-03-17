@@ -902,7 +902,7 @@ class DotPrinter(object):
                 posx += sepx
         ret.append("}")
                 
-        return "\n".join(ret)
+        return ("\n".join(ret))+"\n"
 
     def __print_event(self, event, reads_dic, posx, posy):
         if event.name in reads_dic:

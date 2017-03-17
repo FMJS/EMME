@@ -19,7 +19,7 @@ import subprocess
 from argparse import RawTextHelpFormatter
 
 from ecmasab.beparsing import BeParser
-from ecmasab.printers import JSV8Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
+from ecmasab.printers import JST262Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
 from ecmasab.execution import RF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 
@@ -217,7 +217,7 @@ def analyze_program(config):
     
     logger = Logger(config.verbosity)
     
-    logger.log("** Running with path \"%s\" **\n"%(config.prefix), 0)
+    logger.log("** Running with path \"%s\" **\n"%(config.prefix), -1)
 
     logger.msg("Generating bounded execution... ", 0)
     program = parse_program(logger, config)
@@ -333,7 +333,7 @@ def main(args):
 
     jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
     jsprinters.sort()
-    djsprinter = JSV8Printer().NAME
+    djsprinter = JST262Printer().NAME
 
     parser.set_defaults(jsprinter=djsprinter)
     parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?', 

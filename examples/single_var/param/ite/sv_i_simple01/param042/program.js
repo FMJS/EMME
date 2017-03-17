@@ -8,37 +8,73 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-if (this.Worker) {
-(function execution() {
-var t1 =
-`onmessage = function(data) {
-var x = new Int8Array(data.x_sab); x[0] = 2;
-};`;
-var t2 =
-`onmessage = function(data) {
-var x = new Int8Array(data.x_sab); id3_R_t2 = x[0]; print("id3_R_t2: "+id3_R_t2);
-if(id3_R_t2 < 2) {
-var x = new Int8Array(data.x_sab); x[0] = 0;
-} else {
-var x = new Int8Array(data.x_sab); x[1] = 0;
-}
-};`;
-var t3 =
-`onmessage = function(data) {
-var x = new Int16Array(data.x_sab); id6_R_t3 = x[0]; print("id6_R_t3: "+id6_R_t3);
-};`;
+
+// Thread t1
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
+      var report = [];
+      var x = new Int8Array(data.x_sab); x[0] = 2;
+      $262.agent.report(report);
+      $262.agent.leaving();
+   })
+   `);
+
+// Thread t2
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
+      var report = [];
+      var x = new Int8Array(data.x_sab); id3_R_t2 = x[0]; report.push("id3_R_t2: "+id3_R_t2);
+      if(id3_R_t2 < 2) {
+         var x = new Int8Array(data.x_sab); x[0] = 0;
+      } else {
+         var x = new Int8Array(data.x_sab); x[1] = 0;
+      }
+      $262.agent.report(report);
+      $262.agent.leaving();
+   })
+   `);
+
+// Thread t3
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
+      var report = [];
+      var x = new Int16Array(data.x_sab); id6_R_t3 = x[0]; report.push("id6_R_t3: "+id6_R_t3);
+      $262.agent.report(report);
+      $262.agent.leaving();
+   })
+   `);
+
 var data = {
-x_sab : new SharedArrayBuffer(8),
+   x_sab : new SharedArrayBuffer(8),
+}
+$262.agent.broadcast(data);
+var report = [];
+
+// MAIN Thread
+
+var thread_report;
+var reports = 0;
+var i = 0;
+while (true) {
+   thread_report = $262.agent.getReport();
+   if (thread_report != null) {
+      for(i=0; i < thread_report.length; i++){
+         report.push(thread_report[i]);
+         print(thread_report[i]);
+      }
+      reports += 1;
+      if (reports >= 3) break;
+   }
 }
 
-var wt1 = new Worker(t1);
-var wt2 = new Worker(t2);
-var wt3 = new Worker(t3);
-wt1.postMessage(data, [data.x_sab]);
-wt2.postMessage(data, [data.x_sab]);
-wt3.postMessage(data, [data.x_sab]);
-})();
-}
+report.sort();
+report = report.join(";");
+var outputs = [];
+outputs[0] = "id3_R_t2: 0;id6_R_t3: 0";
+outputs[1] = "id3_R_t2: 2;id6_R_t3: 2";
+outputs[2] = "id3_R_t2: 0;id6_R_t3: 2";
+outputs[3] = "id3_R_t2: 2;id6_R_t3: 0";
+assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id3_R_t2: 0;id6_R_t3: 0
