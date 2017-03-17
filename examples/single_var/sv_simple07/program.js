@@ -13,7 +13,7 @@
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 1.100000;
+      var x = new Float32Array(data.x_sab); x[0] = 1.1000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -23,7 +23,7 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 2.200000;
+      var x = new Float32Array(data.x_sab); x[0] = 2.2000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -33,7 +33,7 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id4_R_t3 = x[0]; report.push("id4_R_t3: "+id4_R_t3.toFixed(6));
+      var x = new Float32Array(data.x_sab); id4_R_t3 = x[0]; report.push("id4_R_t3: "+id4_R_t3.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -65,12 +65,12 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t3: 0.000000";
-outputs[1] = "id4_R_t3: 2.200000";
-outputs[2] = "id4_R_t3: 1.100000";
+outputs[0] = "id4_R_t3: 0.0000";
+outputs[1] = "id4_R_t3: 2.2000";
+outputs[2] = "id4_R_t3: 1.1000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id4_R_t3: 0.000000
-//output// id4_R_t3: 2.200000
-//output// id4_R_t3: 1.100000
+//output// id4_R_t3: 0.0000
+//output// id4_R_t3: 2.2000
+//output// id4_R_t3: 1.1000

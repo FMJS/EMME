@@ -13,8 +13,8 @@
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 1.100000;
-      var x = new Float32Array(data.x_sab); x[1] = 2.200000;
+      var x = new Float32Array(data.x_sab); x[0] = 1.1000;
+      var x = new Float32Array(data.x_sab); x[1] = 2.2000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,7 +24,7 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(6));
+      var x = new Float64Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -56,10 +56,10 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 3.600002";
-outputs[1] = "id4_R_t2: 0.000000";
+outputs[0] = "id4_R_t2: 3.6000";
+outputs[1] = "id4_R_t2: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id4_R_t2: 3.600002
-//output// id4_R_t2: 0.000000
+//output// id4_R_t2: 3.6000
+//output// id4_R_t2: 0.0000

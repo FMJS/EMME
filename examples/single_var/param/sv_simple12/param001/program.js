@@ -13,8 +13,8 @@
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 0.000000;
-      var x = new Float32Array(data.x_sab); x[1] = 0.000000;
+      var x = new Float32Array(data.x_sab); x[0] = 0.0000;
+      var x = new Float32Array(data.x_sab); x[1] = 0.0000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,8 +24,8 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[1] = 0.000000;
-      var x = new Float32Array(data.x_sab); x[2] = 0.000000;
+      var x = new Float32Array(data.x_sab); x[1] = 0.0000;
+      var x = new Float32Array(data.x_sab); x[2] = 0.0000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -35,8 +35,8 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id6_R_t3 = x[0]; report.push("id6_R_t3: "+id6_R_t3.toFixed(6));
-      var x = new Float32Array(data.x_sab); id7_R_t3 = x[0]; report.push("id7_R_t3: "+id7_R_t3.toFixed(6));
+      var x = new Float64Array(data.x_sab); id6_R_t3 = x[0]; report.push("id6_R_t3: "+id6_R_t3.toFixed(4));
+      var x = new Float32Array(data.x_sab); id7_R_t3 = x[0]; report.push("id7_R_t3: "+id7_R_t3.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -68,8 +68,8 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 0.000000;id7_R_t3: 0.000000";
+outputs[0] = "id6_R_t3: 0.0000;id7_R_t3: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id6_R_t3: 0.000000;id7_R_t3: 0.000000
+//output// id6_R_t3: 0.0000;id7_R_t3: 0.0000

@@ -13,9 +13,9 @@
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id2_R_t1 = x[0]; report.push("id2_R_t1: "+id2_R_t1.toFixed(6));
-      var x = new Float32Array(data.x_sab); x[0] = 1.000000;
-      var x = new Float32Array(data.x_sab); x[1] = 1.000000;
+      var x = new Float64Array(data.x_sab); id2_R_t1 = x[0]; report.push("id2_R_t1: "+id2_R_t1.toFixed(4));
+      var x = new Float32Array(data.x_sab); x[0] = 1.0000;
+      var x = new Float32Array(data.x_sab); x[1] = 1.0000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -25,9 +25,9 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id5_R_t2 = x[0]; report.push("id5_R_t2: "+id5_R_t2.toFixed(6));
-      var x = new Float32Array(data.x_sab); x[0] = 2.000000;
-      var x = new Float32Array(data.x_sab); x[1] = 2.000000;
+      var x = new Float64Array(data.x_sab); id5_R_t2 = x[0]; report.push("id5_R_t2: "+id5_R_t2.toFixed(4));
+      var x = new Float32Array(data.x_sab); x[0] = 2.0000;
+      var x = new Float32Array(data.x_sab); x[1] = 2.0000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -59,12 +59,12 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id2_R_t1: 0.000000;id5_R_t2: 0.000000";
-outputs[1] = "id2_R_t1: 2.000000;id5_R_t2: 0.000000";
-outputs[2] = "id2_R_t1: 0.000000;id5_R_t2: 0.007814";
+outputs[0] = "id2_R_t1: 0.0000;id5_R_t2: 0.0078";
+outputs[1] = "id2_R_t1: 0.0000;id5_R_t2: 0.0000";
+outputs[2] = "id2_R_t1: 2.0000;id5_R_t2: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id2_R_t1: 0.000000;id5_R_t2: 0.000000
-//output// id2_R_t1: 2.000000;id5_R_t2: 0.000000
-//output// id2_R_t1: 0.000000;id5_R_t2: 0.007814
+//output// id2_R_t1: 0.0000;id5_R_t2: 0.0078
+//output// id2_R_t1: 0.0000;id5_R_t2: 0.0000
+//output// id2_R_t1: 2.0000;id5_R_t2: 0.0000

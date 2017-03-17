@@ -26,7 +26,7 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(6));
+      var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -58,16 +58,12 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id3_R_t1: 973078528;id4_R_t2: 0.000488";
-outputs[1] = "id3_R_t1: 973078528;id4_R_t2: 0.000032";
-outputs[2] = "id3_R_t1: 973078528;id4_R_t2: 0.000000";
-outputs[3] = "id3_R_t1: 973078528;id4_R_t2: 0.000009";
-outputs[4] = "id3_R_t1: 973078528;id4_R_t2: 0.000122";
+outputs[0] = "id3_R_t1: 973078528;id4_R_t2: 0.0006";
+outputs[1] = "id3_R_t1: 973078528;id4_R_t2: 0.0000";
+outputs[2] = "id3_R_t1: 973078528;id4_R_t2: 0.0001";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id3_R_t1: 973078528;id4_R_t2: 0.000488
-//output// id3_R_t1: 973078528;id4_R_t2: 0.000032
-//output// id3_R_t1: 973078528;id4_R_t2: 0.000000
-//output// id3_R_t1: 973078528;id4_R_t2: 0.000009
-//output// id3_R_t1: 973078528;id4_R_t2: 0.000122
+//output// id3_R_t1: 973078528;id4_R_t2: 0.0006
+//output// id3_R_t1: 973078528;id4_R_t2: 0.0000
+//output// id3_R_t1: 973078528;id4_R_t2: 0.0001

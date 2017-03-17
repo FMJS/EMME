@@ -13,8 +13,8 @@
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 1.100000;
-      var x = new Float32Array(data.x_sab); x[1] = 1.100000;
+      var x = new Float32Array(data.x_sab); x[0] = 1.1000;
+      var x = new Float32Array(data.x_sab); x[1] = 1.1000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,8 +24,8 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[1] = 2.200000;
-      var x = new Float32Array(data.x_sab); x[2] = 2.200000;
+      var x = new Float32Array(data.x_sab); x[1] = 2.2000;
+      var x = new Float32Array(data.x_sab); x[2] = 2.2000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -35,8 +35,8 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id6_R_t3 = x[0]; report.push("id6_R_t3: "+id6_R_t3.toFixed(6));
-      var x = new Float32Array(data.x_sab); id7_R_t3 = x[0]; report.push("id7_R_t3: "+id7_R_t3.toFixed(6));
+      var x = new Float64Array(data.x_sab); id6_R_t3 = x[0]; report.push("id6_R_t3: "+id6_R_t3.toFixed(4));
+      var x = new Float32Array(data.x_sab); id7_R_t3 = x[0]; report.push("id7_R_t3: "+id7_R_t3.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -68,20 +68,18 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 3.600002;id7_R_t3: 1.100000";
-outputs[1] = "id6_R_t3: 0.000000;id7_R_t3: 1.100000";
-outputs[2] = "id6_R_t3: 921.600220;id7_R_t3: 1.100000";
-outputs[3] = "id6_R_t3: 3.600000;id7_R_t3: 1.100000";
-outputs[4] = "id6_R_t3: 0.014064;id7_R_t3: 1.100000";
-outputs[5] = "id6_R_t3: 3.600000;id7_R_t3: 0.000000";
-outputs[6] = "id6_R_t3: 0.000000;id7_R_t3: 0.000000";
+outputs[0] = "id6_R_t3: 0.0142;id7_R_t3: 1.1000";
+outputs[1] = "id6_R_t3: 921.6002;id7_R_t3: 1.1000";
+outputs[2] = "id6_R_t3: 3.6000;id7_R_t3: 0.0000";
+outputs[3] = "id6_R_t3: 0.0000;id7_R_t3: 1.1000";
+outputs[4] = "id6_R_t3: 3.6000;id7_R_t3: 1.1000";
+outputs[5] = "id6_R_t3: 0.0000;id7_R_t3: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id6_R_t3: 3.600002;id7_R_t3: 1.100000
-//output// id6_R_t3: 0.000000;id7_R_t3: 1.100000
-//output// id6_R_t3: 921.600220;id7_R_t3: 1.100000
-//output// id6_R_t3: 3.600000;id7_R_t3: 1.100000
-//output// id6_R_t3: 0.014064;id7_R_t3: 1.100000
-//output// id6_R_t3: 3.600000;id7_R_t3: 0.000000
-//output// id6_R_t3: 0.000000;id7_R_t3: 0.000000
+//output// id6_R_t3: 0.0142;id7_R_t3: 1.1000
+//output// id6_R_t3: 921.6002;id7_R_t3: 1.1000
+//output// id6_R_t3: 3.6000;id7_R_t3: 0.0000
+//output// id6_R_t3: 0.0000;id7_R_t3: 1.1000
+//output// id6_R_t3: 3.6000;id7_R_t3: 1.1000
+//output// id6_R_t3: 0.0000;id7_R_t3: 0.0000

@@ -35,8 +35,7 @@ addons:
 install:
   - pip install -r requirements.txt
   - cd ext_tools && bash ./travis_install.sh && cd ..
-  - for file in `find examples/ -name "*.bex"`; do python emme.py $file -k -l -j=tests/jstests; done
-  
+  - if [[ "$(python --version 2>&1 | sed 's/.* \([0-9]\).*/\1/')" == "2" ]]; then for file in `find examples/ -name "*.bex"`; do python emme.py $file -k -l -j=tests/jstests; done; fi  
 
 env:
  - PYTHONPATH=${TRAVIS_BUILD_DIR}/ext_tools/CVC4/python_bindings:$PYTHONPATH LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/ext_tools/CVC4/python_bindings:$LD_LIBRARY_PATH

@@ -25,7 +25,7 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id3_R_t2 = x[0]; report.push("id3_R_t2: "+id3_R_t2.toFixed(6));
+      var x = new Float64Array(data.x_sab); id3_R_t2 = x[0]; report.push("id3_R_t2: "+id3_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -57,10 +57,10 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id3_R_t2: 0.225000";
-outputs[1] = "id3_R_t2: 0.000000";
+outputs[0] = "id3_R_t2: 0.2250";
+outputs[1] = "id3_R_t2: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id3_R_t2: 0.225000
-//output// id3_R_t2: 0.000000
+//output// id3_R_t2: 0.2250
+//output// id3_R_t2: 0.0000

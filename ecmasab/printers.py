@@ -29,7 +29,7 @@ LICENSE += "// See the License for the specific language governing permissions a
 LICENSE += "// limitations under the License.\n\n"
 
 
-FLOAT_APPROX = 6
+FLOAT_APPROX = 4
 
 def float_approx(value, approx=FLOAT_APPROX):
     val = value*(10**approx)
