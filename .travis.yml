@@ -10,6 +10,7 @@ sudo: required
 cache:
   directories:
   - ${TRAVIS_BUILD_DIR}/ext_tools/CVC4
+  - ${TRAVIS_BUILD_DIR}/ext_tools/v8
 
 addons:
   apt:
