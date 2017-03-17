@@ -125,7 +125,7 @@ def graphviz_gen(config, gfile, pngfile):
         if config.debug: raise
         raise UnreachableCodeException("ERROR: execution of \"%s\" failed"%(command))
 
-def parse_program(logger, config):
+def parse_program(config):
     parser = BeParser()
     parser.DEBUG = config.debug
     
@@ -138,7 +138,7 @@ def parse_program(logger, config):
 
     return program
     
-def generate_model(logger, config, program):
+def generate_model(config, program):
     abspath = os.path.abspath(__file__)
     mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
 
@@ -184,7 +184,7 @@ def generate_model(logger, config, program):
 
     return strmodel
 
-def solve(logger, config, program, strmodel):
+def solve(config, program, strmodel):
     c4solver = CVC4Solver()
     c4solver.verbosity = config.verbosity
     c4solver.models_file = config.models
@@ -220,11 +220,11 @@ def analyze_program(config):
     logger.log("** Running with path \"%s\" **\n"%(config.prefix), -1)
 
     logger.msg("Generating bounded execution... ", 0)
-    program = parse_program(logger, config)
+    program = parse_program(config)
     logger.log("DONE", 0)
 
     logger.msg("Generating SMT model... ", 0)
-    strmodel = generate_model(logger, config, program)
+    strmodel = generate_model(config, program)
     logger.log("DONE", 0)
 
     if config.only_model:
@@ -233,7 +233,7 @@ def analyze_program(config):
     if (not config.skip_solving):
         logger.msg("Solving... ", 0)
 
-    totmodels = solve(logger, config, program, strmodel)
+    totmodels = solve(config, program, strmodel)
 
     if (not config.skip_solving):
         logger.log("DONE", 0)
@@ -318,14 +318,7 @@ def analyze_program(config):
         
 
 def main(args):
-    preproc = None
-    cpp_preproc = True
-    expand_bounded_sets = True
-    verbosity = 0
-    defines = ""
-        
     parser = argparse.ArgumentParser(description='EMME: ECMAScript Memory Model Evaluatior', formatter_class=RawTextHelpFormatter)
-
     
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
@@ -398,7 +391,6 @@ def main(args):
     args = parser.parse_args(args)
 
     prefix = args.prefix
-    preproc = args.preproc
 
     if not prefix:
         prefix = args.input_file.split("/")
@@ -413,7 +405,7 @@ def main(args):
     config = Config()
     config.inputfile = args.input_file
     config.prefix = prefix
-    config.preproc = preproc
+    config.preproc = args.preproc
     config.expand_bounded_sets = not args.no_expand_bounded_sets
     config.verbosity = args.verbosity
     config.defines = args.defines

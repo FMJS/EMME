@@ -26,7 +26,7 @@ setup(
     author='Cristian Mattarei',
     author_email='cristian.mattarei@gmail.com',
     url='https://github.com/FMJS/emme',
-    install_requires=["six","pyparsing","nose","numpy"],
+    install_requires=["six","pyparsing","nose","numpy","commands"],
     license=license,
     packages=find_packages(exclude=('ecmasab', 'tests'))
 )
