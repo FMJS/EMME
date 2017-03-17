@@ -32,12 +32,3 @@ if [ ! -f "$BINDINGS" ]; then
 else
     echo "CVC4 Python bindings already exists!"
 fi
-
-V8="`pwd`/v8/v8"
-if [ ! -d "$V8" ]; then
-    pushd .
-    bash get_v8.sh
-    popd
-else
-    echo "V8 already exists!"
-fi
