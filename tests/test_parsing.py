@@ -69,11 +69,18 @@ def parse_and_generate(example):
     jprinterV8 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
     assert(jprinterV8 in jprinters)
     jprog = jprinterV8.print_program(program)
-        
+
     if not program.params:
         with open("%s/program.js"%example,"r") as f:
             a = f.read()
             b = jprog
+            a = re.sub("//.*(\n|\Z)","",a)
+            b = re.sub("//.*(\n|\Z)","",b)
+
+            a = re.sub(re.compile("(\n)+", re.MULTILINE|re.DOTALL), '\n', a)
+            b = re.sub(re.compile("(\n)+", re.MULTILINE|re.DOTALL), '\n', b)
+
+            
             if a != b:
                 print(example)
                 print(a)
@@ -129,6 +136,7 @@ def be_parsing(example):
     beprogram = beprinter.print_program(program)
     strp = re.sub("\n+","\n",strp)
     strp = re.sub("//.*\n","",strp)
+    beprogram = re.sub("//.*\n","",beprogram)
 
     strp = strp.replace(" ","")
     beprogram = beprogram.replace(" ", "")
