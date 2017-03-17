@@ -35,7 +35,7 @@ addons:
 install:
   - pip install -r requirements.txt
   - cd ext_tools && bash ./travis_install.sh && cd ..
-  - for file in `find examples/ -name "*.bex"`; do python emme.py $file -k -j=tests/jstests; done
+  - for file in `find examples/ -name "*.bex"`; do python emme.py $file -k -l -j=tests/jstests; done
   
 
 env:
