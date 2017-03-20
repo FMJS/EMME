@@ -50,7 +50,7 @@ def run_command(command, number, silent):
         for i in range(number):
 
             process = subprocess.Popen(command, stdout=subprocess.PIPE)
-            out, err = process.communicate()
+            out = process.communicate()[0]
 
             out = out.split("\n")
             out = [x for x in out if x != ""]
@@ -80,15 +80,10 @@ def run_command(command, number, silent):
 def litmus(config):
 
     command = config.command.split(" ")
-    outputs = config.outputs
-    input_file = config.input_file
     number = config.number
-    threads = config.threads
-    percent = config.percent
-    silent = config.silent
 
-    if input_file:
-        command.append(input_file)
+    if config.input_file:
+        command.append(config.input_file)
     
     outputs_dic = {}
 
@@ -109,9 +104,9 @@ def litmus(config):
         
     number = int(number)*factor
 
-    if outputs:
+    if config.outputs:
         try:
-            with open(outputs, "r") as f:
+            with open(config.outputs, "r") as f:
                 for line in f.readlines():
                     line = line.replace("\n","")
                     line = line.split(";")
@@ -119,11 +114,11 @@ def litmus(config):
                     line = ";".join(line)
                     outputs_dic[line] = 0
         except Exception:
-            print("File not found \"%s\""%outputs)
+            print("File not found \"%s\""%config.outputs)
             return 1
     else:
         try:
-            with open(input_file, "r") as f:
+            with open(config.input_file, "r") as f:
                 for line in f.readlines():
                     if JSPrinter.OUT in line:
                         line = line.replace(JSPrinter.OUT,"")                        
@@ -133,13 +128,13 @@ def litmus(config):
                         line = ";".join(line)
                         outputs_dic[line] = 0
         except Exception:
-            print("File not found \"%s\""%input_file)
+            print("File not found \"%s\""%config.input_file)
             return 1
 
             
     original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
             
-    num_t = threads
+    num_t = config.threads
     pool = multiprocessing.Pool(num_t)
     async_results = []
     outputs_t = []
@@ -148,14 +143,14 @@ def litmus(config):
     
         
     for i in range(num_t):
-        async_results.append(pool.apply_async(run_command, (command, number/num_t, silent)))
+        async_results.append(pool.apply_async(run_command, (command, number/num_t, config.silent)))
 
-    if silent:
+    if config.silent:
         sys.stdout.write("Running (x%s) \"%s\"..."%(number, " ".join(command)))
         sys.stdout.flush()
         
     try:
-        if not silent: print("Running...")
+        if not config.silent: print("Running...")
         time.sleep(5)
         
     except KeyboardInterrupt:
@@ -182,29 +177,29 @@ def litmus(config):
     results.sort()
     results.reverse()
 
-    if not silent: sys.stdout.write('\n=== Results ===\n')
+    if not config.silent: sys.stdout.write('\n=== Results ===\n')
     sys.stdout.flush()
 
     for el in not_matched:
-        if not silent: print("NOT MATCHED OUTPUT ERROR: \"%s\""%el)
+        if not config.silent: print("NOT MATCHED OUTPUT ERROR: \"%s\""%el)
                 
     matches = 0
     for result in results:
         if result[0] > 0:
-            num = result[0] if not percent else float(float(result[0]*100)/float(number))
-            if percent:
-                if not silent: print("%.2f%%\t\"%s\""%(num, result[1]))
+            num = result[0] if not config.percent else float(float(result[0]*100)/float(number))
+            if config.percent:
+                if not config.silent: print("%.2f%%\t\"%s\""%(num, result[1]))
             else:
-                if not silent: print("%s\t\"%s\""%(num, result[1]))
+                if not config.silent: print("%s\t\"%s\""%(num, result[1]))
             matches += 1
 
-    if percent:
-        if not silent: print("Coverage: %.2f%%"%(float(float(matches*100)/float(len(results)))))
+    if config.percent:
+        if not config.silent: print("Coverage: %.2f%%"%(float(float(matches*100)/float(len(results)))))
     else:
-        if not silent: print("Coverage: %s/%s"%(matches, len(results)))
+        if not config.silent: print("Coverage: %s/%s"%(matches, len(results)))
 
 
-    if silent:
+    if config.silent:
         if len(not_matched) > 0:
             print("FAIL")
             return 1
@@ -214,12 +209,6 @@ def litmus(config):
             
 if __name__ == "__main__":
 
-    command = None
-    outputs = None
-    number = None
-    threads = None
-    percent = None
-        
     parser = argparse.ArgumentParser(description='Litmus tests checking.')
 
     parser.set_defaults(command=None)
