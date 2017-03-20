@@ -322,7 +322,6 @@ def main(args):
     
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
-    
 
     jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
     jsprinters.sort()
