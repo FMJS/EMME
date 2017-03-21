@@ -12,14 +12,14 @@ For more details have a look at docs/documentation.pdf.
 
 To start playing with the tool, you can run:
 
-1) cd ext_tools && bash get_CVC4.sh && cd .. (to install the CVC4 SMT solver. See http://cvc4.cs.stanford.edu/ for licensing and additional informations)
+1) ``cd ext_tools && bash get_CVC4.sh && cd ..`` (to install the CVC4 SMT solver. See http://cvc4.cs.stanford.edu/ for licensing and additional informations)
 
-2) cd ext_tools && bash get_v8.sh && cd .. (to install V8 JS engine. See https://developers.google.com/v8/ for licensing and additional informations)
+2) ``cd ext_tools && bash get_v8.sh && cd ..`` (to install V8 JS engine. See https://developers.google.com/v8/ for licensing and additional informations)
 
-3) make (to install python dependencies)
+3) ``make`` (to install python dependencies)
    
-4) python emme.py examples/single_var/sv_simple01.bex (to generate the valid executions in the folder examples/single_var/sv_simple01/)
+4) ``python emme.py examples/single_var/sv_simple01.bex`` (to generate the valid executions in the folder examples/single_var/sv_simple01/)
   
-5) python litmus.py -c "ext_tools/run_v8.sh --harmony_sharedarraybuffer" -i examples/single_var/sv_simple01/program.js -n 1k -j 4 (to check if the d8 engine obeys the expected results)
+5) ``python litmus.py -c "ext_tools/run_v8.sh --harmony_sharedarraybuffer" -i examples/single_var/sv_simple01/program.js -n 1k -j 4`` (to check if the d8 engine obeys the expected results)
 
 For more details on the license, have a look at LICENSE.txt
