@@ -16,7 +16,7 @@ import shutil
 import os
 
 from ecmasab.printers import JSV8Printer
-from emme import Config, main, ALL
+from emme import Config, analyze_program, ALL
 from tests.input_tests import examples, ex_fast
 
 tmp_dir = ".tmp_examples/"
@@ -26,12 +26,13 @@ def run(config):
     config.verbosity = 3
     config.jsprinter = JSV8Printer().NAME
     config.defines = "enc_RF=0,enc_RBF1=0,enc_RBF2=0"
+    config.debug = True
     
-    main(config)
+    analyze_program(config)
     
 def run_fresh(example, skip_solving, expand):
     config = Config()
-    config.inputfile = example+".txt"
+    config.inputfile = example+".bex"
     
     config.prefix = tmp_dir+example+"/"
     config.sat = True
@@ -61,7 +62,7 @@ def run_fresh(example, skip_solving, expand):
 
 def run_existing(example, skip_solving, print_all):
     config = Config()
-    config.inputfile = example+".txt"
+    config.inputfile = example+".bex"
     
     config.prefix = example+"/"
     config.sat = False

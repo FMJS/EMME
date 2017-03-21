@@ -22,7 +22,7 @@ from tests.input_tests import examples, invalids
 
 def parse(example, valid):
     try:
-        strp = open("%s.txt"%example,"r").read()
+        strp = open("%s.bex"%example,"r").read()
 
         printers = PrintersFactory.get_printers()
 
@@ -46,7 +46,7 @@ def parse(example, valid):
         
 
 def parse_and_generate(example):
-    strp = open("%s.txt"%example,"r").read()
+    strp = open("%s.bex"%example,"r").read()
 
     printers = PrintersFactory.get_printers()
 
@@ -69,11 +69,18 @@ def parse_and_generate(example):
     jprinterV8 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
     assert(jprinterV8 in jprinters)
     jprog = jprinterV8.print_program(program)
-        
+
     if not program.params:
         with open("%s/program.js"%example,"r") as f:
             a = f.read()
             b = jprog
+            a = re.sub("//.*(\n|\Z)","",a)
+            b = re.sub("//.*(\n|\Z)","",b)
+
+            a = re.sub(re.compile("(\n)+", re.MULTILINE|re.DOTALL), '\n', a)
+            b = re.sub(re.compile("(\n)+", re.MULTILINE|re.DOTALL), '\n', b)
+
+            
             if a != b:
                 print(example)
                 print(a)
@@ -94,7 +101,7 @@ def parse_and_generate(example):
     assert True
 
 def printers_coherence(example):
-    strp = open("%s.txt"%example,"r").read()
+    strp = open("%s.bex"%example,"r").read()
 
     parser = BeParser()
     program = parser.program_from_string(strp)
@@ -120,7 +127,7 @@ def printers_coherence(example):
     assert True
     
 def be_parsing(example):
-    strp = open("%s.txt"%example,"r").read()
+    strp = open("%s.bex"%example,"r").read()
 
     parser = BeParser()
     program = parser.program_from_string(strp)
@@ -129,6 +136,7 @@ def be_parsing(example):
     beprogram = beprinter.print_program(program)
     strp = re.sub("\n+","\n",strp)
     strp = re.sub("//.*\n","",strp)
+    beprogram = re.sub("//.*\n","",beprogram)
 
     strp = strp.replace(" ","")
     beprogram = beprogram.replace(" ", "")
@@ -143,13 +151,23 @@ def be_parsing(example):
     
     assert(strp == beprogram)
     
-def test_parsing():
+def test_parse_valid():
     for example in examples:
         yield parse, example, True
+
+def test_parse_and_generate():
+    for example in examples:
         yield parse_and_generate, example
+
+def test_parsing():
+    for example in examples:
         yield be_parsing, example
+
+def test_printers_coherence():
+    for example in examples:
         yield printers_coherence, example
 
+def test_parse_invalid():
     for invalid in invalids:
         yield parse, invalid, False
         

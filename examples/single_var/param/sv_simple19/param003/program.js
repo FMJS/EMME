@@ -10,44 +10,44 @@
 
 
 // Thread t1
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
       var report = [];
       var x = new Int8Array(data.x_sab); Atomics.store(x, 0, 2);
       var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 2);
       var x = new Int8Array(data.x_sab); Atomics.store(x, 2, 2);
-      $.agent.report(report);
-      $.agent.leaving();
+      $262.agent.report(report);
+      $262.agent.leaving();
    })
    `);
 
 // Thread t2
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
       var report = [];
       var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 0);
       var x = new Int8Array(data.x_sab); Atomics.store(x, 2, 0);
       var x = new Int8Array(data.x_sab); Atomics.store(x, 3, 0);
-      $.agent.report(report);
-      $.agent.leaving();
+      $262.agent.report(report);
+      $262.agent.leaving();
    })
    `);
 
 // Thread t3
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
       var report = [];
       var x = new Int32Array(data.x_sab); id8_R_t3 = Atomics.load(x, 0); report.push("id8_R_t3: "+id8_R_t3);
       var x = new Int16Array(data.x_sab); id9_R_t3 = Atomics.load(x, 1); report.push("id9_R_t3: "+id9_R_t3);
-      $.agent.report(report);
-      $.agent.leaving();
+      $262.agent.report(report);
+      $262.agent.leaving();
    })
    `);
 
 var data = {
    x_sab : new SharedArrayBuffer(8),
 }
-$.agent.broadcast(data);
+$262.agent.broadcast(data);
 var report = [];
 
 // MAIN Thread
@@ -56,7 +56,7 @@ var thread_report;
 var reports = 0;
 var i = 0;
 while (true) {
-   thread_report = $.agent.getReport();
+   thread_report = $262.agent.getReport();
    if (thread_report != null) {
       for(i=0; i < thread_report.length; i++){
          report.push(thread_report[i]);
@@ -81,3 +81,15 @@ outputs[7] = "id8_R_t3: 0;id9_R_t3: 2";
 outputs[8] = "id8_R_t3: 131586;id9_R_t3: 2";
 outputs[9] = "id8_R_t3: 0;id9_R_t3: 0";
 assert(-1 != outputs.indexOf(report));
+
+// Expected outputs //
+//output// id8_R_t3: 131074;id9_R_t3: 2
+//output// id8_R_t3: 131074;id9_R_t3: 0
+//output// id8_R_t3: 2;id9_R_t3: 0
+//output// id8_R_t3: 2;id9_R_t3: 2
+//output// id8_R_t3: 514;id9_R_t3: 2
+//output// id8_R_t3: 514;id9_R_t3: 0
+//output// id8_R_t3: 131586;id9_R_t3: 0
+//output// id8_R_t3: 0;id9_R_t3: 2
+//output// id8_R_t3: 131586;id9_R_t3: 2
+//output// id8_R_t3: 0;id9_R_t3: 0

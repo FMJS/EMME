@@ -10,33 +10,33 @@
 
 
 // Thread t1
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id2_R_t1 = x[0]; report.push("id2_R_t1: "+id2_R_t1.toFixed(2));
-      var x = new Float32Array(data.x_sab); x[0] = 2.00;
-      var x = new Float32Array(data.x_sab); x[1] = 2.00;
-      $.agent.report(report);
-      $.agent.leaving();
+      var x = new Float64Array(data.x_sab); id2_R_t1 = x[0]; report.push("id2_R_t1: "+id2_R_t1.toFixed(4));
+      var x = new Float32Array(data.x_sab); x[0] = 2.0000;
+      var x = new Float32Array(data.x_sab); x[1] = 2.0000;
+      $262.agent.report(report);
+      $262.agent.leaving();
    })
    `);
 
 // Thread t2
-$.agent.start(
-   `$.agent.receiveBroadcast(function (data) {
+$262.agent.start(
+   `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id5_R_t2 = x[0]; report.push("id5_R_t2: "+id5_R_t2.toFixed(2));
-      var x = new Float32Array(data.x_sab); x[0] = 0.00;
-      var x = new Float32Array(data.x_sab); x[1] = 0.00;
-      $.agent.report(report);
-      $.agent.leaving();
+      var x = new Float64Array(data.x_sab); id5_R_t2 = x[0]; report.push("id5_R_t2: "+id5_R_t2.toFixed(4));
+      var x = new Float32Array(data.x_sab); x[0] = 0.0000;
+      var x = new Float32Array(data.x_sab); x[1] = 0.0000;
+      $262.agent.report(report);
+      $262.agent.leaving();
    })
    `);
 
 var data = {
    x_sab : new SharedArrayBuffer(8),
 }
-$.agent.broadcast(data);
+$262.agent.broadcast(data);
 var report = [];
 
 // MAIN Thread
@@ -45,7 +45,7 @@ var thread_report;
 var reports = 0;
 var i = 0;
 while (true) {
-   thread_report = $.agent.getReport();
+   thread_report = $262.agent.getReport();
    if (thread_report != null) {
       for(i=0; i < thread_report.length; i++){
          report.push(thread_report[i]);
@@ -59,6 +59,10 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id2_R_t1: 0.00;id5_R_t2: 0.00";
-outputs[1] = "id2_R_t1: 0.00;id5_R_t2: 2.00";
+outputs[0] = "id2_R_t1: 0.0000;id5_R_t2: 0.0000";
+outputs[1] = "id2_R_t1: 0.0000;id5_R_t2: 2.0000";
 assert(-1 != outputs.indexOf(report));
+
+// Expected outputs //
+//output// id2_R_t1: 0.0000;id5_R_t2: 0.0000
+//output// id2_R_t1: 0.0000;id5_R_t2: 2.0000

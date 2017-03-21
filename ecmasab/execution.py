@@ -92,15 +92,6 @@ def arit_eval(s):
 
     return _eval(node.body)
 
-def is_number(value):
-    assert(type(value) == list)
-    for el in value:
-        if re.search('[a-zA-Z]', el):
-            return False
-        if not len(el):
-            return False
-    return True
-
 class Executions(object):
     program = None
     executions = None
@@ -499,9 +490,9 @@ class For_Loop(object):
                 size = event.get_size()
                 value = event.value
                 offset = event.offset
-
-                offset = offset.replace(self.cname,str(i))
-                offset = int(arit_eval(offset))
+                if type(offset) != int:
+                    offset = str(offset).replace(self.cname,str(i))
+                    offset = int(arit_eval(offset))
                 
                 baddr = size*offset
                 eaddr = (size*(offset+1))-1
@@ -520,7 +511,7 @@ class For_Loop(object):
                 if value:
                     value = [x.replace(self.cname,str(i)) for x in value]
                     me.value = value
-                    if is_number(value):
+                    if me.value_is_number():
                         if event.is_wtear():
                             value = float(arit_eval("".join(value)))
                             me.set_values_from_float(value, baddr, eaddr)
@@ -673,7 +664,7 @@ class Memory_Event(object):
                 val = self.value[x]
                 value.append(str(pardic[val]) if val in pardic else str(val))
             self.value = value
-            if is_number(value):
+            if self.value_is_number():
                 value = arit_eval("".join(value))
                 if self.is_wtear():
                     self.set_values_from_float(float(value),\
@@ -693,6 +684,20 @@ class Memory_Event(object):
         ret = Memory_Event.global_id_ev
         Memory_Event.global_id_ev = Memory_Event.global_id_ev + 1
         return "id%s"%ret
+
+    def value_is_number(self):
+        if self.values:
+            return True
+        if not self.value:
+            return False
+        assert(type(self.value) == list)
+        for el in self.value:
+            if re.search('[a-zA-Z]', el):
+                return False
+            if not len(el):
+                return False
+        return True
+
     
     def is_read(self):
         return self.operation == READ

@@ -1,5 +1,0 @@
-id2_R_t1: 514;id5_R_t2: 0
-id2_R_t1: 0;id5_R_t2: 514
-id2_R_t1: 2;id5_R_t2: 0
-id2_R_t1: 0;id5_R_t2: 0
-id2_R_t1: 0;id5_R_t2: 2
