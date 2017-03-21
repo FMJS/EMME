@@ -12,9 +12,9 @@ For more details have a look at docs/documentation.pdf.
 
 To start playing with the tool, you can run:
 
-1) cd ext_tools && bash get_CVC4.sh && cd .. (to install the CVC4 SMT solver. See http://cvc4.cs.stanford.edu/ for LICENSE and additional informations)
+1) cd ext_tools && bash get_CVC4.sh && cd .. (to install the CVC4 SMT solver. See http://cvc4.cs.stanford.edu/ for licensing and additional informations)
 
-2) cd ext_tools && bash get_v8.sh && cd .. (to install V8 JS engine. See https://developers.google.com/v8/ for LICENSE and additional informations)
+2) cd ext_tools && bash get_v8.sh && cd .. (to install V8 JS engine. See https://developers.google.com/v8/ for licensing and additional informations)
 
 3) make (to install python dependencies)
    
