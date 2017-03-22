@@ -1,6 +1,5 @@
 FROM fedora
 WORKDIR /home/fmjs
-RUN pwd
 
 RUN yum install -y wget unzip @development-tools python-pip swig python graphviz automake libtool gmp-devel gmp-*  curl which nano python-devel boost-devel gcc-c++ java
 RUN wget https://github.com/FMJS/EMME/archive/master.zip
