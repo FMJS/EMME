@@ -20,6 +20,6 @@ To start playing with the tool, you can run:
    
 4) ``python emme.py examples/single_var/sv_simple01.bex`` (to generate the valid executions in the folder examples/single_var/sv_simple01/)
   
-5) ``python litmus.py -c "ext_tools/run_v8.sh" -i examples/single_var/sv_simple01/program.js -n 1k -j 4`` (to check if the d8 engine obeys the expected results)
+5) ``python litmus.py -c "bash ext_tools/run_v8.sh" -i examples/single_var/sv_simple01/program.js -n 1k -j 4`` (to check if the d8 engine obeys the expected results)
 
 For more details on the license, have a look at LICENSE.txt
