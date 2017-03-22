@@ -1,7 +1,7 @@
-FROM fedora
+FROM fedora:25
 WORKDIR /home/fmjs
 
-RUN yum install -y wget unzip @development-tools python-pip swig python graphviz automake libtool gmp-devel gmp-*  curl which nano python-devel boost-devel gcc-c++ java
+RUN dnf install -y wget unzip @development-tools python-pip swig python graphviz automake libtool gmp-devel gmp-*  curl which nano python-devel boost-devel gcc-c++ java
 RUN wget https://github.com/FMJS/EMME/archive/master.zip
 RUN unzip master.zip
 RUN cd EMME-master/ext_tools && bash ./get_CVC4.sh
