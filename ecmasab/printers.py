@@ -696,7 +696,7 @@ class JST262Printer(JSPrinter):
         is_float = event.is_wtear()
         var_def = ""
         prt = ""
-
+        mop = None
         
         if (operation == WRITE) and (ordering == INIT):
             return ""
@@ -711,7 +711,7 @@ class JST262Printer(JSPrinter):
                                                            block_size*8, \
                                                            block_name+"_sab")
 
-        if (operation == WRITE):
+        if (event.is_write_or_modify()):
             if event.value_is_number():
                 event_values = event.get_correct_value()
             else:
@@ -723,13 +723,13 @@ class JST262Printer(JSPrinter):
             else:
                 addr = int(event_address[0]/block_size)
 
-            if operation == WRITE:
+            if event.is_write():
                 mop = "Atomics.store(%s, %s, %s)"%(block_name, \
                                                    addr, \
                                                    event_values)
 
 
-            if operation == READ:
+            if event.is_read():
                 mop = "%s = Atomics.load(%s, %s)"%(event_name, \
                                                    block_name, \
                                                    addr)
@@ -738,6 +738,20 @@ class JST262Printer(JSPrinter):
                 else:
                     prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
 
+            if event.is_modify():
+                if event.is_add():
+                    mop = "%s = Atomics.add(%s, %s, %s)"%(event_name, \
+                                                          block_name, \
+                                                          addr, \
+                                                          event_values)
+                else:
+                    raise UnreachableCodeException("Operator not supported")
+                
+                if postfix:
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
+                else:
+                    prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
+                    
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
@@ -764,7 +778,10 @@ class JST262Printer(JSPrinter):
                 else:
                     prt = "report.push(\"%s: \"+%s%s)"%(event_name, event_name, approx)
 
-        if operation == READ:
+
+        assert mop
+        
+        if event.is_read_or_modify():
             return "%s;\n"%("; ".join([var_def,mop,prt]))
         else:
             if not mop:
@@ -1021,18 +1038,28 @@ class BePrinter(object):
                 if not event_values and event.value:
                     event_values = "".join(self.__solve_param_names(event.value))
 
-            if operation == WRITE:
+            if event.is_write():
                 ret = "Atomics.store(%s%s, %s, %s)"%(block_name, \
                                                      self.__get_block_size(block_size, False), \
                                                      addr, \
                                                      event_values)
 
 
-            if operation == READ:
+            if event.is_read():
                 ret = "Atomics.load(%s%s, %s)"%(block_name, \
                                                 self.__get_block_size(block_size, False), \
                                                 addr)
 
+            if event.is_modify():
+                if event.is_add():
+                    ret = "Atomics.add(%s%s, %s, %s)"%(block_name, \
+                                                       self.__get_block_size(block_size, False), \
+                                                       addr, \
+                                                       event_values)
+                else:
+                    raise UnreachableCodeException("Operator not supported")
+
+                    
         if (ordering == UNORD) or is_float:
             if not event_address:
                 addr = event.offset
@@ -1062,7 +1089,7 @@ class BePrinter(object):
                                   addr)            
 
         if not pure:
-            if operation == READ:
+            if event.is_read_or_modify():
                 ret = "print(%s);\n"%ret
             else:
                 ret = "%s;\n"%ret

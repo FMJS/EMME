@@ -26,6 +26,9 @@ UNORD = "U"
 WTEAR = "WT"
 NTEAR = "NT"
 
+ADD = "ADD"
+AND = "AND"
+
 MAIN = "main"
 TYPE = "_Type"
 
@@ -630,6 +633,7 @@ class Memory_Event(object):
     pvalue = None
     id_ev = None
     en_conditions = None
+    operator = None
     
     info = None
     
@@ -647,6 +651,7 @@ class Memory_Event(object):
         self.pvalue = None
         self.en_conditions = None
         self.info = None
+        self.operator = None
         
         self.id_ev = Memory_Event.global_id_ev
 
@@ -698,7 +703,6 @@ class Memory_Event(object):
                 return False
         return True
 
-    
     def is_read(self):
         return self.operation == READ
 
@@ -708,6 +712,9 @@ class Memory_Event(object):
     def is_modify(self):
         return self.operation == MODIFY
 
+    def is_add(self):
+        return self.operator == ADD
+    
     def is_read_or_modify(self):
         return self.is_read() or self.is_modify()
 
