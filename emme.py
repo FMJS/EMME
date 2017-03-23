@@ -216,8 +216,8 @@ def analyze_program(config):
     config.generate_filenames()
     
     logger = Logger(config.verbosity)
-    
-    logger.log("** Running with path \"%s\" **\n"%(config.prefix), -1)
+
+    logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)
 
     logger.msg("Generating bounded execution... ", 0)
     program = parse_program(config)
