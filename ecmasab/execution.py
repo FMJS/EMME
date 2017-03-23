@@ -16,6 +16,7 @@ import re
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
+from ecmasab.utils import values_from_int, values_from_float, float_from_values, int_from_values
 
 READ = "R"
 WRITE = "W"
@@ -731,7 +732,7 @@ class Memory_Event(object):
         return self.ordering == INIT
 
     def set_values(self, values):
-        self.offset = None
+#        self.offset = None
         self.values = values
 
         self.block.update_size(len(values))
@@ -769,25 +770,17 @@ class Memory_Event(object):
         if not self.info:
             return False
         return key in self.info
-        
+    
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin
-        self.size = (end-begin)+1
-        values = list(struct.pack(self.__get_int_type(self.size), int(int_value)))
-        self.values = ([None] * begin) + values
-
+        self.values = values_from_int(int_value, begin, end)
         self.tear = NTEAR
-        
         self.block.update_size(end+1)
 
     def set_values_from_float(self, float_value, begin, end):
         self.offset = begin
-        self.size = (end-begin)+1
-        values = list(struct.pack(self.__get_float_type(self.size), float(float_value)))
-        self.values = ([None] * begin) + values
-
+        self.values = values_from_float(float_value, begin, end)
         self.tear = WTEAR
-
         self.block.update_size(end+1)
         
     def set_init_values(self):
@@ -795,43 +788,28 @@ class Memory_Event(object):
         self.values = [0]*self.block.size
         
     def get_correct_value(self):
+        if self.is_read():
+            return self.get_correct_read_value()
+        elif self.is_write():
+            return self.get_correct_write_value()
+        elif self.is_modify():
+            return self.get_correct_write_value()
+        else:
+            raise UnreachableCodeException("Event type not defined")
+
+    def __compute_correct_value(self, with_offset=True):
         if not self.values:
             return None
+        offset = self.offset if (self.offset and with_offset) else 0
         if self.is_ntear():
-            return self.get_int_value()
+            return int_from_values(self.values[offset:])
         if self.is_wtear():
-            return self.get_float_value()
+            return float_from_values(self.values[offset:])
         return None
-        
-    def get_int_value(self):
-        if not self.values:
-            return None
-        values = self.values[self.offset:]
-        values = struct.unpack(self.__get_int_type(len(values)), bytearray(values))
-        return values[0]
-
-    def get_float_value(self):
-        if not self.values:
-            return None
-        values = self.values[self.offset:]
-        values = struct.unpack(self.__get_float_type(len(values)), bytearray(values))
-        return values[0]
     
-    def __get_int_type(self, size):
-        if size <= 1:
-            return '<B'
-        elif size <= 2:
-            return '<H'
-        elif size <= 4:
-            return '<I'
-        else:
-            raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
+    def get_correct_write_value(self):
+        return self.__compute_correct_value()
 
-    def __get_float_type(self, size):
-        if size <= 4:
-            return '<f'
-        elif size <= 8:
-            return '<d'
-        else:
-            raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
-        
+    def get_correct_read_value(self):
+        return self.__compute_correct_value(False)
+    

@@ -16,6 +16,7 @@ from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, 
 from ecmasab.execution import READ, WRITE, MODIFY, ADD, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
+from ecmasab.utils import values_from_int, int_from_values
 
 from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
     operatorPrecedence, opAssoc, Combine, Optional, White, Group
@@ -236,7 +237,8 @@ class BeParser(object):
         for exe in executions.executions:
             events = exe.get_events()
             ev_map = dict((x.name, x) for x in events)
-            read_evs = [x for x in events if x.is_read_or_modify()]
+
+            read_evs = [x for x in events if x.is_modify()]
             
             rbf_map = dict(((x[0], int(x[2])), x[1]) for x in exe.get_RBF().tuples)
             for read_event in read_evs:
@@ -248,7 +250,33 @@ class BeParser(object):
                 new_read_event = copy.deepcopy(read_event)
                 new_read_event.set_values(values)
                 exe.add_read_values(new_read_event)
-    
+
+            mod_map = dict((x.name, x) for x in exe.reads_values)
+            read_evs = [x for x in events if x.is_read()]
+            
+            rbf_map = dict(((x[0], int(x[2])), x[1]) for x in exe.get_RBF().tuples)
+            for read_event in read_evs:
+                values = []
+                for i in read_event.address:
+                    write_event = ev_map[rbf_map[(read_event.name, i)]]
+                    if write_event.is_modify():
+                        if write_event.is_add():
+                            updated_values = self.__add_values(write_event.get_values(), mod_map[write_event.name])
+                            value = updated_values[i]
+                    else:
+                        value = write_event.get_values()[i]
+                    values.append(value)
+                new_read_event = copy.deepcopy(read_event)
+                new_read_event.set_values(values)
+                exe.add_read_values(new_read_event)
+
+    def __add_values(self, val1, ev):
+        begin = ev.offset
+        end = len(val1)
+        val1 = int_from_values(val1[ev.offset:])
+        val2 = int_from_values(ev.values)
+        return values_from_int(val1+val2, begin, end)
+                
     def __parse_executions(self, strinput):
         models = []
         done = False

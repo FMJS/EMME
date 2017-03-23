@@ -56,7 +56,7 @@ class PrintersFactory(object):
         PrintersFactory.register_printer(JSV8Printer())
         PrintersFactory.register_printer(JST262Printer())
         PrintersFactory.register_printer(JST262_NP_Printer())
-        PrintersFactory.register_printer(JST262_NPNA_Printer())
+        PrintersFactory.register_printer(JST262_NA_Printer())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
@@ -342,7 +342,7 @@ class JSV8Printer(JSPrinter):
     def print_execution(self, program, interp):
         reads = []
         for el in interp.reads_values:
-            value = el.get_correct_value()
+            value = el.get_correct_read_value()
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
@@ -549,7 +549,7 @@ class JST262Printer(JSPrinter):
     def print_execution(self, program, interp):
         reads = []
         for el in interp.reads_values:
-            value = el.get_correct_value()
+            value = el.get_correct_read_value()
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
@@ -795,11 +795,10 @@ class JST262_NP_Printer(JST262Printer):
 
     agent_prefix = "$"
 
-class JST262_NPNA_Printer(JST262Printer):
-    NAME = "JS-TEST262-NPNA"
-    DESC = "TEST262 format (without assertions and $262 prefix)"
+class JST262_NA_Printer(JST262Printer):
+    NAME = "JS-TEST262-NA"
+    DESC = "TEST262 format (without assertions)"
 
-    agent_prefix = "$"
     asserts = False
     
 
@@ -922,26 +921,35 @@ class DotPrinter(object):
         return ("\n".join(ret))+"\n"
 
     def __print_event(self, event, reads_dic, posx, posy):
+        revent = event
         if event.name in reads_dic:
-            event = reads_dic[event.name]
-            value = event.get_correct_value()
-            bname = "%s%s[%s]"%(event.block.name, self.__get_block_size(event), event.address[0])
+            revent = reads_dic[event.name]
+            value = revent.get_correct_read_value()
+            bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0])
         else:
-            if event.is_init():
+            if revent.is_init():
                 value = 0
-                bname = "%s-init"%event.block.name
+                bname = "%s-init"%revent.block.name
             else:
-                value = event.get_correct_value()
-                bname = "%s%s[%s]"%(event.block.name, self.__get_block_size(event), event.address[0])
+                value = revent.get_correct_write_value()
+                bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0])
             
-        value = self.float_pri_js%(float_approx(value)) if event.is_wtear() else value
-        oper = "=" if event.is_read() else ":="
+        value = self.float_pri_js%(float_approx(value)) if revent.is_wtear() else value
 
-        label = "%s<br/><B>%s %s %s</B>"%(event.name, bname, oper, value)
-        if event.has_info(ITE_Statement.OP_ITE):
-            label +=  "<br/>(%s)"%event.info[ITE_Statement.OP_ITE]
+        if revent.is_read():
+            oper = "= %s"%value
+        elif revent.is_write():
+            oper = ":= %s"%value
+        else:
+            wvalue = event.get_correct_write_value()
+            if revent.is_add():
+                oper = "+= %s<br/>(%s &rarr; %s)"%(wvalue, value, wvalue+value)
+            
+        label = "%s<br/><B>%s %s</B>"%(revent.name, bname, oper)
+        if revent.has_info(ITE_Statement.OP_ITE):
+            label +=  "<br/>(%s)"%revent.info[ITE_Statement.OP_ITE]
         
-        node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(event.name, label, posx, posy)
+        node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(revent.name, label, posx, posy)
 
         return node
 
