@@ -28,6 +28,7 @@ WTEAR = "WT"
 NTEAR = "NT"
 
 ADD = "ADD"
+SUB = "SUB"
 AND = "AND"
 
 MAIN = "main"
@@ -715,6 +716,9 @@ class Memory_Event(object):
 
     def is_add(self):
         return self.operator == ADD
+
+    def is_sub(self):
+        return self.operator == SUB
     
     def is_read_or_modify(self):
         return self.is_read() or self.is_modify()

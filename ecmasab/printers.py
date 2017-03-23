@@ -744,6 +744,11 @@ class JST262Printer(JSPrinter):
                                                           block_name, \
                                                           addr, \
                                                           event_values)
+                elif event.is_sub():
+                    mop = "%s = Atomics.sub(%s, %s, %s)"%(event_name, \
+                                                          block_name, \
+                                                          addr, \
+                                                          event_values)
                 else:
                     raise UnreachableCodeException("Operator not supported")
                 
@@ -944,6 +949,8 @@ class DotPrinter(object):
             wvalue = event.get_correct_write_value()
             if revent.is_add():
                 oper = "+= %s<br/>(%s &rarr; %s)"%(wvalue, value, wvalue+value)
+            if revent.is_sub():
+                oper = "-= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
             
         label = "%s<br/><B>%s %s</B>"%(revent.name, bname, oper)
         if revent.has_info(ITE_Statement.OP_ITE):

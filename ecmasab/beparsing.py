@@ -13,7 +13,7 @@ import numpy
 from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
-from ecmasab.execution import READ, WRITE, MODIFY, ADD, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
+from ecmasab.execution import READ, WRITE, MODIFY, ADD, SUB, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.utils import values_from_int, int_from_values
@@ -22,6 +22,7 @@ from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, L
     operatorPrecedence, opAssoc, Combine, Optional, White, Group
 
 T_AADD = "Atomics.add"
+T_ASUB = "Atomics.sub"
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
 T_ASTORE = "Atomics.store"
@@ -68,6 +69,7 @@ T_VAR = "var"
 
 P_ACCESS = "access"
 P_ADD = "add"
+P_SUB = "sub"
 P_ADDR = "address"
 P_ADDRSET = "address-set"
 P_ASS = "assign"
@@ -184,11 +186,12 @@ class BeParser(object):
         ssaddr = (T_CM + expr)(P_ADDR)
         sabstore = (T_ASTORE + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_STORE)
         sabadd = (T_AADD + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_ADD)
+        sabsub = (T_ASUB + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_SUB)
         
         sabaccess = (sabname + addr)(P_ACCESS)
         sabload  = (T_ALOAD + T_OP + sabname + ssaddr + T_CP)(P_LOAD)
 
-        sabread = (sabload | sabaccess | sabadd)
+        sabread = (sabload | sabaccess | sabadd | sabsub)
 
         sabassign = (sabaccess + T_EQ + value)(P_SABASS)
         printv = (T_PR + T_OP + sabread + T_CP)(P_PRINT)
@@ -262,7 +265,11 @@ class BeParser(object):
                     if write_event.is_modify():
                         if write_event.is_add():
                             updated_values = self.__add_values(write_event.get_values(), mod_map[write_event.name])
-                            value = updated_values[i]
+                        elif write_event.is_sub():
+                            updated_values = self.__sub_values(write_event.get_values(), mod_map[write_event.name])
+                        else:
+                            raise UnreachableCodeException("Operation not supported")
+                        value = updated_values[i]
                     else:
                         value = write_event.get_values()[i]
                     values.append(value)
@@ -276,7 +283,14 @@ class BeParser(object):
         val1 = int_from_values(val1[ev.offset:])
         val2 = int_from_values(ev.values)
         return values_from_int(val1+val2, begin, end)
-                
+
+    def __sub_values(self, val1, ev):
+        begin = ev.offset
+        end = len(val1)
+        val1 = int_from_values(val1[ev.offset:])
+        val2 = int_from_values(ev.values)
+        return values_from_int(val2-val1, begin, end)
+    
     def __parse_executions(self, strinput):
         models = []
         done = False
@@ -407,6 +421,11 @@ class BeParser(object):
             ordering = SC
             operation = MODIFY
             operator = ADD
+
+        elif ctype == P_SUB:
+            ordering = SC
+            operation = MODIFY
+            operator = SUB
             
         else:
             raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
@@ -519,13 +538,13 @@ class BeParser(object):
                 
                 thread.append(me)
                 
-            elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD]:
+            elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD, P_SUB]:
                 block_name = command.varname
 
                 if block_name not in blocks:
                     raise ParsingErrorException("ERROR (L%s): SAB \"%s\" not defined"%(linenum, block_name))
 
-                if self.__var_type_is_float(command.typeop) and (command_name in [P_STORE, P_LOAD, P_ADD]):
+                if self.__var_type_is_float(command.typeop) and (command_name not in [P_SABASS, P_ACCESS]):
                     raise ParsingErrorException("ERROR (L%s): Atomic operations not support the float type"%linenum)
 
                 param = False
@@ -566,6 +585,8 @@ class BeParser(object):
                     commands.insert(0, command.load)
                 elif command.add:
                     commands.insert(0, command.add)
+                elif command.sub:
+                    commands.insert(0, command.sub)
                 else:
                     raise ParsingErrorException("ERROR (L%s): cannot print command \"%s\""%(linenum, "".join(command)))
                     
