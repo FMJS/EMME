@@ -35,7 +35,7 @@ def float_approx(value, approx=FLOAT_APPROX):
     val = value*(10**approx)
     if (value*(10**approx)) % 1 >= float(0.5):
         val += 1
-    return float(val/(10**approx))
+    return float(float(int(val))/(10**approx))
 
 class NotRegisteredPrinterException(Exception):
     pass
