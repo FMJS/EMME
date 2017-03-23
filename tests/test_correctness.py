@@ -25,7 +25,7 @@ def run(example):
     config.command = "bash %s/ext_tools/run_v8.sh"%path
     config.input_file = "%s/tests/%s"%(path, example)
     config.threads = 1
-    config.number = "1"
+    config.number = "10"
     config.silent = True
     
     assert litmus(config) == 0
