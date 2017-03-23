@@ -951,8 +951,9 @@ class DotPrinter(object):
                 oper = "+= %s<br/>(%s &rarr; %s)"%(wvalue, value, wvalue+value)
             if revent.is_sub():
                 oper = "-= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
-            
-        label = "%s<br/><B>%s %s</B>"%(revent.name, bname, oper)
+
+        atomic = "A." if event.is_atomic() else ""                
+        label = "%s<br/><B>%s%s %s</B>"%(revent.name, atomic, bname, oper)
         if revent.has_info(ITE_Statement.OP_ITE):
             label +=  "<br/>(%s)"%revent.info[ITE_Statement.OP_ITE]
         

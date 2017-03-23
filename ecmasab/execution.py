@@ -735,8 +735,10 @@ class Memory_Event(object):
     def is_init(self):
         return self.ordering == INIT
 
+    def is_atomic(self):
+        return self.ordering == SC
+    
     def set_values(self, values):
-#        self.offset = None
         self.values = values
 
         self.block.update_size(len(values))
