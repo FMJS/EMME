@@ -52,8 +52,8 @@ def run_command(command, number, silent):
             process = subprocess.Popen(command, stdout=subprocess.PIPE)
             out = process.communicate()[0]
 
-            out = out.split("\n")
-            out = [x for x in out if x != ""]
+            out = out.split(b"\n")
+            out = [x.decode('utf-8') for x in out if x.decode('utf-8') != ""]
             out.sort()
             out = ";".join(out)
 
@@ -161,7 +161,6 @@ def litmus(config):
 
     for i in range(num_t):
         outputs_t.append(async_results[i].get())
-
         
     not_matched = []
     for outputs in outputs_t:
@@ -173,7 +172,7 @@ def litmus(config):
 
     not_matched = list(set(not_matched))
 
-    results = [(v, k) for k, v in outputs_dic.iteritems()]
+    results = [(outputs_dic[x], x) for x in outputs_dic]    
     results.sort()
     results.reverse()
 
