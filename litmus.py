@@ -143,7 +143,7 @@ def litmus(config):
     
         
     for i in range(num_t):
-        async_results.append(pool.apply_async(run_command, (command, number/num_t, config.silent)))
+        async_results.append(pool.apply_async(run_command, (command, int(number/num_t), config.silent)))
 
     if config.silent:
         sys.stdout.write("Running (x%s) \"%s\"..."%(number, " ".join(command)))
