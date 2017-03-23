@@ -25,8 +25,12 @@ if os.path.exists(jsdir):
             if (line == "") or (line[0] == "#"): continue
             jsprog = line.split(";")
             jsprogs.append(jsprog[0])
+            attr[jsprog[0]] = jsprog[1:]
         
 ex_fast = [x for x in tests if FAST in attr[x]]
 examples = [x for x in tests if INVALID not in attr[x]]
 invalids = [x for x in tests if INVALID in attr[x]]
+
+jstests = jsprogs
+jstests_fast = [x for x in jsprogs if PARAM not in attr[x]]
 
