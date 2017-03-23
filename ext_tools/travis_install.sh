@@ -32,3 +32,12 @@ if [ ! -f "$BINDINGS" ]; then
 else
     echo "CVC4 Python bindings already exists!"
 fi
+
+pushd .
+cd ext_tools
+wget https://github.com/cristian-mattarei/compiled_softwares/raw/master/v8/ubuntu-14.04-64/package.zip
+unzip package.zip
+rm
+echo "`pwd`/v8/v8/out/x64.release/d8 --test --random-seed=\$RANDOM --use-strict --nohard-abort --nodead-code-elimination --nofold-constants `pwd`/v8/v8/test/test262/data/harness/sta.js `pwd`/v8/v8/test/test262/data/harness/assert.js `pwd`/v8/v8/test/test262/harness-adapt.js `pwd`/v8/v8/test/test262/harness-agent.js --harmony-sharedarraybuffer \$1" > run_v8.sh
+echo "for file in \`find \$1 -name \"*.js\"\`; do python litmus.py -c \"bash `pwd`/run_v8.sh\" -i \$file -s -n \$2 -j 1; done" > run_all_v8.sh
+popd
