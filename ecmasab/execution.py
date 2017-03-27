@@ -734,6 +734,23 @@ class Memory_Event(object):
 
     def is_exchange(self):
         return self.operator == EXC
+
+    def get_operator_fun(self):
+        if self.is_add():
+            return lambda x,y: x+y
+        elif self.is_sub():
+            return lambda x,y: x-y
+        elif self.is_and():
+            return lambda x,y: x&y
+        elif self.is_xor():
+            return lambda x,y: x^y
+        elif self.is_or():
+            return lambda x,y: x|y
+        elif self.is_exchange():
+            return lambda x,y: y
+        else:
+            raise UnreachableCodeException("Operator not supported")
+        
     
     def is_read_or_modify(self):
         return self.is_read() or self.is_modify()

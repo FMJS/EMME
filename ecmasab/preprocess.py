@@ -254,7 +254,7 @@ class ExtPreprocessor(object):
                 command.append("-D %s" % define)
         command.append("%s" % filename)
 
-        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, close_fds=True)
         out = process.communicate()[0]
 
         out = out.split(b"\n")

@@ -33,13 +33,13 @@ def float_from_values(values):
 
 def get_int_type(size):
     if size <= 1:
-        return '<B'
+        return '<b'
     elif size <= 2:
-        return '<H'
+        return '<h'
     elif size <= 4:
-        return '<I'
+        return '<i'
     elif size <= 8:
-        return '<Q'
+        return '<q'
     else:
         raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
 

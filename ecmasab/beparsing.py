@@ -275,29 +275,15 @@ class BeParser(object):
                 for i in read_event.address:
                     write_event = ev_map[rbf_map[(read_event.name, i)]]
                     if write_event.is_modify():
-                        val1 = write_event.get_values()
-                        ev = mod_map[write_event.name]
-                        fun = None
                         is_float = False
-                        if write_event.is_add():
-                            is_float = ev.is_wtear()
-                            fun = lambda x,y: x+y
-                        elif write_event.is_sub():
-                            is_float = ev.is_wtear()
-                            fun = lambda x,y: x-y
-                        elif write_event.is_and():
-                            fun = lambda x,y: x&y
-                        elif write_event.is_xor():
-                            fun = lambda x,y: x^y
-                        elif write_event.is_or():
-                            fun = lambda x,y: x|y
-                        elif write_event.is_exchange():
-                            is_float = ev.is_wtear()
-                            fun = lambda x,y: y
-                        else:
-                            raise UnreachableCodeException("Operation not supported")
                         
-                        updated_values = self.__op_values(is_float, val1, ev, fun)
+                        if write_event.is_add() or write_event.is_sub() or write_event.is_exchange():
+                            is_float = write_event.is_wtear()
+                        
+                        updated_values = self.__op_values(is_float, \
+                                                          mod_map[write_event.name], \
+                                                          write_event, \
+                                                          write_event.get_operator_fun())
                         value = updated_values[i]
                     else:
                         value = write_event.get_values()[i]
@@ -306,16 +292,20 @@ class BeParser(object):
                 new_read_event.set_values(values)
                 exe.add_read_values(new_read_event)
 
-    def __op_values(self, is_float, val1, ev, fun):
-        begin = ev.offset
-        end = len(val1)
+    def __op_values(self, is_float, ev1, ev2, fun):
+        val2 = ev2.values
+        val1 = ev1.values
+        
+        begin = ev1.offset
+        end = len(val2)
         if is_float:
-            val1 = float_from_values(val1[ev.offset:])
-            val2 = float_from_values(ev.values)
+            val2 = float_from_values(val2[ev1.offset:])
+            val1 = float_from_values(ev1.values)
         else:
-            val1 = int_from_values(val1[ev.offset:])
-            val2 = int_from_values(ev.values)
-        return values_from_int(fun(val2,val1), begin, end)
+            val2 = int_from_values(val2[ev1.offset:])
+            val1 = int_from_values(ev1.values)
+            
+        return values_from_int(fun(val1,val2), begin, end)
     
     def __parse_executions(self, strinput):
         models = []

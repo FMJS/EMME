@@ -958,20 +958,25 @@ class DotPrinter(object):
             oper = ":= %s"%value
         else:
             wvalue = event.get_correct_write_value()
+            simbop = None
             if revent.is_add():
-                oper = "+= %s<br/>(%s &rarr; %s)"%(wvalue, value, wvalue+value)
+                simbop = "+="
             elif revent.is_sub():
-                oper = "-= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+                simbop = "-="
             elif revent.is_and():
-                oper = "&amp;= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+                simbop = "&amp;="
             elif revent.is_xor():
-                oper = "^= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+                simbop = "^="
             elif revent.is_or():
-                oper = "|= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+                simbop = "|="
             elif revent.is_exchange():
-                oper = ":= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+                simbop = ":="
             else:
                 raise UnreachableCodeException("Operator not supported")
+
+
+            oper = "%s %s<br/>(%s &rarr; %s)"%(simbop, wvalue, value, revent.get_operator_fun()(value, wvalue))
+            
 
         atomic = "A." if event.is_atomic() else ""                
         label = "%s<br/><B>%s%s %s</B>"%(revent.name, atomic, bname, oper)
