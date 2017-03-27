@@ -430,13 +430,10 @@ class BeParser(object):
         optypes.append((P_EXC, (SC, MODIFY, EXC)))
         optypes = dict(optypes)
 
-        for optype in optypes:
-            if ctype == optype:
-                ordering, operation, operator = optypes[optype]
-                break
-            
-        if not ordering:
+        if ctype not in optypes:
             raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
+                
+        ordering, operation, operator = optypes[ctype]
         
         block_name = command.varname
         opsize = self.__get_var_size(command.typeop)
@@ -479,7 +476,6 @@ class BeParser(object):
             if check_addr:
                 if T_VAL in str(check_addr):
                     raise ParsingErrorException("Parametric address definition is not supported")
-
 
         value = command.value            
 
@@ -588,24 +584,20 @@ class BeParser(object):
 
             elif command_name == P_PRINT:
 
-                reads = [command.access, \
-                         command.load, \
-                         command.oadd, \
-                         command.osub, \
-                         command.oand, \
-                         command.oxor, \
-                         command.oor, \
-                         command.oexchange]
+                reads = [x for x in [command.access, \
+                                     command.load, \
+                                     command.oadd, \
+                                     command.osub, \
+                                     command.oand, \
+                                     command.oxor, \
+                                     command.oor, \
+                                     command.oexchange] \
+                         if x]
 
-                ok = False
-                for read in reads:
-                    if read:
-                        commands.insert(0, read)
-                        ok = True
-                        break
-
-                if not ok:
+                if len(reads) < 1:
                     raise ParsingErrorException("ERROR (L%s): cannot print command \"%s\""%(linenum, "".join(command)))
+                
+                commands.insert(0, reads[0])
                     
             elif command_name == P_CSCOPE:
                 if floop:
