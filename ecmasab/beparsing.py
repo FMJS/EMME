@@ -417,53 +417,26 @@ class BeParser(object):
         operation = None
         operator = None
 
-        if ctype == P_STORE:
-            ordering = SC
-            operation = WRITE
 
-        elif ctype == P_LOAD:
-            ordering = SC
-            operation = READ
+        optypes = []
+        optypes.append((P_STORE, (SC, WRITE, None)))
+        optypes.append((P_LOAD, (SC, READ, None)))
+        optypes.append((P_ACCESS, (UNORD, READ, None)))
+        optypes.append((P_SABASS, (UNORD, WRITE, None)))
+        optypes.append((P_ADD, (SC, MODIFY, ADD)))
+        optypes.append((P_SUB, (SC, MODIFY, SUB)))
+        optypes.append((P_AND, (SC, MODIFY, AND)))
+        optypes.append((P_XOR, (SC, MODIFY, XOR)))
+        optypes.append((P_OR, (SC, MODIFY, OR)))
+        optypes.append((P_EXC, (SC, MODIFY, EXC)))
+        optypes = dict(optypes)
+
+        for optype in optypes:
+            if ctype == optype:
+                ordering, operation, operator = optypes[optype]
+                break
             
-        elif ctype == P_ACCESS:
-            ordering = UNORD
-            operation = READ
-            
-        elif ctype == P_SABASS:
-            ordering = UNORD
-            operation = WRITE
-
-        elif ctype == P_ADD:
-            ordering = SC
-            operation = MODIFY
-            operator = ADD
-
-        elif ctype == P_SUB:
-            ordering = SC
-            operation = MODIFY
-            operator = SUB
-
-        elif ctype == P_AND:
-            ordering = SC
-            operation = MODIFY
-            operator = AND
-
-        elif ctype == P_XOR:
-            ordering = SC
-            operation = MODIFY
-            operator = XOR
-
-        elif ctype == P_OR:
-            ordering = SC
-            operation = MODIFY
-            operator = OR
-
-        elif ctype == P_EXC:
-            ordering = SC
-            operation = MODIFY
-            operator = EXC
-            
-        else:
+        if not ordering:
             raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
         
         block_name = command.varname
