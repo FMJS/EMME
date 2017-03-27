@@ -22,14 +22,14 @@ from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, L
     operatorPrecedence, opAssoc, Combine, Optional, White, Group
 
 T_AADD = "Atomics.add"
-T_AXOR = "Atomics.xor"
-T_AEXC = "Atomics.exchange"
-T_AOR = "Atomics.or"
 T_AAND = "Atomics.and"
-T_ASUB = "Atomics.sub"
+T_AEXC = "Atomics.exchange"
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
+T_AOR = "Atomics.or"
 T_ASTORE = "Atomics.store"
+T_ASUB = "Atomics.sub"
+T_AXOR = "Atomics.xor"
 T_BEQ = "=="
 T_CCB = "}"
 T_CM = ","
@@ -73,13 +73,9 @@ T_VAR = "var"
 
 P_ACCESS = "access"
 P_ADD = "oadd"
-P_AND = "oand"
-P_XOR = "oxor"
-P_EXC = "oexchange"
-P_OR = "oor"
-P_SUB = "osub"
 P_ADDR = "address"
 P_ADDRSET = "address-set"
+P_AND = "oand"
 P_ASS = "assign"
 P_BCOND = "bcond"
 P_BIREL = "bi-relation"
@@ -88,6 +84,7 @@ P_CSCOPE = "closescope"
 P_ELSE = "else"
 P_EMPTY = "empty"
 P_EMREL = "em-relation"
+P_EXC = "oexchange"
 P_EXPR = "expr"
 P_FLOOP = "floop"
 P_IF = "if"
@@ -96,6 +93,7 @@ P_INTER = "interval"
 P_LIST = "list"
 P_LOAD = "load"
 P_OP = "operator"
+P_OR = "oor"
 P_PARAM = "param"
 P_PARAMS = "params"
 P_PRINT = "print"
@@ -105,6 +103,7 @@ P_SABASS = "sab-assign"
 P_SABDEF = "sabdef"
 P_SIZE = "varsize"
 P_STORE = "store"
+P_SUB = "osub"
 P_TRDB = "thread-begin"
 P_TRREL = "tr-relation"
 P_TYPEOP = "typeop"
@@ -113,6 +112,7 @@ P_VLEFT = "vleft"
 P_VNAME = "varname"
 P_VRIGHT = "vright"
 P_WRITE = "write"
+P_XOR = "oxor"
 
 class ParsingErrorException(Exception):
     pass
@@ -133,7 +133,6 @@ class BeParser(object):
     def __init_execution_parser(self):
         varname = Word(alphas+nums+T_US)
         bitup = T_OP + varname + T_CM + varname + T_CP
-#        trtup = T_OP + varname + T_CM + varname + T_CM + varname + T_CP
         trtup = T_OP + T_OP + varname + T_CM + varname + T_CP + T_CM + varname + T_CP
 
         birel = bitup + ZeroOrMore(T_CM + bitup)
@@ -417,18 +416,16 @@ class BeParser(object):
         operation = None
         operator = None
 
-        optypes = []
-        optypes.append((P_STORE, (SC, WRITE, None)))
-        optypes.append((P_LOAD, (SC, READ, None)))
-        optypes.append((P_ACCESS, (UNORD, READ, None)))
-        optypes.append((P_SABASS, (UNORD, WRITE, None)))
-        optypes.append((P_ADD, (SC, MODIFY, ADD)))
-        optypes.append((P_SUB, (SC, MODIFY, SUB)))
-        optypes.append((P_AND, (SC, MODIFY, AND)))
-        optypes.append((P_XOR, (SC, MODIFY, XOR)))
-        optypes.append((P_OR, (SC, MODIFY, OR)))
-        optypes.append((P_EXC, (SC, MODIFY, EXC)))
-        optypes = dict(optypes)
+        optypes = dict([(P_STORE, (SC, WRITE, None)), \
+                        (P_LOAD, (SC, READ, None)), \
+                        (P_ACCESS, (UNORD, READ, None)), \
+                        (P_SABASS, (UNORD, WRITE, None)), \
+                        (P_ADD, (SC, MODIFY, ADD)), \
+                        (P_SUB, (SC, MODIFY, SUB)), \
+                        (P_AND, (SC, MODIFY, AND)), \
+                        (P_XOR, (SC, MODIFY, XOR)), \
+                        (P_OR, (SC, MODIFY, OR)), \
+                        (P_EXC, (SC, MODIFY, EXC))])
 
         if ctype not in optypes:
             raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
@@ -539,7 +536,6 @@ class BeParser(object):
                 # Added to the SAB definitions since the size of the
                 # write will depend on the other writes and reads
                 sab_defs.append(me)
-                
                 thread.append(me)
                 
             elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD, P_SUB, P_AND, P_XOR, P_OR, P_EXC]:
@@ -672,7 +668,6 @@ class BeParser(object):
                 except ParsingErrorException as e:
                     if self.DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
-
 
                 ite.append_condition(lval, command.operator, rval)
 
