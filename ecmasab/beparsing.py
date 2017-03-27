@@ -72,12 +72,12 @@ T_VAL = "val_"
 T_VAR = "var"
 
 P_ACCESS = "access"
-P_ADD = "add"
-P_AND = "_and"
-P_XOR = "xor"
-P_EXC = "exchange"
-P_OR = "_or"
-P_SUB = "sub"
+P_ADD = "oadd"
+P_AND = "oand"
+P_XOR = "oxor"
+P_EXC = "oexchange"
+P_OR = "oor"
+P_SUB = "osub"
 P_ADDR = "address"
 P_ADDRSET = "address-set"
 P_ASS = "assign"
@@ -417,7 +417,6 @@ class BeParser(object):
         operation = None
         operator = None
 
-
         optypes = []
         optypes.append((P_STORE, (SC, WRITE, None)))
         optypes.append((P_LOAD, (SC, READ, None)))
@@ -591,12 +590,12 @@ class BeParser(object):
 
                 reads = [command.access, \
                          command.load, \
-                         command.add, \
-                         command.sub, \
-                         command._and, \
-                         command.xor, \
-                         command._or, \
-                         command.exchange]
+                         command.oadd, \
+                         command.osub, \
+                         command.oand, \
+                         command.oxor, \
+                         command.oor, \
+                         command.oexchange]
 
                 ok = False
                 for read in reads:
