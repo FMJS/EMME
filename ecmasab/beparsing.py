@@ -13,19 +13,23 @@ import numpy
 from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
-from ecmasab.execution import READ, WRITE, MODIFY, ADD, SUB, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
+from ecmasab.execution import READ, WRITE, MODIFY, ADD, AND, SUB, OR, XOR, EXC, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.utils import values_from_int, int_from_values
+from ecmasab.utils import values_from_int, int_from_values, float_from_values
 
 from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
     operatorPrecedence, opAssoc, Combine, Optional, White, Group
 
 T_AADD = "Atomics.add"
-T_ASUB = "Atomics.sub"
+T_AAND = "Atomics.and"
+T_AEXC = "Atomics.exchange"
 T_ALOAD = "Atomics.load"
 T_AND = "AND"
+T_AOR = "Atomics.or"
 T_ASTORE = "Atomics.store"
+T_ASUB = "Atomics.sub"
+T_AXOR = "Atomics.xor"
 T_BEQ = "=="
 T_CCB = "}"
 T_CM = ","
@@ -68,10 +72,10 @@ T_VAL = "val_"
 T_VAR = "var"
 
 P_ACCESS = "access"
-P_ADD = "add"
-P_SUB = "sub"
+P_ADD = "oadd"
 P_ADDR = "address"
 P_ADDRSET = "address-set"
+P_AND = "oand"
 P_ASS = "assign"
 P_BCOND = "bcond"
 P_BIREL = "bi-relation"
@@ -80,6 +84,7 @@ P_CSCOPE = "closescope"
 P_ELSE = "else"
 P_EMPTY = "empty"
 P_EMREL = "em-relation"
+P_EXC = "oexchange"
 P_EXPR = "expr"
 P_FLOOP = "floop"
 P_IF = "if"
@@ -88,6 +93,7 @@ P_INTER = "interval"
 P_LIST = "list"
 P_LOAD = "load"
 P_OP = "operator"
+P_OR = "oor"
 P_PARAM = "param"
 P_PARAMS = "params"
 P_PRINT = "print"
@@ -97,6 +103,7 @@ P_SABASS = "sab-assign"
 P_SABDEF = "sabdef"
 P_SIZE = "varsize"
 P_STORE = "store"
+P_SUB = "osub"
 P_TRDB = "thread-begin"
 P_TRREL = "tr-relation"
 P_TYPEOP = "typeop"
@@ -105,6 +112,7 @@ P_VLEFT = "vleft"
 P_VNAME = "varname"
 P_VRIGHT = "vright"
 P_WRITE = "write"
+P_XOR = "oxor"
 
 class ParsingErrorException(Exception):
     pass
@@ -125,7 +133,6 @@ class BeParser(object):
     def __init_execution_parser(self):
         varname = Word(alphas+nums+T_US)
         bitup = T_OP + varname + T_CM + varname + T_CP
-#        trtup = T_OP + varname + T_CM + varname + T_CM + varname + T_CP
         trtup = T_OP + T_OP + varname + T_CM + varname + T_CP + T_CM + varname + T_CP
 
         birel = bitup + ZeroOrMore(T_CM + bitup)
@@ -186,12 +193,16 @@ class BeParser(object):
         ssaddr = (T_CM + expr)(P_ADDR)
         sabstore = (T_ASTORE + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_STORE)
         sabadd = (T_AADD + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_ADD)
+        sabxor = (T_AXOR + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_XOR)
+        sabexc = (T_AEXC + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_EXC)
+        sabor = (T_AOR + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_OR)
+        saband = (T_AAND + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_AND)
         sabsub = (T_ASUB + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_SUB)
         
         sabaccess = (sabname + addr)(P_ACCESS)
         sabload  = (T_ALOAD + T_OP + sabname + ssaddr + T_CP)(P_LOAD)
 
-        sabread = (sabload | sabaccess | sabadd | sabsub)
+        sabread = (sabload | sabaccess | sabadd | sabsub | saband | sabxor | sabor | sabexc) 
 
         sabassign = (sabaccess + T_EQ + value)(P_SABASS)
         printv = (T_PR + T_OP + sabread + T_CP)(P_PRINT)
@@ -263,12 +274,15 @@ class BeParser(object):
                 for i in read_event.address:
                     write_event = ev_map[rbf_map[(read_event.name, i)]]
                     if write_event.is_modify():
-                        if write_event.is_add():
-                            updated_values = self.__add_values(write_event.get_values(), mod_map[write_event.name])
-                        elif write_event.is_sub():
-                            updated_values = self.__sub_values(write_event.get_values(), mod_map[write_event.name])
-                        else:
-                            raise UnreachableCodeException("Operation not supported")
+                        is_float = False
+                        
+                        if write_event.is_add() or write_event.is_sub() or write_event.is_exchange():
+                            is_float = write_event.is_wtear()
+                        
+                        updated_values = self.__op_values(is_float, \
+                                                          mod_map[write_event.name], \
+                                                          write_event, \
+                                                          write_event.get_operator_fun())
                         value = updated_values[i]
                     else:
                         value = write_event.get_values()[i]
@@ -277,19 +291,20 @@ class BeParser(object):
                 new_read_event.set_values(values)
                 exe.add_read_values(new_read_event)
 
-    def __add_values(self, val1, ev):
-        begin = ev.offset
-        end = len(val1)
-        val1 = int_from_values(val1[ev.offset:])
-        val2 = int_from_values(ev.values)
-        return values_from_int(val1+val2, begin, end)
-
-    def __sub_values(self, val1, ev):
-        begin = ev.offset
-        end = len(val1)
-        val1 = int_from_values(val1[ev.offset:])
-        val2 = int_from_values(ev.values)
-        return values_from_int(val2-val1, begin, end)
+    def __op_values(self, is_float, ev1, ev2, fun):
+        val2 = ev2.values
+        val1 = ev1.values
+        
+        begin = ev1.offset
+        end = len(val2)
+        if is_float:
+            val2 = float_from_values(val2[ev1.offset:])
+            val1 = float_from_values(ev1.values)
+        else:
+            val2 = int_from_values(val2[ev1.offset:])
+            val1 = int_from_values(ev1.values)
+            
+        return values_from_int(fun(val1,val2), begin, end)
     
     def __parse_executions(self, strinput):
         models = []
@@ -401,34 +416,21 @@ class BeParser(object):
         operation = None
         operator = None
 
-        if ctype == P_STORE:
-            ordering = SC
-            operation = WRITE
+        optypes = dict([(P_STORE, (SC, WRITE, None)), \
+                        (P_LOAD, (SC, READ, None)), \
+                        (P_ACCESS, (UNORD, READ, None)), \
+                        (P_SABASS, (UNORD, WRITE, None)), \
+                        (P_ADD, (SC, MODIFY, ADD)), \
+                        (P_SUB, (SC, MODIFY, SUB)), \
+                        (P_AND, (SC, MODIFY, AND)), \
+                        (P_XOR, (SC, MODIFY, XOR)), \
+                        (P_OR, (SC, MODIFY, OR)), \
+                        (P_EXC, (SC, MODIFY, EXC))])
 
-        elif ctype == P_LOAD:
-            ordering = SC
-            operation = READ
-            
-        elif ctype == P_ACCESS:
-            ordering = UNORD
-            operation = READ
-            
-        elif ctype == P_SABASS:
-            ordering = UNORD
-            operation = WRITE
-
-        elif ctype == P_ADD:
-            ordering = SC
-            operation = MODIFY
-            operator = ADD
-
-        elif ctype == P_SUB:
-            ordering = SC
-            operation = MODIFY
-            operator = SUB
-            
-        else:
+        if ctype not in optypes:
             raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
+                
+        ordering, operation, operator = optypes[ctype]
         
         block_name = command.varname
         opsize = self.__get_var_size(command.typeop)
@@ -471,7 +473,6 @@ class BeParser(object):
             if check_addr:
                 if T_VAL in str(check_addr):
                     raise ParsingErrorException("Parametric address definition is not supported")
-
 
         value = command.value            
 
@@ -535,10 +536,9 @@ class BeParser(object):
                 # Added to the SAB definitions since the size of the
                 # write will depend on the other writes and reads
                 sab_defs.append(me)
-                
                 thread.append(me)
                 
-            elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD, P_SUB]:
+            elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD, P_SUB, P_AND, P_XOR, P_OR, P_EXC]:
                 block_name = command.varname
 
                 if block_name not in blocks:
@@ -579,16 +579,21 @@ class BeParser(object):
                     thread.append(me)
 
             elif command_name == P_PRINT:
-                if command.access:
-                    commands.insert(0, command.access)
-                elif command.load:
-                    commands.insert(0, command.load)
-                elif command.add:
-                    commands.insert(0, command.add)
-                elif command.sub:
-                    commands.insert(0, command.sub)
-                else:
+
+                reads = [x for x in [command.access, \
+                                     command.load, \
+                                     command.oadd, \
+                                     command.osub, \
+                                     command.oand, \
+                                     command.oxor, \
+                                     command.oor, \
+                                     command.oexchange] \
+                         if x]
+
+                if len(reads) < 1:
                     raise ParsingErrorException("ERROR (L%s): cannot print command \"%s\""%(linenum, "".join(command)))
+                
+                commands.insert(0, reads[0])
                     
             elif command_name == P_CSCOPE:
                 if floop:
@@ -663,7 +668,6 @@ class BeParser(object):
                 except ParsingErrorException as e:
                     if self.DEBUG: raise
                     raise ParsingErrorException("ERROR (L%s): %s"%(linenum, str(e)))
-
 
                 ite.append_condition(lval, command.operator, rval)
 
