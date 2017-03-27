@@ -15,7 +15,6 @@ import unittest
 import shutil
 import os
 
-from ecmasab.printers import JSV8Printer
 from emme import Config, analyze_program, ALL
 from tests.input_tests import examples, ex_fast
 
@@ -24,7 +23,6 @@ outputs = "outputs.txt"
 
 def run(config):
     config.verbosity = 3
-    config.jsprinter = JSV8Printer().NAME
     config.defines = "enc_RF=0,enc_RBF1=0,enc_RBF2=0"
     config.debug = True
     

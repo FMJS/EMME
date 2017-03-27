@@ -16,13 +16,14 @@ import re
 
 from ecmasab.beparsing import BeParser, ParsingErrorException
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, JSV8Printer, JST262Printer, BePrinter
+from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, BePrinter
 from tests.input_tests import examples, invalids
-
+from emme import Config
 
 def parse(example, valid):
     try:
-        strp = open("%s.bex"%example,"r").read()
+        with open("%s.bex"%example,"r") as f:
+            strp = f.read()
 
         printers = PrintersFactory.get_printers()
 
@@ -46,7 +47,8 @@ def parse(example, valid):
         
 
 def parse_and_generate(example):
-    strp = open("%s.bex"%example,"r").read()
+    with open("%s.bex"%example,"r") as f:
+        strp = f.read()
 
     printers = PrintersFactory.get_printers()
 
@@ -64,13 +66,22 @@ def parse_and_generate(example):
     c4printer.print_data_type(program)
     c4printer.print_block_type(program)
 
+    config = Config()
+    
     jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
+    jprinter = PrintersFactory.printer_by_name(config.jsprinter)
 
-    jprinterV8 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
-    assert(jprinterV8 in jprinters)
-    jprog = jprinterV8.print_program(program)
+    assert(jprinter in jprinters)
 
     if not program.params:
+        with open("%s/models.txt"%example,"r") as f:
+            execsstr = f.read()
+            
+        execs = parser.executions_from_string(execsstr, program)
+        eprint = c4printer.print_executions(execs)
+        
+        jprog = jprinter.print_program(program, execs)
+        
         with open("%s/program.js"%example,"r") as f:
             a = f.read()
             b = jprog
@@ -79,7 +90,6 @@ def parse_and_generate(example):
 
             a = re.sub(re.compile("(\n)+", re.MULTILINE|re.DOTALL), '\n', a)
             b = re.sub(re.compile("(\n)+", re.MULTILINE|re.DOTALL), '\n', b)
-
             
             if a != b:
                 print(example)
@@ -87,13 +97,9 @@ def parse_and_generate(example):
                 print(b)
             assert a == b
 
-        execsstr = open("%s/models.txt"%example,"r").read()
-        execs = parser.executions_from_string(execsstr, program)
-        eprint = c4printer.print_executions(execs)
-
         with open("%s/outputs.txt"%example,"r") as f:
             a = f.read().split("\n")
-            b = jprinterV8.print_executions(program, execs).split("\n")
+            b = jprinter.print_executions(program, execs).split("\n")
             a.sort()
             b.sort()
             assert a == b
@@ -101,7 +107,8 @@ def parse_and_generate(example):
     assert True
 
 def printers_coherence(example):
-    strp = open("%s.bex"%example,"r").read()
+    with open("%s.bex"%example,"r") as f:
+        strp = f.read()
 
     parser = BeParser()
     program = parser.program_from_string(strp)
@@ -112,11 +119,14 @@ def printers_coherence(example):
     jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
         
     if not program.params:
-        execsstr = open("%s/models.txt"%example,"r").read()
+        with open("%s/models.txt"%example,"r") as f:
+            execsstr = f.read()
         execs = parser.executions_from_string(execsstr, program)
+
+        config = Config()
         
-        jprinterV8 = PrintersFactory.printer_by_name(JSV8Printer().NAME)
-        jprog = jprinterV8.compute_possible_executions(program, execs)
+        jprinter = PrintersFactory.printer_by_name(config.jsprinter)
+        jprog = jprinter.compute_possible_executions(program, execs)
         
         for jprinter in jprinters:
             assert jprinter.compute_possible_executions(program, execs) == jprog
@@ -127,7 +137,8 @@ def printers_coherence(example):
     assert True
     
 def be_parsing(example):
-    strp = open("%s.bex"%example,"r").read()
+    with open("%s.bex"%example,"r") as f:
+        strp = f.read()
 
     parser = BeParser()
     program = parser.program_from_string(strp)
@@ -173,11 +184,16 @@ def test_parse_invalid():
         
 if __name__ == "__main__":
     for example in examples:
-        be_parsing(example)
+        parse(example, True)
 
     for example in examples:
         parse_and_generate(example)
 
+    for example in examples:
+        be_parsing(example)
+
+    for example in examples:
+        printers_coherence(example)
+
     for invalid in invalids:
         parse(invalid, False)
-        

@@ -14,7 +14,7 @@ $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
       var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 2);
-      var x = new Int8Array(data.x_sab); id3_M_t1 = Atomics.sub(x, 1, 1); report.push("id3_M_t1: "+id3_M_t1);
+      var x = new Int8Array(data.x_sab); id3_M_t1 = Atomics.exchange(x, 1, 3); report.push("id3_M_t1: "+id3_M_t1);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -56,12 +56,12 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id3_M_t1: 2;id4_R_t2: 256";
+outputs[0] = "id3_M_t1: 2;id4_R_t2: 768";
 outputs[1] = "id3_M_t1: 2;id4_R_t2: 0";
 outputs[2] = "id3_M_t1: 2;id4_R_t2: 512";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id3_M_t1: 2;id4_R_t2: 256
+//output// id3_M_t1: 2;id4_R_t2: 768
 //output// id3_M_t1: 2;id4_R_t2: 0
 //output// id3_M_t1: 2;id4_R_t2: 512

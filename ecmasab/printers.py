@@ -111,7 +111,7 @@ class JSPrinter(object):
     def print_program(self, program, executions=None):
         pass
     
-    def print_event(self, event):
+    def print_event(self, event, postfix=None):
         pass
         
 class CVC4Printer(object):
@@ -181,7 +181,6 @@ class CVC4Printer(object):
         program.sort_threads()
 
         ret = ""
-
         ret += self.__print_conditions(program) + "\n"
         conditional = program.has_conditions()
         
@@ -375,7 +374,6 @@ class JSV8Printer(JSPrinter):
 
             ret += "};`;\n"
 
-
         blocks = [(x.name, x.size) for x in program.get_blocks()]
         blocks.sort()
         ret += "var data = {\n"
@@ -392,12 +390,10 @@ class JSV8Printer(JSPrinter):
             for ev in thread.get_events(True):
                 ret += self.print_event(ev)
 
-
         for thread in program.threads:
             if thread.name == MAIN:
                 continue
             ret += "var w%s = new Worker(%s);\n"%(thread.name, thread.name)
-
 
         block_pars = ", ".join(["data.%s_sab"%str(x[0]) for x in blocks])
         for thread in program.threads:
@@ -419,10 +415,10 @@ class JSV8Printer(JSPrinter):
     def print_floop(self, floop):
         ret = ""
         ret += "for(%s = %s; %s <= %s; %s++){\n"%(floop.cname, \
-                                                 floop.fromind, \
-                                                 floop.cname, \
-                                                 floop.toind,
-                                                 floop.cname)
+                                                  floop.fromind, \
+                                                  floop.cname, \
+                                                  floop.toind,
+                                                  floop.cname)
         for ev in floop.events:
             ret += self.print_event(ev, floop.cname)
 
@@ -454,83 +450,76 @@ class JSV8Printer(JSPrinter):
         return ret
     
     def print_event(self, event, postfix=None):
-        operation = event.operation
-        ordering = event.ordering
-        block_name = event.block.name
-        event_name = event.name
-        event_address = event.address
-        block_size = event.get_size()
         is_float = event.is_wtear()
         var_def = ""
         prt = ""
         
-        if (ordering != INIT):
+        if (event.ordering != INIT):
             if is_float:
-                var_def = "var %s = new Float%sArray(data.%s)"%(block_name, \
-                                                                  block_size*8, \
-                                                                  block_name+"_sab")
+                var_def = "var %s = new Float%sArray(data.%s)"%(event.block.name, \
+                                                                event.get_size()*8, \
+                                                                event.block.name+"_sab")
             else:
-                var_def = "var %s = new Int%sArray(data.%s)"%(block_name, \
-                                                           block_size*8, \
-                                                           block_name+"_sab")
+                var_def = "var %s = new Int%sArray(data.%s)"%(event.block.name, \
+                                                              event.get_size()*8, \
+                                                              event.block.name+"_sab")
 
-        if (operation == WRITE) and (ordering == INIT):
+        if (event.operation == WRITE) and (event.ordering == INIT):
             return var_def+"\n"
 
-        if (operation == WRITE):
+        if (event.operation == WRITE):
             if event.value_is_number():
                 event_values = event.get_correct_value()
             else:
                 event_values = "".join(event.value)
 
-        if (ordering == SC) and not is_float:
-            if not event_address:
+        if (event.ordering == SC) and not is_float:
+            if not event.address:
                 addr = event.offset
             else:
-                addr = int(event_address[0]/block_size)
+                addr = int(event.address[0]/event.get_size())
 
-            if operation == WRITE:
-                mop = "Atomics.store(%s, %s, %s)"%(block_name, \
-                                                        addr, \
-                                                        event_values)
+            if event.operation == WRITE:
+                mop = "Atomics.store(%s, %s, %s)"%(event.block.name, \
+                                                   addr, \
+                                                   event_values)
 
-
-            if operation == READ:
-                mop = "%s = Atomics.load(%s, %s)"%(event_name, \
-                                                          block_name, \
-                                                          addr)
+            if event.operation == READ:
+                mop = "%s = Atomics.load(%s, %s)"%(event.name, \
+                                                   event.block.name, \
+                                                   addr)
                 if postfix:
-                    prt = "print(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
+                    prt = "print(\"%s_\"+%s+\": \"+%s)"%(event.name, postfix, event.name)
                 else:
-                    prt = "print(\"%s: \"+%s)"%(event_name, event_name)
+                    prt = "print(\"%s: \"+%s)"%(event.name, event.name)
 
-        if (ordering == UNORD) or is_float:
-            if not event_address:
+        if (event.ordering == UNORD) or is_float:
+            if not event.address:
                 addr = event.offset
             else:
-                addr = int(event_address[0]/block_size)
+                addr = int(event.address[0]/event.get_size())
                     
-            if operation == WRITE:
-                if is_float and event_address:
+            if event.operation == WRITE:
+                if is_float and event.address:
                     event_values = self.float_pri_js%(float_approx(event_values))
 
-                mop = ("%s[%s] = %s")%(block_name, \
-                                              addr, \
-                                              event_values)
+                mop = ("%s[%s] = %s")%(event.block.name, \
+                                       addr, \
+                                       event_values)
 
-            if operation == READ:
+            if event.operation == READ:
                 approx = self.float_app_js if is_float else ""
                     
-                mop = "%s = %s[%s]"%(event_name, \
-                                            block_name, \
-                                            addr)
+                mop = "%s = %s[%s]"%(event.name, \
+                                     event.block.name, \
+                                     addr)
 
                 if postfix:
-                    prt = "print(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
+                    prt = "print(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
                 else:
-                    prt = "print(\"%s: \"+%s%s)"%(event_name, event_name, approx)
+                    prt = "print(\"%s: \"+%s%s)"%(event.name, event.name, approx)
 
-        if operation == READ:
+        if event.operation == READ:
             return "%s;\n"%("; ".join([var_def,mop,prt]))
         else:
             return "%s;\n"%("; ".join([var_def,mop]))
@@ -588,7 +577,6 @@ class JST262Printer(JSPrinter):
             ret += (ind*1)+"})\n"
             ret += (ind*1)+"`);\n"
 
-
         blocks = [(x.name, x.size) for x in program.get_blocks()]
         blocks.sort()
         ret += "\nvar data = {\n"
@@ -639,7 +627,6 @@ class JST262Printer(JSPrinter):
 
             ret += "assert(-1 != outputs.indexOf(report));\n"
 
-
         if executions:
             execs = self.compute_possible_executions(program, executions)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
@@ -651,10 +638,10 @@ class JST262Printer(JSPrinter):
         ind = self.indent
         ret = ""
         ret += (ind*2)+"for(%s = %s; %s <= %s; %s++){\n"%(floop.cname, \
-                                                 floop.fromind, \
-                                                 floop.cname, \
-                                                 floop.toind,
-                                                 floop.cname)
+                                                          floop.fromind, \
+                                                          floop.cname, \
+                                                          floop.toind,
+                                                          floop.cname)
         for ev in floop.events:
             ret += (ind*3)+self.print_event(ev, floop.cname)
 
@@ -687,29 +674,23 @@ class JST262Printer(JSPrinter):
         return ret
     
     def print_event(self, event, postfix=None):
-        operation = event.operation
-        ordering = event.ordering
-        block_name = event.block.name
-        event_name = event.name
-        event_address = event.address
-        block_size = event.get_size()
         is_float = event.is_wtear()
         var_def = ""
         prt = ""
         mop = None
         
-        if (operation == WRITE) and (ordering == INIT):
+        if (event.operation == WRITE) and (event.ordering == INIT):
             return ""
         
-        if (ordering != INIT):
+        if (event.ordering != INIT):
             if is_float:
-                var_def = "var %s = new Float%sArray(data.%s)"%(block_name, \
-                                                                  block_size*8, \
-                                                                  block_name+"_sab")
+                var_def = "var %s = new Float%sArray(data.%s)"%(event.block.name, \
+                                                                event.get_size()*8, \
+                                                                event.block.name+"_sab")
             else:
-                var_def = "var %s = new Int%sArray(data.%s)"%(block_name, \
-                                                           block_size*8, \
-                                                           block_name+"_sab")
+                var_def = "var %s = new Int%sArray(data.%s)"%(event.block.name, \
+                                                              event.get_size()*8, \
+                                                              event.block.name+"_sab")
 
         if (event.is_write_or_modify()):
             if event.value_is_number():
@@ -717,72 +698,80 @@ class JST262Printer(JSPrinter):
             else:
                 event_values = "".join(event.value)
 
-        if (ordering == SC) and not is_float:
-            if not event_address:
+        if (event.ordering == SC) and not is_float:
+            if not event.address:
                 addr = event.offset
             else:
-                addr = int(event_address[0]/block_size)
+                addr = int(event.address[0]/event.get_size())
 
             if event.is_write():
-                mop = "Atomics.store(%s, %s, %s)"%(block_name, \
+                mop = "Atomics.store(%s, %s, %s)"%(event.block.name, \
                                                    addr, \
                                                    event_values)
 
-
             if event.is_read():
-                mop = "%s = Atomics.load(%s, %s)"%(event_name, \
-                                                   block_name, \
+                mop = "%s = Atomics.load(%s, %s)"%(event.name, \
+                                                   event.block.name, \
                                                    addr)
                 if postfix:
-                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event.name, postfix, event.name)
                 else:
-                    prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
+                    prt = "report.push(\"%s: \"+%s)"%(event.name, event.name)
 
             if event.is_modify():
+                operator = None
+                
                 if event.is_add():
-                    mop = "%s = Atomics.add(%s, %s, %s)"%(event_name, \
-                                                          block_name, \
-                                                          addr, \
-                                                          event_values)
+                    operator = "Atomics.add"
                 elif event.is_sub():
-                    mop = "%s = Atomics.sub(%s, %s, %s)"%(event_name, \
-                                                          block_name, \
-                                                          addr, \
-                                                          event_values)
+                    operator = "Atomics.sub"
+                elif event.is_and():
+                    operator = "Atomics.and"
+                elif event.is_xor():
+                    operator = "Atomics.xor"
+                elif event.is_or():
+                    operator = "Atomics.or"
+                elif event.is_exchange():
+                    operator = "Atomics.exchange"
                 else:
                     raise UnreachableCodeException("Operator not supported")
+
+                mop = "%s = %s(%s, %s, %s)"%(event.name, \
+                                             operator, \
+                                             event.block.name, \
+                                             addr, \
+                                             event_values)
                 
                 if postfix:
-                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event.name, postfix, event.name)
                 else:
-                    prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
+                    prt = "report.push(\"%s: \"+%s)"%(event.name, event.name)
                     
-        if (ordering == UNORD) or is_float:
-            if not event_address:
+        if (event.ordering == UNORD) or is_float:
+            if not event.address:
                 addr = event.offset
             else:
-                addr = int(event_address[0]/block_size)
+                addr = int(event.address[0]/event.get_size())
                     
-            if operation == WRITE:
-                if is_float and event_address:
+            if event.operation == WRITE:
+                if is_float and event.address:
                     event_values = self.float_pri_js%(float_approx(event_values))
 
-                mop = ("%s[%s] = %s")%(block_name, \
-                                              addr, \
-                                              event_values)
-
-            if operation == READ:
+                mop = ("%s[%s] = %s")%(event.block.name, \
+                                       addr, \
+                                       event_values)
+                
+            if event.operation == READ:
                 approx = self.float_app_js if is_float else ""
                     
-                mop = "%s = %s[%s]"%(event_name, \
-                                            block_name, \
-                                            addr)
+                mop = "%s = %s[%s]"%(event.name, \
+                                     event.block.name, \
+                                     addr)
 
                 if postfix:
-                    prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event_name, postfix, event_name, approx)
+                    prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
                 else:
-                    prt = "report.push(\"%s: \"+%s%s)"%(event_name, event_name, approx)
-
+                    prt = "report.push(\"%s: \"+%s%s)"%(event.name, event.name, approx)
 
         assert mop
         
@@ -805,7 +794,6 @@ class JST262_NA_Printer(JST262Printer):
     DESC = "TEST262 format (without assertions)"
 
     asserts = False
-    
 
 class DotPrinter(object):
     NAME = "DOT"
@@ -837,7 +825,6 @@ class DotPrinter(object):
         if not len(self.printing_relations):
             return True
         return relation in self.printing_relations
-
             
     def print_execution(self, program, interp):
 
@@ -895,7 +882,6 @@ class DotPrinter(object):
                                                                          label, \
                                                                          colors[relation] if relation in colors else defcolor))
                 
-
         sepx = 5
         sepy = 2
         
@@ -947,10 +933,23 @@ class DotPrinter(object):
             oper = ":= %s"%value
         else:
             wvalue = event.get_correct_write_value()
+            simbop = None
             if revent.is_add():
-                oper = "+= %s<br/>(%s &rarr; %s)"%(wvalue, value, wvalue+value)
-            if revent.is_sub():
-                oper = "-= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+                simbop = "+="
+            elif revent.is_sub():
+                simbop = "-="
+            elif revent.is_and():
+                simbop = "&amp;="
+            elif revent.is_xor():
+                simbop = "^="
+            elif revent.is_or():
+                simbop = "|="
+            elif revent.is_exchange():
+                simbop = ":="
+            else:
+                raise UnreachableCodeException("Operator not supported")
+
+            oper = "%s %s<br/>(%s &rarr; %s)"%(simbop, wvalue, value, revent.get_operator_fun()(value, wvalue))
 
         atomic = "A." if event.is_atomic() else ""                
         label = "%s<br/><B>%s%s %s</B>"%(revent.name, atomic, bname, oper)
@@ -960,7 +959,6 @@ class DotPrinter(object):
         node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(revent.name, label, posx, posy)
 
         return node
-
     
     def __get_block_size(self, event):
         size = event.get_size()
@@ -1033,75 +1031,82 @@ class BePrinter(object):
         return ret
 
     def print_event(self, event, pure=False):
-        operation = event.operation
-        ordering = event.ordering
-        block_name = event.block.name
-        event_address = event.address
-        block_size = event.get_size()
         is_float = event.is_wtear()
 
-        if (ordering == INIT):
+        if (event.ordering == INIT):
             return ""
         
-        if (ordering == SC) and not is_float:
-            if not event_address:
+        if (event.ordering == SC) and not is_float:
+            if not event.address:
                 addr = event.offset
                 event_values = []
                 event_values = "".join(self.__solve_param_names(event.value))
             else:
-                addr = int(event_address[0]/block_size)
+                addr = int(event.address[0]/event.get_size())
                 event_values = event.get_correct_value()
                 if not event_values and event.value:
                     event_values = "".join(self.__solve_param_names(event.value))
 
             if event.is_write():
-                ret = "Atomics.store(%s%s, %s, %s)"%(block_name, \
-                                                     self.__get_block_size(block_size, False), \
+                ret = "Atomics.store(%s%s, %s, %s)"%(event.block.name, \
+                                                     self.__get_block_size(event.get_size(), False), \
                                                      addr, \
                                                      event_values)
 
-
             if event.is_read():
-                ret = "Atomics.load(%s%s, %s)"%(block_name, \
-                                                self.__get_block_size(block_size, False), \
+                ret = "Atomics.load(%s%s, %s)"%(event.block.name, \
+                                                self.__get_block_size(event.get_size(), False), \
                                                 addr)
 
             if event.is_modify():
+                operator = None
                 if event.is_add():
-                    ret = "Atomics.add(%s%s, %s, %s)"%(block_name, \
-                                                       self.__get_block_size(block_size, False), \
-                                                       addr, \
-                                                       event_values)
+                    operator = "Atomics.add"
+                elif event.is_sub():
+                    operator = "Atomics.sub"
+                elif event.is_and():
+                    operator = "Atomics.and"
+                elif event.is_xor():
+                    operator = "Atomics.xor"
+                elif event.is_or():
+                    operator = "Atomics.or"
+                elif event.is_exchange():
+                    operator = "Atomics.exchange"
                 else:
                     raise UnreachableCodeException("Operator not supported")
 
+                ret = "%s(%s%s, %s, %s)"%(operator, \
+                                          event.block.name, \
+                                          self.__get_block_size(event.get_size(), False), \
+                                          addr, \
+                                          event_values)
                     
-        if (ordering == UNORD) or is_float:
-            if not event_address:
+        if (event.ordering == UNORD) or is_float:
+            if not event.address:
                 addr = event.offset
                 event_values = []
                 event_values = "".join(self.__solve_param_names(event.value))
             else:
-                addr = int(event_address[0]/block_size)
+                addr = int(event.address[0]/event.get_size())
                 event_values = event.get_correct_value()
                 if not event_values and event.value:
                     event_values = "".join(self.__solve_param_names(event.value))
 
-            if operation == WRITE:
-                if is_float and event_address:
+            if event.operation == WRITE:
+                if is_float and event.address:
                     if type(event_values) == list:
                         event_values = "".join(event_values)
                     else:
                         event_values = self.__get_round_value(event_values)
 
-                ret = ("%s%s[%s] = %s")%(block_name, \
-                                         self.__get_block_size(block_size, is_float),\
+                ret = ("%s%s[%s] = %s")%(event.block.name, \
+                                         self.__get_block_size(event.get_size(), is_float),\
                                          addr, \
                                          event_values)
 
-            if operation == READ:
-                ret = "%s%s[%s]"%(block_name, \
-                                  self.__get_block_size(block_size, is_float),\
+            if event.operation == READ:
+                ret = "%s%s[%s]"%(event.block.name, \
+                                  self.__get_block_size(event.get_size(), is_float),\
                                   addr)            
 
         if not pure:
@@ -1111,7 +1116,6 @@ class BePrinter(object):
                 ret = "%s;\n"%ret
                 
         return ret
-
 
     def __solve_param_names(self, value):
         if type(value) != list:
@@ -1124,7 +1128,6 @@ class BePrinter(object):
                 ret.append(value[i])
 
         return ret
-
     
     def __get_round_value(self, value):
         if type(value) == int:
@@ -1142,7 +1145,6 @@ class BePrinter(object):
         val2 = re.sub("0+\Z", "", val2)[1:]
         val2 = int(val2) if val2 != "" else 0
         return "%s.%s"%(val1,val2)
-
     
     def __get_block_size(self, size, isfloat):
         if not isfloat:
@@ -1207,7 +1209,6 @@ class BePrinter(object):
         ret += "}\n"
 
         return ret
-
     
     def print_params(self, params):
         ret = []

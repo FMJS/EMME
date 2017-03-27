@@ -8,7 +8,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import struct
 import ast
 import operator
 import sys
@@ -30,6 +29,9 @@ NTEAR = "NT"
 ADD = "ADD"
 SUB = "SUB"
 AND = "AND"
+XOR = "XOR"
+EXC = "EXC"
+OR = "OR"
 
 MAIN = "main"
 TYPE = "_Type"
@@ -719,6 +721,35 @@ class Memory_Event(object):
 
     def is_sub(self):
         return self.operator == SUB
+
+    def is_and(self):
+        return self.operator == AND
+
+    def is_xor(self):
+        return self.operator == XOR
+
+    def is_or(self):
+        return self.operator == OR
+
+    def is_exchange(self):
+        return self.operator == EXC
+
+    def get_operator_fun(self):
+        if self.is_add():
+            return lambda x,y: x+y
+        elif self.is_sub():
+            return lambda x,y: x-y
+        elif self.is_and():
+            return lambda x,y: x&y
+        elif self.is_xor():
+            return lambda x,y: x^y
+        elif self.is_or():
+            return lambda x,y: x|y
+        elif self.is_exchange():
+            return lambda x,y: y
+        else:
+            raise UnreachableCodeException("Operator not supported")
+        
     
     def is_read_or_modify(self):
         return self.is_read() or self.is_modify()

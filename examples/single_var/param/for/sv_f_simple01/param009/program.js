@@ -57,10 +57,10 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id3_R_t2: 0.7001";
-outputs[1] = "id3_R_t2: 0.0000";
+outputs[0] = "id3_R_t2: 0.0000";
+outputs[1] = "id3_R_t2: 0.7000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id3_R_t2: 0.7001
 //output// id3_R_t2: 0.0000
+//output// id3_R_t2: 0.7000
