@@ -85,7 +85,7 @@ class Config(object):
         self.sat = False
         self.only_model = False
         self.skip_solving = False
-        self.jsprinter = None
+        self.jsprinter = JST262Printer().NAME
         self.graphviz = None
         self.printing_relations = ",".join([RF,HB,SW])
         self.jsdir = None
@@ -323,13 +323,14 @@ def main(args):
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
 
+    config = Config()
+    
     jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
     jsprinters.sort()
-    djsprinter = JST262Printer().NAME
 
-    parser.set_defaults(jsprinter=djsprinter)
+    parser.set_defaults(jsprinter=config.jsprinter)
     parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?', 
-                        help='select the JS printer between (Default is \"%s\"):\n%s'%(djsprinter, "\n".join(jsprinters)))
+                        help='select the JS printer between (Default is \"%s\"):\n%s'%(config.jsprinter, "\n".join(jsprinters)))
 
     parser.set_defaults(jsdir=None)
     parser.add_argument('-j', '--jsdir', metavar='jsdir', type=str, nargs='?',
@@ -347,7 +348,7 @@ def main(args):
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
                         help="skips the solving part. (Default is \"%s\")"%False)
 
-    parser.set_defaults(relations=",".join([RF,HB,SW]))
+    parser.set_defaults(relations=config.printing_relations)
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
                         help='a (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
 
@@ -401,7 +402,6 @@ def main(args):
         print("File not found: \"%s\""%args.input_file)
         return 1
     
-    config = Config()
     config.inputfile = args.input_file
     config.prefix = prefix
     config.preproc = args.preproc

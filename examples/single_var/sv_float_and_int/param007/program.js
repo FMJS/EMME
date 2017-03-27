@@ -58,7 +58,7 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id3_R_t1: 1056964608;id4_R_t2: 0.0314";
+outputs[0] = "id3_R_t1: 1056964608;id4_R_t2: 0.0313";
 outputs[1] = "id3_R_t1: 1056964608;id4_R_t2: 0.5000";
 outputs[2] = "id3_R_t1: 1056964608;id4_R_t2: 0.1250";
 outputs[3] = "id3_R_t1: 1056964608;id4_R_t2: 0.0078";
@@ -66,7 +66,7 @@ outputs[4] = "id3_R_t1: 1056964608;id4_R_t2: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id3_R_t1: 1056964608;id4_R_t2: 0.0314
+//output// id3_R_t1: 1056964608;id4_R_t2: 0.0313
 //output// id3_R_t1: 1056964608;id4_R_t2: 0.5000
 //output// id3_R_t1: 1056964608;id4_R_t2: 0.1250
 //output// id3_R_t1: 1056964608;id4_R_t2: 0.0078
