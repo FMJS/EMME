@@ -31,6 +31,7 @@ ADD = "ADD"
 SUB = "SUB"
 AND = "AND"
 XOR = "XOR"
+EXC = "EXC"
 OR = "OR"
 
 MAIN = "main"
@@ -730,6 +731,9 @@ class Memory_Event(object):
 
     def is_or(self):
         return self.operator == OR
+
+    def is_exchange(self):
+        return self.operator == EXC
     
     def is_read_or_modify(self):
         return self.is_read() or self.is_modify()

@@ -751,6 +751,8 @@ class JST262Printer(JSPrinter):
                     operator = "Atomics.xor"
                 elif event.is_or():
                     operator = "Atomics.or"
+                elif event.is_exchange():
+                    operator = "Atomics.exchange"
                 else:
                     raise UnreachableCodeException("Operator not supported")
 
@@ -966,6 +968,8 @@ class DotPrinter(object):
                 oper = "^= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
             elif revent.is_or():
                 oper = "|= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+            elif revent.is_exchange():
+                oper = ":= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
             else:
                 raise UnreachableCodeException("Operator not supported")
 
@@ -1095,6 +1099,8 @@ class BePrinter(object):
                     operator = "Atomics.xor"
                 elif event.is_or():
                     operator = "Atomics.or"
+                elif event.is_exchange():
+                    operator = "Atomics.exchange"
                 else:
                     raise UnreachableCodeException("Operator not supported")
 

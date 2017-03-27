@@ -13,7 +13,7 @@ import numpy
 from six.moves import range
 
 from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, Execution, Relation, For_Loop, ITE_Statement
-from ecmasab.execution import READ, WRITE, MODIFY, ADD, AND, SUB, OR, XOR, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
+from ecmasab.execution import READ, WRITE, MODIFY, ADD, AND, SUB, OR, XOR, EXC, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.utils import values_from_int, int_from_values
@@ -23,6 +23,7 @@ from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, L
 
 T_AADD = "Atomics.add"
 T_AXOR = "Atomics.xor"
+T_AEXC = "Atomics.exchange"
 T_AOR = "Atomics.or"
 T_AAND = "Atomics.and"
 T_ASUB = "Atomics.sub"
@@ -74,6 +75,7 @@ P_ACCESS = "access"
 P_ADD = "add"
 P_AND = "_and"
 P_XOR = "xor"
+P_EXC = "exchange"
 P_OR = "_or"
 P_SUB = "sub"
 P_ADDR = "address"
@@ -193,6 +195,7 @@ class BeParser(object):
         sabstore = (T_ASTORE + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_STORE)
         sabadd = (T_AADD + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_ADD)
         sabxor = (T_AXOR + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_XOR)
+        sabexc = (T_AEXC + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_EXC)
         sabor = (T_AOR + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_OR)
         saband = (T_AAND + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_AND)
         sabsub = (T_ASUB + T_OP + sabname + ssaddr + T_CM + value + T_CP)(P_SUB)
@@ -200,7 +203,7 @@ class BeParser(object):
         sabaccess = (sabname + addr)(P_ACCESS)
         sabload  = (T_ALOAD + T_OP + sabname + ssaddr + T_CP)(P_LOAD)
 
-        sabread = (sabload | sabaccess | sabadd | sabsub | saband | sabxor | sabor)
+        sabread = (sabload | sabaccess | sabadd | sabsub | saband | sabxor | sabor | sabexc) 
 
         sabassign = (sabaccess + T_EQ + value)(P_SABASS)
         printv = (T_PR + T_OP + sabread + T_CP)(P_PRINT)
@@ -285,6 +288,8 @@ class BeParser(object):
                             fun = lambda x,y: x^y
                         elif write_event.is_or():
                             fun = lambda x,y: x|y
+                        elif write_event.is_exchange():
+                            fun = lambda x,y: y
                         else:
                             raise UnreachableCodeException("Operation not supported")
                         
@@ -454,6 +459,11 @@ class BeParser(object):
             ordering = SC
             operation = MODIFY
             operator = OR
+
+        elif ctype == P_EXC:
+            ordering = SC
+            operation = MODIFY
+            operator = EXC
             
         else:
             raise UnreachableCodeException("Type \"%s\" is invalid"%ctype)
@@ -566,7 +576,7 @@ class BeParser(object):
                 
                 thread.append(me)
                 
-            elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD, P_SUB, P_AND, P_XOR, P_OR]:
+            elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD, P_SUB, P_AND, P_XOR, P_OR, P_EXC]:
                 block_name = command.varname
 
                 if block_name not in blocks:
@@ -614,7 +624,8 @@ class BeParser(object):
                          command.sub, \
                          command._and, \
                          command.xor, \
-                         command._or]
+                         command._or, \
+                         command.exchange]
 
                 ok = False
                 for read in reads:
