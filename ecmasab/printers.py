@@ -111,7 +111,7 @@ class JSPrinter(object):
     def print_program(self, program, executions=None):
         pass
     
-    def print_event(self, event):
+    def print_event(self, event, postfix=None):
         pass
         
 class CVC4Printer(object):
