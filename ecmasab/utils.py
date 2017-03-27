@@ -38,6 +38,8 @@ def get_int_type(size):
         return '<H'
     elif size <= 4:
         return '<I'
+    elif size <= 8:
+        return '<Q'
     else:
         raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
 

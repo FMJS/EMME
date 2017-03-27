@@ -49,7 +49,7 @@ def run_command(command, number, silent):
 
         for i in range(number):
 
-            process = subprocess.Popen(command, stdout=subprocess.PIPE)
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, close_fds=True)
             out = process.communicate()[0]
 
             out = out.split(b"\n")
