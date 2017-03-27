@@ -739,18 +739,27 @@ class JST262Printer(JSPrinter):
                     prt = "report.push(\"%s: \"+%s)"%(event_name, event_name)
 
             if event.is_modify():
+                operator = None
+                
                 if event.is_add():
-                    mop = "%s = Atomics.add(%s, %s, %s)"%(event_name, \
-                                                          block_name, \
-                                                          addr, \
-                                                          event_values)
+                    operator = "Atomics.add"
                 elif event.is_sub():
-                    mop = "%s = Atomics.sub(%s, %s, %s)"%(event_name, \
-                                                          block_name, \
-                                                          addr, \
-                                                          event_values)
+                    operator = "Atomics.sub"
+                elif event.is_and():
+                    operator = "Atomics.and"
+                elif event.is_xor():
+                    operator = "Atomics.xor"
+                elif event.is_or():
+                    operator = "Atomics.or"
                 else:
                     raise UnreachableCodeException("Operator not supported")
+
+
+                mop = "%s = %s(%s, %s, %s)"%(event_name, \
+                                             operator, \
+                                             block_name, \
+                                             addr, \
+                                             event_values)
                 
                 if postfix:
                     prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event_name, postfix, event_name)
@@ -949,8 +958,16 @@ class DotPrinter(object):
             wvalue = event.get_correct_write_value()
             if revent.is_add():
                 oper = "+= %s<br/>(%s &rarr; %s)"%(wvalue, value, wvalue+value)
-            if revent.is_sub():
+            elif revent.is_sub():
                 oper = "-= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+            elif revent.is_and():
+                oper = "&amp;= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+            elif revent.is_xor():
+                oper = "^= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+            elif revent.is_or():
+                oper = "|= %s<br/>(%s &rarr; %s)"%(wvalue, value, value-wvalue)
+            else:
+                raise UnreachableCodeException("Operator not supported")
 
         atomic = "A." if event.is_atomic() else ""                
         label = "%s<br/><B>%s%s %s</B>"%(revent.name, atomic, bname, oper)
@@ -1067,13 +1084,26 @@ class BePrinter(object):
                                                 addr)
 
             if event.is_modify():
+                operator = None
                 if event.is_add():
-                    ret = "Atomics.add(%s%s, %s, %s)"%(block_name, \
-                                                       self.__get_block_size(block_size, False), \
-                                                       addr, \
-                                                       event_values)
+                    operator = "Atomics.add"
+                elif event.is_sub():
+                    operator = "Atomics.sub"
+                elif event.is_and():
+                    operator = "Atomics.and"
+                elif event.is_xor():
+                    operator = "Atomics.xor"
+                elif event.is_or():
+                    operator = "Atomics.or"
                 else:
                     raise UnreachableCodeException("Operator not supported")
+
+
+                ret = "%s(%s%s, %s, %s)"%(operator, \
+                                          block_name, \
+                                          self.__get_block_size(block_size, False), \
+                                          addr, \
+                                          event_values)
 
                     
         if (ordering == UNORD) or is_float:

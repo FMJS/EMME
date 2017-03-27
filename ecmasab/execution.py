@@ -30,6 +30,8 @@ NTEAR = "NT"
 ADD = "ADD"
 SUB = "SUB"
 AND = "AND"
+XOR = "XOR"
+OR = "OR"
 
 MAIN = "main"
 TYPE = "_Type"
@@ -719,6 +721,15 @@ class Memory_Event(object):
 
     def is_sub(self):
         return self.operator == SUB
+
+    def is_and(self):
+        return self.operator == AND
+
+    def is_xor(self):
+        return self.operator == XOR
+
+    def is_or(self):
+        return self.operator == OR
     
     def is_read_or_modify(self):
         return self.is_read() or self.is_modify()
