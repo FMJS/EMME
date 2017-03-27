@@ -16,7 +16,7 @@ from ecmasab.execution import Thread, Program, Block, Memory_Event, Executions, 
 from ecmasab.execution import READ, WRITE, MODIFY, ADD, AND, SUB, OR, XOR, EXC, INIT, SC, UNORD, WTEAR, NTEAR, MAIN
 from ecmasab.execution import HB, RF, RBF, MO, SW
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.utils import values_from_int, int_from_values
+from ecmasab.utils import values_from_int, int_from_values, float_from_values
 
 from pyparsing import ParseException, Word, nums, alphas, LineEnd, restOfLine, Literal, ZeroOrMore, Empty, \
     operatorPrecedence, opAssoc, Combine, Optional, White, Group
