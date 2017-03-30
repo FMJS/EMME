@@ -166,8 +166,7 @@ class CVC4Printer(object):
         ret = " AND ".join(relations+conds)
             
         return "ASSERT NOT(%s);"%(ret)
-    
-    
+
     def __print_relation(self, relation):
         tuples = relation.tuples
         return "%s = {%s}"%(relation.name, ", ".join([self.__print_tuple(x) for x in tuples]))
@@ -885,7 +884,8 @@ class DotPrinter(object):
                                                                          label, \
                                                                          colors[relation] if relation in colors else defcolor))
                 
-        posx = ((len(program.threads)-2)*self.sepx)/2.0
+        iposx = ((len(program.threads)-2)*self.sepx)/2.0
+        posx = iposx
         maxy = max([len(x.get_events(True)) for x in program.threads])*self.sepy
         posy = maxy
         
@@ -907,10 +907,27 @@ class DotPrinter(object):
                     ret.append(node)
                     posy -= self.sepy
                 posx += self.sepx
+
+        mo_str = "<br align=\"left\"/>".join(self.__print_memory_order(interp))
+        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, shape=box, pos=\"%d,%d!\"]"%(mo_str, iposx+self.sepx, maxy))
         ret.append("}")
                 
         return ("\n".join(ret))+"\n"
 
+    def __print_memory_order(self, interp):
+        mo = interp.get_MO()
+        events = {}
+        for tup in mo.tuples:
+            if not tup[0] in events: events[tup[0]] = 0
+            if not tup[1] in events: events[tup[1]] = 0
+            events[tup[0]] += 1
+
+        events = [(events[x], x) for x in events]
+        events.sort()
+        events.reverse()
+        events = ["%s: %s"%(len(events)-x[0], x[1]) for x in events]
+        return events
+    
     def __print_event(self, event, reads_dic, posx, posy):
         revent = event
         if event.name in reads_dic:

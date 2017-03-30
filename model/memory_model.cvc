@@ -596,6 +596,7 @@ en_MO : BOOLEAN;
 ASSERT en_MO => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (MO3a(ee,ed) AND MO3b(ee,ed))));
 ASSERT en_MO => (FORALL (ee IN ev_set) : (Active(ee) => (NOT(MO(ee,ee)))));
 ASSERT en_MO => (FORALL (e1,e2 IN ev_set) : (Active2(e1,e2) => ((NOT(e1 = e2) => (MO(e1,e2) XOR MO(e2,e1)))))); 
+ASSERT en_MO => (FORALL (e1,e2,e3 IN ev_set) : (Active3(e1,e2,e3) => ((MO(e1,e2) AND MO(e2,e3)) => MO(e1,e3)))); 
 #endif
 
 ASSERT en_MO;
