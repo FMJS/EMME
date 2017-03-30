@@ -800,6 +800,9 @@ class DotPrinter(object):
     TYPE = PrinterType.GRAPH
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
     printing_relations = None
+    sepx = 3
+    sepy = 2
+        
 
     def __init__(self):
         self.printing_relations = []
@@ -882,11 +885,8 @@ class DotPrinter(object):
                                                                          label, \
                                                                          colors[relation] if relation in colors else defcolor))
                 
-        sepx = 5
-        sepy = 2
-        
-        posx = ((len(program.threads)-2)*sepx)/2.0
-        maxy = max([len(x.get_events(True)) for x in program.threads])*sepy
+        posx = ((len(program.threads)-2)*self.sepx)/2.0
+        maxy = max([len(x.get_events(True)) for x in program.threads])*self.sepy
         posy = maxy
         
         for thread in program.threads:
@@ -894,7 +894,7 @@ class DotPrinter(object):
                 for event in thread.get_events(True):
                     node = self.__print_event(event, reads_dic, posx, posy)
                     ret.append(node)
-                    posy -= sepy
+                    posy -= self.sepy
 
         posx = 0
         sposy = posy
@@ -905,8 +905,8 @@ class DotPrinter(object):
                 for event in thread.get_events(True):
                     node = self.__print_event(event, reads_dic, posx, posy)
                     ret.append(node)
-                    posy -= sepy
-                posx += sepx
+                    posy -= self.sepy
+                posx += self.sepx
         ret.append("}")
                 
         return ("\n".join(ret))+"\n"

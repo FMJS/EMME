@@ -17,7 +17,7 @@ import multiprocessing
 import signal
 import time
 from six.moves import range
-
+from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
 
 K = "k"
@@ -31,17 +31,18 @@ class Config(object):
     threads = None
     percent = None
     silent = None
+    pretty = None
 
     def __init__(self):
         self.command = None
         self.outputs = None
         self.input_file = None
-        self.number = None
-        self.threads = None
-        self.percent = None
-        self.silent = None
+        self.number = 10
+        self.threads = 4
+        self.percent = True
+        self.silent = False
+        self.pretty = True
     
-
 def run_command(command, number, silent):
 
     try:
@@ -179,24 +180,47 @@ def litmus(config):
     if not config.silent: sys.stdout.write('\n=== Results ===\n')
     sys.stdout.flush()
 
+    lines = []
+    
     for el in not_matched:
-        if not config.silent: print("NOT MATCHED OUTPUT ERROR: \"%s\""%el)
-                
+        if not config.silent: lines.append("NOT MATCHED OUTPUT ERROR: \"%s\""%el)
+
+    if config.pretty:
+        table = PrettyTable()
+        
     matches = 0
     for result in results:
         if result[0] > 0:
             num = result[0] if not config.percent else float(float(result[0]*100)/float(number))
+            res_val = result[1]
+            row = None
             if config.percent:
-                if not config.silent: print("%.2f%%\t\"%s\""%(num, result[1]))
+                if not config.silent:
+                    if config.pretty:
+                        row = ["%.2f%%"%num] + res_val.split(";")
+                    else:
+                        lines.append("%.2f%%\t\"%s\""%(num, result[1]))
             else:
-                if not config.silent: print("%s\t\"%s\""%(num, result[1]))
+                if not config.silent:
+                    if config.pretty:
+                        row = [num] + res_val.split(";")
+                    else:
+                        lines.append("%s\t\"%s\""%(num, result[1]))
             matches += 1
+            if row:
+                table.add_row(row)
+
+    if (not config.silent) and (config.pretty):
+        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(row)-1)]
+        table.align = "l"
+        lines.append(str(table))
 
     if config.percent:
-        if not config.silent: print("Coverage: %.2f%%"%(float(float(matches*100)/float(len(results)))))
+        if not config.silent: lines.append("Coverage: %.2f%%"%(float(float(matches*100)/float(len(results)))))
     else:
-        if not config.silent: print("Coverage: %s/%s"%(matches, len(results)))
+        if not config.silent: lines.append("Coverage: %s/%s"%(matches, len(results)))
 
+    print("\n".join(lines))
 
     if config.silent:
         if len(not_matched) > 0:
