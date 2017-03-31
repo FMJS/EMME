@@ -802,7 +802,6 @@ class DotPrinter(object):
     sepx = 3
     sepy = 2
         
-
     def __init__(self):
         self.printing_relations = []
 
@@ -909,7 +908,8 @@ class DotPrinter(object):
                 posx += self.sepx
 
         mo_str = "<br align=\"left\"/>".join(self.__print_memory_order(interp))
-        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, shape=box, pos=\"%d,%d!\"]"%(mo_str, iposx+self.sepx, maxy))
+        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, splines=false, overlap=true, margin=0, shape=none, pos=\"%d,%d!\"]"%(mo_str, iposx+self.sepx, maxy))
+        
         ret.append("}")
                 
         return ("\n".join(ret))+"\n"
@@ -973,7 +973,7 @@ class DotPrinter(object):
         if revent.has_info(ITE_Statement.OP_ITE):
             label +=  "<br/>(%s)"%revent.info[ITE_Statement.OP_ITE]
         
-        node = "%s [label=<%s>, pos=\"%s,%s!\"]"%(revent.name, label, posx, posy)
+        node = "%s [label=<%s>, shape=box, style=rounded, pos=\"%s,%s!\"]"%(revent.name, label, posx, posy)
 
         return node
     

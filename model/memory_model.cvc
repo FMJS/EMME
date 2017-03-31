@@ -68,8 +68,7 @@
 % #define enc_RF 0
 % #define enc_RBF1 0
 % #define enc_RBF2 0
-% #define enc_HB 0
-% #define enc_HB1 1
+% #define enc_HB 1
 % #define enc_CR 2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -404,16 +403,11 @@ en_HB4b : BOOLEAN;
 en_HB4c : BOOLEAN;
 en_HB4d : BOOLEAN;
 en_HB1 : BOOLEAN;
-en_HB2 : BOOLEAN;
 
 #define HB4a(ee, ed) (en_HB4a => (AO(ee, ed)))
 #define HB4b(ee, ed) (en_HB4b => (SW(ee, ed)))
 #define HB4c(ee, ed) (en_HB4c => (Init(ee) AND RangeIN(ee,ed)))
-#define HB4d(ee, ed) (en_HB4d => (RF(ed, ee)))
-
-HBp : EV_REL;
-
-#define HBp(e1,e2) ((e1,e2) IS_IN HBp)
+#define HB4d(ee, ed) (en_HB4d => (EXISTS (ef IN ev_set) : (Active(ef) AND HB(ee, ef) AND HB(ef, ed))))
 
 en_HB : BOOLEAN;
 ne_HB : BOOLEAN;
@@ -425,7 +419,6 @@ ASSERT en_HB4b;
 ASSERT en_HB4c;
 ASSERT en_HB4d;
 ASSERT en_HB1;
-ASSERT en_HB2;
 
 ASSERT en_HB;
 
@@ -433,22 +426,12 @@ ASSERT ne_HB <=> NOT(HB = empty_rel_set);
 
 #if enc_HB == 1
 
-ASSERT en_HB => (en_HB2 => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HBp(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed)))))));
+ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HB(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed))))));
 
 #else
 
-ASSERT en_HB => (en_HB2 => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (NOT(ee=ed) => (HBp(ee,ed) <=> (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed)))))));
-
-#endif
-
-#if enc_HB1 == 1
-
-ASSERT en_HB1 => (FORALL (e1,e2 IN ev_set) : (Active2(e1,e2) => (HB(e1,e2) <=> (HBp(e1,e2) OR (EXISTS (e3 IN ev_set) : Active(e3) AND (HBp(e1,e3) AND HBp(e3,e2)))))));
-ASSERT en_HB1 => ((HBp <= HB) AND (HB <= pair_ev_set));
-
-#else
-
-ASSERT en_HB1 => (HB = TCLOSURE(HBp));
+ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (NOT(ee=ed) => (HB(ee,ed) <=> (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed))))));
+ASSERT en_HB => (FORALL (ee IN ev_set) : Active(ee) => NOT(HB(ee,ee)));
 
 #endif
 
@@ -457,13 +440,13 @@ ASSERT en_HB1 => (HB = TCLOSURE(HBp));
 
 #if ENCODE_CONDITIONS == 1
 ASSERT FORALL (tup : BITUP) : ((tup IS_IN HB) => ActiveT(tup));
-ASSERT FORALL (tup : BITUP) : ((tup IS_IN HBp) => ActiveT(tup));
+ASSERT FORALL (tup : BITUP) : ((tup IS_IN HB) => ActiveT(tup));
 #endif
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_HB
 
 #ifdef PROBLEM_DEF
-ASSERT HBp <= pair_ev_set;
+ASSERT HB <= pair_ev_set;
 #else
 ASSERT (FORALL (e1,e2 IN ev_set) : (Active2(e1,e2) => (HB(e1,e2)  => (NOT(e1 = e2)))));
 
@@ -596,7 +579,8 @@ en_MO : BOOLEAN;
 ASSERT en_MO => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (MO3a(ee,ed) AND MO3b(ee,ed))));
 ASSERT en_MO => (FORALL (ee IN ev_set) : (Active(ee) => (NOT(MO(ee,ee)))));
 ASSERT en_MO => (FORALL (e1,e2 IN ev_set) : (Active2(e1,e2) => ((NOT(e1 = e2) => (MO(e1,e2) XOR MO(e2,e1)))))); 
-ASSERT en_MO => (FORALL (e1,e2,e3 IN ev_set) : (Active3(e1,e2,e3) => ((MO(e1,e2) AND MO(e2,e3)) => MO(e1,e3)))); 
+ASSERT en_MO => (FORALL (e1,e2,e3 IN ev_set) : (Active3(e1,e2,e3) => ((MO(e1,e2) AND MO(e2,e3)) => MO(e1,e3))));
+%ASSERT en_MO => (MO = TCLOSURE(MO));
 #endif
 
 ASSERT en_MO;
