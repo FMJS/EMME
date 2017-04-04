@@ -67,8 +67,10 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id4_R_t3: 0.0000";
 outputs[1] = "id4_R_t3: 3.6000";
+outputs[2] = "id4_R_t3: 2.1000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id4_R_t3: 0.0000
 //output// id4_R_t3: 3.6000
+//output// id4_R_t3: 2.1000

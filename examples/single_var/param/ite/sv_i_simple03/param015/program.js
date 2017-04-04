@@ -69,6 +69,7 @@ outputs[3] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0";
 outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2";
 outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
 outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0";
+outputs[7] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
@@ -79,3 +80,4 @@ assert(-1 != outputs.indexOf(report));
 //output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2
 //output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
 //output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0
+//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2

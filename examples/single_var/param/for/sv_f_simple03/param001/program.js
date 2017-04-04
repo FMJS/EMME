@@ -63,9 +63,11 @@ var outputs = [];
 outputs[0] = "id4_R_t2_0: 0;id4_R_t2_1: 1";
 outputs[1] = "id4_R_t2_0: 0;id4_R_t2_1: 0";
 outputs[2] = "id4_R_t2_0: 0;id4_R_t2_1: 513";
+outputs[3] = "id4_R_t2_0: 0;id4_R_t2_1: 512";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id4_R_t2_0: 0;id4_R_t2_1: 1
 //output// id4_R_t2_0: 0;id4_R_t2_1: 0
 //output// id4_R_t2_0: 0;id4_R_t2_1: 513
+//output// id4_R_t2_0: 0;id4_R_t2_1: 512

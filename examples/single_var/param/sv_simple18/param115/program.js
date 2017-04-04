@@ -62,15 +62,19 @@ var outputs = [];
 outputs[0] = "id6_R_t2: 0;id7_R_t2: 1";
 outputs[1] = "id6_R_t2: 0;id7_R_t2: 0";
 outputs[2] = "id6_R_t2: 0;id7_R_t2: 513";
-outputs[3] = "id6_R_t2: 768;id7_R_t2: 513";
-outputs[4] = "id6_R_t2: 768;id7_R_t2: 0";
-outputs[5] = "id6_R_t2: 768;id7_R_t2: 1";
+outputs[3] = "id6_R_t2: 0;id7_R_t2: 512";
+outputs[4] = "id6_R_t2: 768;id7_R_t2: 512";
+outputs[5] = "id6_R_t2: 768;id7_R_t2: 513";
+outputs[6] = "id6_R_t2: 768;id7_R_t2: 0";
+outputs[7] = "id6_R_t2: 768;id7_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id6_R_t2: 0;id7_R_t2: 1
 //output// id6_R_t2: 0;id7_R_t2: 0
 //output// id6_R_t2: 0;id7_R_t2: 513
+//output// id6_R_t2: 0;id7_R_t2: 512
+//output// id6_R_t2: 768;id7_R_t2: 512
 //output// id6_R_t2: 768;id7_R_t2: 513
 //output// id6_R_t2: 768;id7_R_t2: 0
 //output// id6_R_t2: 768;id7_R_t2: 1

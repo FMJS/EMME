@@ -59,24 +59,54 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t2: 0;id7_R_t2: 2";
-outputs[1] = "id6_R_t2: 0;id7_R_t2: 0";
-outputs[2] = "id6_R_t2: 257;id7_R_t2: 2";
-outputs[3] = "id6_R_t2: 513;id7_R_t2: 0";
-outputs[4] = "id6_R_t2: 1;id7_R_t2: 2";
-outputs[5] = "id6_R_t2: 1;id7_R_t2: 0";
-outputs[6] = "id6_R_t2: 131585;id7_R_t2: 2";
-outputs[7] = "id6_R_t2: 257;id7_R_t2: 0";
-outputs[8] = "id6_R_t2: 513;id7_R_t2: 2";
+outputs[0] = "id6_R_t2: 131072;id7_R_t2: 2";
+outputs[1] = "id6_R_t2: 131072;id7_R_t2: 0";
+outputs[2] = "id6_R_t2: 513;id7_R_t2: 0";
+outputs[3] = "id6_R_t2: 513;id7_R_t2: 2";
+outputs[4] = "id6_R_t2: 257;id7_R_t2: 2";
+outputs[5] = "id6_R_t2: 257;id7_R_t2: 0";
+outputs[6] = "id6_R_t2: 256;id7_R_t2: 2";
+outputs[7] = "id6_R_t2: 131585;id7_R_t2: 0";
+outputs[8] = "id6_R_t2: 256;id7_R_t2: 0";
+outputs[9] = "id6_R_t2: 131585;id7_R_t2: 2";
+outputs[10] = "id6_R_t2: 512;id7_R_t2: 0";
+outputs[11] = "id6_R_t2: 512;id7_R_t2: 2";
+outputs[12] = "id6_R_t2: 131584;id7_R_t2: 0";
+outputs[13] = "id6_R_t2: 131584;id7_R_t2: 2";
+outputs[14] = "id6_R_t2: 0;id7_R_t2: 2";
+outputs[15] = "id6_R_t2: 0;id7_R_t2: 0";
+outputs[16] = "id6_R_t2: 131329;id7_R_t2: 0";
+outputs[17] = "id6_R_t2: 131329;id7_R_t2: 2";
+outputs[18] = "id6_R_t2: 131328;id7_R_t2: 0";
+outputs[19] = "id6_R_t2: 131328;id7_R_t2: 2";
+outputs[20] = "id6_R_t2: 1;id7_R_t2: 2";
+outputs[21] = "id6_R_t2: 1;id7_R_t2: 0";
+outputs[22] = "id6_R_t2: 131073;id7_R_t2: 2";
+outputs[23] = "id6_R_t2: 131073;id7_R_t2: 0";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
+//output// id6_R_t2: 131072;id7_R_t2: 2
+//output// id6_R_t2: 131072;id7_R_t2: 0
+//output// id6_R_t2: 513;id7_R_t2: 0
+//output// id6_R_t2: 513;id7_R_t2: 2
+//output// id6_R_t2: 257;id7_R_t2: 2
+//output// id6_R_t2: 257;id7_R_t2: 0
+//output// id6_R_t2: 256;id7_R_t2: 2
+//output// id6_R_t2: 131585;id7_R_t2: 0
+//output// id6_R_t2: 256;id7_R_t2: 0
+//output// id6_R_t2: 131585;id7_R_t2: 2
+//output// id6_R_t2: 512;id7_R_t2: 0
+//output// id6_R_t2: 512;id7_R_t2: 2
+//output// id6_R_t2: 131584;id7_R_t2: 0
+//output// id6_R_t2: 131584;id7_R_t2: 2
 //output// id6_R_t2: 0;id7_R_t2: 2
 //output// id6_R_t2: 0;id7_R_t2: 0
-//output// id6_R_t2: 257;id7_R_t2: 2
-//output// id6_R_t2: 513;id7_R_t2: 0
+//output// id6_R_t2: 131329;id7_R_t2: 0
+//output// id6_R_t2: 131329;id7_R_t2: 2
+//output// id6_R_t2: 131328;id7_R_t2: 0
+//output// id6_R_t2: 131328;id7_R_t2: 2
 //output// id6_R_t2: 1;id7_R_t2: 2
 //output// id6_R_t2: 1;id7_R_t2: 0
-//output// id6_R_t2: 131585;id7_R_t2: 2
-//output// id6_R_t2: 257;id7_R_t2: 0
-//output// id6_R_t2: 513;id7_R_t2: 2
+//output// id6_R_t2: 131073;id7_R_t2: 2
+//output// id6_R_t2: 131073;id7_R_t2: 0

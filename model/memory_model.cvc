@@ -58,8 +58,6 @@
 % #define ASSERT_TFR
 % #define ASSERT_NEG_TFR
 
-% #define ASSERT_NEHB
-
 % #define ENABLE_AOT
 % #define ASSERT_AOT
 % #define ASSERT_NEG_AOT
@@ -410,7 +408,7 @@ en_HB1 : BOOLEAN;
 #define HB4d(ee, ed) (en_HB4d => (EXISTS (ef IN ev_set) : (Active(ef) AND HB(ee, ef) AND HB(ef, ed))))
 
 en_HB : BOOLEAN;
-ne_HB : BOOLEAN;
+spo_HB : BOOLEAN;
 
 #ifdef ENABLE_HB
 
@@ -422,16 +420,16 @@ ASSERT en_HB1;
 
 ASSERT en_HB;
 
-ASSERT ne_HB <=> NOT(HB = empty_rel_set);
+ASSERT spo_HB <=> ((HB = TCLOSURE(HB)) AND NOT(HB = empty_rel_set));
 
 #if enc_HB == 1
 
-ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HB(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed))))));
+ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (NOT(ee=ed) => (HB(ee,ed) <=> (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed))))));
+ASSERT en_HB => (FORALL (ee IN ev_set) : Active(ee) => NOT(HB(ee,ee)));
 
 #else
 
-ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (NOT(ee=ed) => (HB(ee,ed) <=> (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed))))));
-ASSERT en_HB => (FORALL (ee IN ev_set) : Active(ee) => NOT(HB(ee,ee)));
+ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HB(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed))))));
 
 #endif
 
@@ -439,7 +437,6 @@ ASSERT en_HB => (FORALL (ee IN ev_set) : Active(ee) => NOT(HB(ee,ee)));
 
 
 #if ENCODE_CONDITIONS == 1
-ASSERT FORALL (tup : BITUP) : ((tup IS_IN HB) => ActiveT(tup));
 ASSERT FORALL (tup : BITUP) : ((tup IS_IN HB) => ActiveT(tup));
 #endif
 
@@ -487,11 +484,11 @@ ASSERT en_CR => (CR <=> (FORALL (tup : BITUP) : ActiveT(tup) => ((tup IS_IN RF) 
 
 #elif enc_CR == 2
 
-ASSERT en_CR => (CR <=> (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => (NOT (EXISTS (ee IN ev_set) : Active(ee) AND (WoM(ee) AND HB(ew,ee) AND HB(ee,er) AND BlockEQ(ee,ew) AND (addr IS_IN Range(ee))))))))));
+ASSERT en_CR => (CR <=> (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => ((NOT HB(er,ew)) AND (NOT (EXISTS (ee IN ev_set) : Active(ee) AND (WoM(ee) AND HB(ew,ee) AND HB(ee,er) AND BlockEQ(ee,ew) AND (addr IS_IN Range(ee)))))))))));
 
 #else
 
-ASSERT en_CR => (CR <=> (FORALL (er IN rom_ev_set) : (Active(er) => (FORALL (ew IN wom_ev_set) : Active(ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => (NOT (EXISTS (ev IN wom_ev_set) : Active(ev) AND (HB(ew,ev) AND HB(ev,er) AND BlockEQ(ev,ew) AND (addr IS_IN Range(ev)))))))))));
+ASSERT en_CR => (CR <=> (FORALL (er IN rom_ev_set) : (Active(er) => (FORALL (ew IN wom_ev_set) : Active(ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => ((NOT HB(er,ew)) AND (NOT (EXISTS (ev IN wom_ev_set) : Active(ev) AND (HB(ew,ev) AND HB(ev,er) AND BlockEQ(ev,ew) AND (addr IS_IN Range(ev))))))))))));
 
 #endif
 
@@ -663,15 +660,11 @@ ASSERT SCA;
 ASSERT NOT SCA;
 #endif
 
-#ifdef ASSERT_NEHB
-ASSERT ne_HB;
-#endif
-
 #ifdef ENABLE_VE
 VE : BOOLEAN;
 
 en_VE : BOOLEAN;
-ASSERT en_VE => (VE <=> (ne_HB AND
+ASSERT en_VE => (VE <=> (spo_HB AND
                          CR AND
                          TFR AND
                          SCA));

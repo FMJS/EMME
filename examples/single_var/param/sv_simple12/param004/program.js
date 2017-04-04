@@ -71,9 +71,11 @@ var outputs = [];
 outputs[0] = "id6_R_t3: 0.0000;id7_R_t3: 0.0000";
 outputs[1] = "id6_R_t3: 0.1250;id7_R_t3: 1.5000";
 outputs[2] = "id6_R_t3: 0.0000;id7_R_t3: 1.5000";
+outputs[3] = "id6_R_t3: 0.1250;id7_R_t3: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id6_R_t3: 0.0000;id7_R_t3: 0.0000
 //output// id6_R_t3: 0.1250;id7_R_t3: 1.5000
 //output// id6_R_t3: 0.0000;id7_R_t3: 1.5000
+//output// id6_R_t3: 0.1250;id7_R_t3: 0.0000

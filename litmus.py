@@ -220,7 +220,8 @@ def litmus(config):
     else:
         if not config.silent: lines.append("Coverage: %s/%s"%(matches, len(results)))
 
-    print("\n".join(lines))
+    if not config.silent:
+        print("\n".join(lines))
 
     if config.silent:
         if len(not_matched) > 0:

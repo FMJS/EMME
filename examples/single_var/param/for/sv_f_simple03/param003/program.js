@@ -61,17 +61,21 @@ report.sort();
 report = report.join(";");
 var outputs = [];
 outputs[0] = "id4_R_t2_0: 2;id4_R_t2_1: 513";
-outputs[1] = "id4_R_t2_0: 2;id4_R_t2_1: 1";
-outputs[2] = "id4_R_t2_0: 2;id4_R_t2_1: 0";
-outputs[3] = "id4_R_t2_0: 0;id4_R_t2_1: 1";
-outputs[4] = "id4_R_t2_0: 0;id4_R_t2_1: 0";
-outputs[5] = "id4_R_t2_0: 0;id4_R_t2_1: 513";
+outputs[1] = "id4_R_t2_0: 2;id4_R_t2_1: 512";
+outputs[2] = "id4_R_t2_0: 2;id4_R_t2_1: 1";
+outputs[3] = "id4_R_t2_0: 2;id4_R_t2_1: 0";
+outputs[4] = "id4_R_t2_0: 0;id4_R_t2_1: 1";
+outputs[5] = "id4_R_t2_0: 0;id4_R_t2_1: 0";
+outputs[6] = "id4_R_t2_0: 0;id4_R_t2_1: 513";
+outputs[7] = "id4_R_t2_0: 0;id4_R_t2_1: 512";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id4_R_t2_0: 2;id4_R_t2_1: 513
+//output// id4_R_t2_0: 2;id4_R_t2_1: 512
 //output// id4_R_t2_0: 2;id4_R_t2_1: 1
 //output// id4_R_t2_0: 2;id4_R_t2_1: 0
 //output// id4_R_t2_0: 0;id4_R_t2_1: 1
 //output// id4_R_t2_0: 0;id4_R_t2_1: 0
 //output// id4_R_t2_0: 0;id4_R_t2_1: 513
+//output// id4_R_t2_0: 0;id4_R_t2_1: 512

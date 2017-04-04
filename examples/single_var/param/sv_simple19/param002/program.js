@@ -70,26 +70,38 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id8_R_t3: 1;id9_R_t3: 0";
-outputs[1] = "id8_R_t3: 65537;id9_R_t3: 0";
-outputs[2] = "id8_R_t3: 257;id9_R_t3: 0";
-outputs[3] = "id8_R_t3: 65793;id9_R_t3: 1";
-outputs[4] = "id8_R_t3: 65793;id9_R_t3: 0";
-outputs[5] = "id8_R_t3: 257;id9_R_t3: 1";
-outputs[6] = "id8_R_t3: 1;id9_R_t3: 1";
-outputs[7] = "id8_R_t3: 65537;id9_R_t3: 1";
-outputs[8] = "id8_R_t3: 0;id9_R_t3: 1";
-outputs[9] = "id8_R_t3: 0;id9_R_t3: 0";
+outputs[0] = "id8_R_t3: 65536;id9_R_t3: 1";
+outputs[1] = "id8_R_t3: 1;id9_R_t3: 0";
+outputs[2] = "id8_R_t3: 257;id9_R_t3: 1";
+outputs[3] = "id8_R_t3: 65537;id9_R_t3: 1";
+outputs[4] = "id8_R_t3: 1;id9_R_t3: 1";
+outputs[5] = "id8_R_t3: 65793;id9_R_t3: 0";
+outputs[6] = "id8_R_t3: 65536;id9_R_t3: 0";
+outputs[7] = "id8_R_t3: 65537;id9_R_t3: 0";
+outputs[8] = "id8_R_t3: 256;id9_R_t3: 0";
+outputs[9] = "id8_R_t3: 257;id9_R_t3: 0";
+outputs[10] = "id8_R_t3: 256;id9_R_t3: 1";
+outputs[11] = "id8_R_t3: 65792;id9_R_t3: 0";
+outputs[12] = "id8_R_t3: 65792;id9_R_t3: 1";
+outputs[13] = "id8_R_t3: 65793;id9_R_t3: 1";
+outputs[14] = "id8_R_t3: 0;id9_R_t3: 1";
+outputs[15] = "id8_R_t3: 0;id9_R_t3: 0";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
+//output// id8_R_t3: 65536;id9_R_t3: 1
 //output// id8_R_t3: 1;id9_R_t3: 0
-//output// id8_R_t3: 65537;id9_R_t3: 0
-//output// id8_R_t3: 257;id9_R_t3: 0
-//output// id8_R_t3: 65793;id9_R_t3: 1
-//output// id8_R_t3: 65793;id9_R_t3: 0
 //output// id8_R_t3: 257;id9_R_t3: 1
-//output// id8_R_t3: 1;id9_R_t3: 1
 //output// id8_R_t3: 65537;id9_R_t3: 1
+//output// id8_R_t3: 1;id9_R_t3: 1
+//output// id8_R_t3: 65793;id9_R_t3: 0
+//output// id8_R_t3: 65536;id9_R_t3: 0
+//output// id8_R_t3: 65537;id9_R_t3: 0
+//output// id8_R_t3: 256;id9_R_t3: 0
+//output// id8_R_t3: 257;id9_R_t3: 0
+//output// id8_R_t3: 256;id9_R_t3: 1
+//output// id8_R_t3: 65792;id9_R_t3: 0
+//output// id8_R_t3: 65792;id9_R_t3: 1
+//output// id8_R_t3: 65793;id9_R_t3: 1
 //output// id8_R_t3: 0;id9_R_t3: 1
 //output// id8_R_t3: 0;id9_R_t3: 0

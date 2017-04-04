@@ -70,51 +70,67 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id8_R_t3: 0;id9_R_t3: 0";
-outputs[1] = "id8_R_t3: 65536;id9_R_t3: 0";
-outputs[2] = "id8_R_t3: 65536;id9_R_t3: 1";
-outputs[3] = "id8_R_t3: 256;id9_R_t3: 0";
-outputs[4] = "id8_R_t3: 256;id9_R_t3: 1";
-outputs[5] = "id8_R_t3: 0;id9_R_t3: 1";
-outputs[6] = "id8_R_t3: 16843008;id9_R_t3: 256";
-outputs[7] = "id8_R_t3: 16843008;id9_R_t3: 257";
-outputs[8] = "id8_R_t3: 65536;id9_R_t3: 256";
-outputs[9] = "id8_R_t3: 65792;id9_R_t3: 0";
-outputs[10] = "id8_R_t3: 65792;id9_R_t3: 1";
-outputs[11] = "id8_R_t3: 16842752;id9_R_t3: 256";
-outputs[12] = "id8_R_t3: 16777472;id9_R_t3: 257";
-outputs[13] = "id8_R_t3: 256;id9_R_t3: 257";
-outputs[14] = "id8_R_t3: 256;id9_R_t3: 256";
-outputs[15] = "id8_R_t3: 65536;id9_R_t3: 257";
-outputs[16] = "id8_R_t3: 16777472;id9_R_t3: 256";
-outputs[17] = "id8_R_t3: 16842752;id9_R_t3: 257";
-outputs[18] = "id8_R_t3: 0;id9_R_t3: 256";
-outputs[19] = "id8_R_t3: 0;id9_R_t3: 257";
-outputs[20] = "id8_R_t3: 16777216;id9_R_t3: 256";
-outputs[21] = "id8_R_t3: 16777216;id9_R_t3: 257";
-outputs[22] = "id8_R_t3: 65792;id9_R_t3: 257";
-outputs[23] = "id8_R_t3: 65792;id9_R_t3: 256";
+outputs[0] = "id8_R_t3: 16777216;id9_R_t3: 1";
+outputs[1] = "id8_R_t3: 16777216;id9_R_t3: 0";
+outputs[2] = "id8_R_t3: 65536;id9_R_t3: 0";
+outputs[3] = "id8_R_t3: 65536;id9_R_t3: 1";
+outputs[4] = "id8_R_t3: 256;id9_R_t3: 0";
+outputs[5] = "id8_R_t3: 256;id9_R_t3: 1";
+outputs[6] = "id8_R_t3: 0;id9_R_t3: 1";
+outputs[7] = "id8_R_t3: 0;id9_R_t3: 0";
+outputs[8] = "id8_R_t3: 16843008;id9_R_t3: 257";
+outputs[9] = "id8_R_t3: 16842752;id9_R_t3: 1";
+outputs[10] = "id8_R_t3: 16777472;id9_R_t3: 0";
+outputs[11] = "id8_R_t3: 65792;id9_R_t3: 0";
+outputs[12] = "id8_R_t3: 65792;id9_R_t3: 1";
+outputs[13] = "id8_R_t3: 16777472;id9_R_t3: 256";
+outputs[14] = "id8_R_t3: 16843008;id9_R_t3: 256";
+outputs[15] = "id8_R_t3: 16842752;id9_R_t3: 256";
+outputs[16] = "id8_R_t3: 16777472;id9_R_t3: 1";
+outputs[17] = "id8_R_t3: 16842752;id9_R_t3: 0";
+outputs[18] = "id8_R_t3: 16843008;id9_R_t3: 0";
+outputs[19] = "id8_R_t3: 16843008;id9_R_t3: 1";
+outputs[20] = "id8_R_t3: 256;id9_R_t3: 257";
+outputs[21] = "id8_R_t3: 256;id9_R_t3: 256";
+outputs[22] = "id8_R_t3: 65536;id9_R_t3: 257";
+outputs[23] = "id8_R_t3: 65536;id9_R_t3: 256";
+outputs[24] = "id8_R_t3: 16842752;id9_R_t3: 257";
+outputs[25] = "id8_R_t3: 16777472;id9_R_t3: 257";
+outputs[26] = "id8_R_t3: 0;id9_R_t3: 256";
+outputs[27] = "id8_R_t3: 0;id9_R_t3: 257";
+outputs[28] = "id8_R_t3: 16777216;id9_R_t3: 256";
+outputs[29] = "id8_R_t3: 16777216;id9_R_t3: 257";
+outputs[30] = "id8_R_t3: 65792;id9_R_t3: 257";
+outputs[31] = "id8_R_t3: 65792;id9_R_t3: 256";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id8_R_t3: 0;id9_R_t3: 0
+//output// id8_R_t3: 16777216;id9_R_t3: 1
+//output// id8_R_t3: 16777216;id9_R_t3: 0
 //output// id8_R_t3: 65536;id9_R_t3: 0
 //output// id8_R_t3: 65536;id9_R_t3: 1
 //output// id8_R_t3: 256;id9_R_t3: 0
 //output// id8_R_t3: 256;id9_R_t3: 1
 //output// id8_R_t3: 0;id9_R_t3: 1
-//output// id8_R_t3: 16843008;id9_R_t3: 256
+//output// id8_R_t3: 0;id9_R_t3: 0
 //output// id8_R_t3: 16843008;id9_R_t3: 257
-//output// id8_R_t3: 65536;id9_R_t3: 256
+//output// id8_R_t3: 16842752;id9_R_t3: 1
+//output// id8_R_t3: 16777472;id9_R_t3: 0
 //output// id8_R_t3: 65792;id9_R_t3: 0
 //output// id8_R_t3: 65792;id9_R_t3: 1
+//output// id8_R_t3: 16777472;id9_R_t3: 256
+//output// id8_R_t3: 16843008;id9_R_t3: 256
 //output// id8_R_t3: 16842752;id9_R_t3: 256
-//output// id8_R_t3: 16777472;id9_R_t3: 257
+//output// id8_R_t3: 16777472;id9_R_t3: 1
+//output// id8_R_t3: 16842752;id9_R_t3: 0
+//output// id8_R_t3: 16843008;id9_R_t3: 0
+//output// id8_R_t3: 16843008;id9_R_t3: 1
 //output// id8_R_t3: 256;id9_R_t3: 257
 //output// id8_R_t3: 256;id9_R_t3: 256
 //output// id8_R_t3: 65536;id9_R_t3: 257
-//output// id8_R_t3: 16777472;id9_R_t3: 256
+//output// id8_R_t3: 65536;id9_R_t3: 256
 //output// id8_R_t3: 16842752;id9_R_t3: 257
+//output// id8_R_t3: 16777472;id9_R_t3: 257
 //output// id8_R_t3: 0;id9_R_t3: 256
 //output// id8_R_t3: 0;id9_R_t3: 257
 //output// id8_R_t3: 16777216;id9_R_t3: 256

@@ -71,8 +71,10 @@ outputs[0] = "id6_R_t3: 1";
 outputs[1] = "id6_R_t3: 0";
 outputs[2] = "id6_R_t3: 65792";
 outputs[3] = "id6_R_t3: 65793";
-outputs[4] = "id6_R_t3: 256";
-outputs[5] = "id6_R_t3: 257";
+outputs[4] = "id6_R_t3: 65536";
+outputs[5] = "id6_R_t3: 65537";
+outputs[6] = "id6_R_t3: 256";
+outputs[7] = "id6_R_t3: 257";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
@@ -80,5 +82,7 @@ assert(-1 != outputs.indexOf(report));
 //output// id6_R_t3: 0
 //output// id6_R_t3: 65792
 //output// id6_R_t3: 65793
+//output// id6_R_t3: 65536
+//output// id6_R_t3: 65537
 //output// id6_R_t3: 256
 //output// id6_R_t3: 257

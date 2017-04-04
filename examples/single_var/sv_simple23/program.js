@@ -62,9 +62,11 @@ var outputs = [];
 outputs[0] = "id2_R_t1: 0.0000;id5_R_t2: 0.0078";
 outputs[1] = "id2_R_t1: 0.0000;id5_R_t2: 0.0000";
 outputs[2] = "id2_R_t1: 2.0000;id5_R_t2: 0.0000";
+outputs[3] = "id2_R_t1: 2.0000;id5_R_t2: 0.0078";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id2_R_t1: 0.0000;id5_R_t2: 0.0078
 //output// id2_R_t1: 0.0000;id5_R_t2: 0.0000
 //output// id2_R_t1: 2.0000;id5_R_t2: 0.0000
+//output// id2_R_t1: 2.0000;id5_R_t2: 0.0078

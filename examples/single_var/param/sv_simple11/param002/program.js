@@ -69,10 +69,12 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id6_R_t3: 1";
 outputs[1] = "id6_R_t3: 0";
-outputs[2] = "id6_R_t3: 257";
+outputs[2] = "id6_R_t3: 256";
+outputs[3] = "id6_R_t3: 257";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id6_R_t3: 1
 //output// id6_R_t3: 0
+//output// id6_R_t3: 256
 //output// id6_R_t3: 257

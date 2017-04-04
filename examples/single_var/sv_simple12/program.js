@@ -68,18 +68,34 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 921.6002;id7_R_t3: 1.1000";
-outputs[1] = "id6_R_t3: 0.0141;id7_R_t3: 1.1000";
-outputs[2] = "id6_R_t3: 3.6000;id7_R_t3: 0.0000";
-outputs[3] = "id6_R_t3: 0.0000;id7_R_t3: 1.1000";
-outputs[4] = "id6_R_t3: 3.6000;id7_R_t3: 1.1000";
-outputs[5] = "id6_R_t3: 0.0000;id7_R_t3: 0.0000";
+outputs[0] = "id6_R_t3: 896.1001;id7_R_t3: 0.0000";
+outputs[1] = "id6_R_t3: 896.1002;id7_R_t3: 1.1000";
+outputs[2] = "id6_R_t3: 896.1001;id7_R_t3: 1.1000";
+outputs[3] = "id6_R_t3: 2.1000;id7_R_t3: 0.0000";
+outputs[4] = "id6_R_t3: 896.1002;id7_R_t3: 0.0000";
+outputs[5] = "id6_R_t3: 0.0141;id7_R_t3: 1.1000";
+outputs[6] = "id6_R_t3: 3.6000;id7_R_t3: 0.0000";
+outputs[7] = "id6_R_t3: 0.0000;id7_R_t3: 1.1000";
+outputs[8] = "id6_R_t3: 921.6002;id7_R_t3: 0.0000";
+outputs[9] = "id6_R_t3: 2.1000;id7_R_t3: 1.1000";
+outputs[10] = "id6_R_t3: 0.0141;id7_R_t3: 0.0000";
+outputs[11] = "id6_R_t3: 3.6000;id7_R_t3: 1.1000";
+outputs[12] = "id6_R_t3: 0.0000;id7_R_t3: 0.0000";
+outputs[13] = "id6_R_t3: 921.6002;id7_R_t3: 1.1000";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id6_R_t3: 921.6002;id7_R_t3: 1.1000
+//output// id6_R_t3: 896.1001;id7_R_t3: 0.0000
+//output// id6_R_t3: 896.1002;id7_R_t3: 1.1000
+//output// id6_R_t3: 896.1001;id7_R_t3: 1.1000
+//output// id6_R_t3: 2.1000;id7_R_t3: 0.0000
+//output// id6_R_t3: 896.1002;id7_R_t3: 0.0000
 //output// id6_R_t3: 0.0141;id7_R_t3: 1.1000
 //output// id6_R_t3: 3.6000;id7_R_t3: 0.0000
 //output// id6_R_t3: 0.0000;id7_R_t3: 1.1000
+//output// id6_R_t3: 921.6002;id7_R_t3: 0.0000
+//output// id6_R_t3: 2.1000;id7_R_t3: 1.1000
+//output// id6_R_t3: 0.0141;id7_R_t3: 0.0000
 //output// id6_R_t3: 3.6000;id7_R_t3: 1.1000
 //output// id6_R_t3: 0.0000;id7_R_t3: 0.0000
+//output// id6_R_t3: 921.6002;id7_R_t3: 1.1000

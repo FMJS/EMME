@@ -73,7 +73,9 @@ outputs[1] = "id6_R_t3: 0;id7_R_t3: 0";
 outputs[2] = "id6_R_t3: 512;id7_R_t3: 0";
 outputs[3] = "id6_R_t3: 512;id7_R_t3: 2";
 outputs[4] = "id6_R_t3: 131584;id7_R_t3: 2";
-outputs[5] = "id6_R_t3: 131072;id7_R_t3: 2";
+outputs[5] = "id6_R_t3: 131584;id7_R_t3: 0";
+outputs[6] = "id6_R_t3: 131072;id7_R_t3: 0";
+outputs[7] = "id6_R_t3: 131072;id7_R_t3: 2";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
@@ -82,4 +84,6 @@ assert(-1 != outputs.indexOf(report));
 //output// id6_R_t3: 512;id7_R_t3: 0
 //output// id6_R_t3: 512;id7_R_t3: 2
 //output// id6_R_t3: 131584;id7_R_t3: 2
+//output// id6_R_t3: 131584;id7_R_t3: 0
+//output// id6_R_t3: 131072;id7_R_t3: 0
 //output// id6_R_t3: 131072;id7_R_t3: 2

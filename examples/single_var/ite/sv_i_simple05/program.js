@@ -13,10 +13,8 @@
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      for(i = 0; i <= 3; i++){
-         var x = new Int8Array(data.x_sab); x[3] = 35.0+i;
-         var x = new Int32Array(data.x_sab); id3_R_t1 = x[0]; report.push("id3_R_t1_"+i+": "+id3_R_t1);
-      }
+      var x = new Int8Array(data.x_sab); x[0] = 1;
+      var x = new Int8Array(data.x_sab); x[1] = 2;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -26,7 +24,13 @@ $262.agent.start(
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
+      var x = new Int8Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2);
+      var x = new Int8Array(data.x_sab); id5_R_t2 = x[0]; report.push("id5_R_t2: "+id5_R_t2);
+      if(id4_R_t2 == id5_R_t2) {
+         var x = new Int8Array(data.x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
+      } else {
+         var x = new Int8Array(data.x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
+      }
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -58,8 +62,22 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id3_R_t1_0: 587202560;id3_R_t1_1: 603979776;id3_R_t1_2: 620756992;id3_R_t1_3: 637534208;id4_R_t2: 0.0000";
+outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 2";
+outputs[1] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 2";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[4] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
+outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0";
+outputs[6] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1";
+outputs[7] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
-//output// id3_R_t1_0: 587202560;id3_R_t1_1: 603979776;id3_R_t1_2: 620756992;id3_R_t1_3: 637534208;id4_R_t2: 0.0000
+//output// id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 2
+//output// id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0
+//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 2
+//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
+//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1
+//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0
+//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1
+//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0

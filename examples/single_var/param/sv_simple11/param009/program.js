@@ -69,16 +69,20 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id6_R_t3: 0";
 outputs[1] = "id6_R_t3: 2";
-outputs[2] = "id6_R_t3: 512";
-outputs[3] = "id6_R_t3: 131584";
-outputs[4] = "id6_R_t3: 514";
-outputs[5] = "id6_R_t3: 131586";
+outputs[2] = "id6_R_t3: 131584";
+outputs[3] = "id6_R_t3: 131072";
+outputs[4] = "id6_R_t3: 512";
+outputs[5] = "id6_R_t3: 131074";
+outputs[6] = "id6_R_t3: 514";
+outputs[7] = "id6_R_t3: 131586";
 assert(-1 != outputs.indexOf(report));
 
 // Expected outputs //
 //output// id6_R_t3: 0
 //output// id6_R_t3: 2
-//output// id6_R_t3: 512
 //output// id6_R_t3: 131584
+//output// id6_R_t3: 131072
+//output// id6_R_t3: 512
+//output// id6_R_t3: 131074
 //output// id6_R_t3: 514
 //output// id6_R_t3: 131586
