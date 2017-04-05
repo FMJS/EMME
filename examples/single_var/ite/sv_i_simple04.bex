@@ -1,0 +1,17 @@
+// Single Variable ITE Simple 04
+var x = new SharedArrayBuffer();
+
+Thread t1 {
+  Atomics.store(x-I8, 0, 1);
+  Atomics.store(x-I8, 1, 1);
+  Atomics.store(x-I8, 0, 2);
+  Atomics.store(x-I8, 1, 2);
+}
+
+Thread t2 {
+  if (Atomics.load(x-I8, 0) >= 1) {
+     print(Atomics.load(x-I8, 0));
+  } else {
+     print(Atomics.load(x-I8, 1));
+  }
+}
