@@ -228,7 +228,7 @@ def litmus(config):
             print("FAIL")
             return 1
         else:
-            print("PASS")
+            print("ok")
             return 0
             
 if __name__ == "__main__":

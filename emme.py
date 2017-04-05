@@ -280,7 +280,7 @@ def analyze_program(config):
         jsfiles = [config.jsprogram]
         if config.jsdir:
             jsprogram = "%s/%s"%(config.jsdir, config.jsprogram.replace("/","-"))
-            jsfiles.append(jsprogram)
+            jsfiles = [jsprogram]
 
         for jsfile in jsfiles:    
             with open(jsfile, "w") as f:

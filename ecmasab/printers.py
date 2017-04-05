@@ -57,6 +57,8 @@ class PrintersFactory(object):
         PrintersFactory.register_printer(JST262Printer())
         PrintersFactory.register_printer(JST262_NP_Printer())
         PrintersFactory.register_printer(JST262_NA_Printer())
+        PrintersFactory.register_printer(JST262_SR_Printer())
+        PrintersFactory.register_printer(JST262_SR_NP_Printer())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
@@ -534,6 +536,8 @@ class JST262Printer(JSPrinter):
     asserts = True
     indent = "   "
 
+    str_report = False
+
     def print_execution(self, program, interp):
         reads = []
         for el in interp.reads_values:
@@ -555,12 +559,17 @@ class JST262Printer(JSPrinter):
         
         ret = LICENSE
 
+        blocks = [(x.name, x.size) for x in program.get_blocks()]
+        blocks.sort()
+
+        str_blist = ",".join(["%s_sab"%x[0] for x in blocks])
+        
         for thread in program.threads:
             if thread.name == MAIN:
                 continue
             ret += "\n// Thread %s\n"%thread.name
             ret += "%s.agent.start(\n"%self.agent_prefix
-            ret += (ind*1)+"`%s.agent.receiveBroadcast(function (data) {\n"%self.agent_prefix
+            ret += (ind*1)+"`%s.agent.receiveBroadcast(function (%s) {\n"%(self.agent_prefix, str_blist if self.str_report else "data")
             ret += (ind*2)+"var report = [];\n"
 
             for ev in thread.get_events(False):
@@ -576,17 +585,26 @@ class JST262Printer(JSPrinter):
             ret += (ind*1)+"})\n"
             ret += (ind*1)+"`);\n"
 
-        blocks = [(x.name, x.size) for x in program.get_blocks()]
-        blocks.sort()
-        ret += "\nvar data = {\n"
+        if not self.str_report:
+            ret += "\nvar data = {\n"
         for sab in blocks:
             size = sab[1]
             if (size % 8) != 0:
                 size = (int(size / 8)+1) * 8
-            ret += (ind*1)+"%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
-        ret += "}\n"
+                
+            if self.str_report:
+                ret += "var %s_sab = new SharedArrayBuffer(%s);\n"%(sab[0], size)
+            else:
+                ret += (ind*1)+"%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
+                
+        if not self.str_report:
+            ret += "}\n"
 
-        ret += "%s.agent.broadcast(data);\n"%self.agent_prefix
+        if self.str_report:
+            ret += "%s.agent.broadcast(%s);\n"%(self.agent_prefix, str_blist)
+        else:
+            ret += "%s.agent.broadcast(data);\n"%(self.agent_prefix)
+
         ret += "var report = [];\n"
         
         ret += "\n// MAIN Thread\n"
@@ -605,7 +623,11 @@ class JST262Printer(JSPrinter):
         ret += "while (true) {\n"
         ret += (ind*1)+"thread_report = %s.agent.getReport();\n"%self.agent_prefix
         ret += (ind*1)+"if (thread_report != null) {\n"
+        if self.str_report:
+            ret += (ind*2)+"thread_report = thread_report.split(\",\");\n"
         ret += (ind*2)+"for(i=0; i < thread_report.length; i++){\n"
+        if self.str_report:
+            ret += (ind*3)+"if(thread_report[i] == \"\") continue;\n"
         ret += (ind*3)+"report.push(thread_report[i]);\n"
         ret += (ind*3)+"print(thread_report[i]);\n"
         ret += (ind*2)+"}\n"
@@ -683,12 +705,14 @@ class JST262Printer(JSPrinter):
         
         if (event.ordering != INIT):
             if is_float:
-                var_def = "var %s = new Float%sArray(data.%s)"%(event.block.name, \
-                                                                event.get_size()*8, \
-                                                                event.block.name+"_sab")
+                var_def = "var %s = new Float%sArray(%s%s)"%(event.block.name, \
+                                                             event.get_size()*8, \
+                                                             "" if self.str_report else "data.", \
+                                                             event.block.name+"_sab")
             else:
-                var_def = "var %s = new Int%sArray(data.%s)"%(event.block.name, \
+                var_def = "var %s = new Int%sArray(%s%s)"%(event.block.name, \
                                                               event.get_size()*8, \
+                                                              "" if self.str_report else "data.", \
                                                               event.block.name+"_sab")
 
         if (event.is_write_or_modify()):
@@ -794,6 +818,19 @@ class JST262_NA_Printer(JST262Printer):
 
     asserts = False
 
+class JST262_SR_Printer(JST262Printer):
+    NAME = "JS-TEST262-SR"
+    DESC = "TEST262 format (with string-report)"
+
+    str_report = True
+
+class JST262_SR_NP_Printer(JST262Printer):
+    NAME = "JS-TEST262-SR-NP"
+    DESC = "TEST262 format (with string-report and not $262 prefix)"
+
+    str_report = True
+    agent_prefix = "$"    
+    
 class DotPrinter(object):
     NAME = "DOT"
     TYPE = PrinterType.GRAPH
@@ -908,7 +945,7 @@ class DotPrinter(object):
                 posx += self.sepx
 
         mo_str = "<br align=\"left\"/>".join(self.__print_memory_order(interp))
-        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, splines=false, overlap=true, margin=0, shape=none, pos=\"%d,%d!\"]"%(mo_str, iposx+self.sepx, maxy))
+        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, splines=false, overlap=true, margin=0, shape=none, pos=\"%d,%d!\"]"%(mo_str, iposx+(1.5*self.sepx), maxy))
         
         ret.append("}")
                 
