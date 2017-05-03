@@ -68,22 +68,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 0;id7_R_t3: 1";
-outputs[1] = "id6_R_t3: 0;id7_R_t3: 0";
-outputs[2] = "id6_R_t3: 256;id7_R_t3: 0";
-outputs[3] = "id6_R_t3: 256;id7_R_t3: 1";
-outputs[4] = "id6_R_t3: 65792;id7_R_t3: 0";
-outputs[5] = "id6_R_t3: 65792;id7_R_t3: 1";
-outputs[6] = "id6_R_t3: 65536;id7_R_t3: 0";
-outputs[7] = "id6_R_t3: 65536;id7_R_t3: 1";
+outputs[0] = "id6_R_t3: 0;id7_R_t3: 0";
+outputs[1] = "id6_R_t3: 256;id7_R_t3: 0";
+outputs[2] = "id6_R_t3: 65536;id7_R_t3: 0";
+outputs[3] = "id6_R_t3: 65792;id7_R_t3: 0";
+outputs[4] = "id6_R_t3: 0;id7_R_t3: 1";
+outputs[5] = "id6_R_t3: 256;id7_R_t3: 1";
+outputs[6] = "id6_R_t3: 65536;id7_R_t3: 1";
+outputs[7] = "id6_R_t3: 65792;id7_R_t3: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id6_R_t3: 0;id7_R_t3: 1
-//output// id6_R_t3: 0;id7_R_t3: 0
-//output// id6_R_t3: 256;id7_R_t3: 0
-//output// id6_R_t3: 256;id7_R_t3: 1
-//output// id6_R_t3: 65792;id7_R_t3: 0
-//output// id6_R_t3: 65792;id7_R_t3: 1
-//output// id6_R_t3: 65536;id7_R_t3: 0
-//output// id6_R_t3: 65536;id7_R_t3: 1
+// Expected Output (Compressed Data) //
+//eNrt28tOwkAUgOG9T9GlJiSlnaFEjQuJIW7UBBcsiUldNFFxUVbGd7fQAi1My6Wd6cV/R87MnLYMfDnJ
+//9Nj2fBF+L0LbtgLfm01mobix+reBP1x/tu3Puf/+EU14HFl31s9l4Luz6Sx0etEKsfp01bMyUZmKCmU0
+//vtIyGl8njjrRjM+34GsZd1Oz03GRE5c58cEy7u7HvZzrJvfza90/P1hPL//niXeeKJ1lG/WUc9MZhDKD
+//UGYQygxSmUEqM0hlhnjd7txtNLPHk9F4tcmZPVp/P9HK/nJ13qBTNOgWDYpkcFi0cqhemdz4OPlxKvOr
+//V8crX6fJylP+EBc2VEAFVBRQUV6D7eBmi/v6oVBc9WQ+YAImYKJ8RXEiE5utdEwyIWACJmBCLxNlC4a6
+//kXCVP0JddLgDDzzAAzyqrzFkLXxIoAAKoGhPlSEbVGXowsMbDAR8wAd8lD4d2bdl80CuSUDSXyNUQAVU
+//1HE6clKlUQ8U6koDPuADPuquNI44GKmbDwEf8AEfdfFR7sCkmbWHaVKG1y6kQAqknFWRyKahIuEDPuCj
+//FRWJbEdFYpaU9OtiDpzACdWI2T6V/cEURud3qezEk5yHe1dgAiZgomk9KlUgcXSHymE6QAIkQKJpHSrV
+//IiFAAiRAolv9KfrqCP1wZF86hw7ooL4w2p1SLR4SJmACJrrWm2KiwtBFx+4LX+ABHtQYRjtTquXjwKEp
+//UAAFULSxL8VElQEe4AEeHexK0XdOAh7gAR4d7kkxfX5iApTsK+WAAihUIwY7UvSdqoAHeIBHh/tRTJ+1
+//VAnKH+qKprg=

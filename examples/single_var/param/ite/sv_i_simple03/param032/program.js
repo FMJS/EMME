@@ -62,22 +62,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2";
-outputs[1] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
-outputs[2] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2";
-outputs[3] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 0";
-outputs[5] = "id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 0";
-outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 2";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2";
+outputs[4] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 2";
+outputs[5] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2";
+outputs[6] = "id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 0";
 outputs[7] = "id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 2
+// Expected Output (Compressed Data) //
+//eNrtmztvwjAUhff+iowgIaX4EiO1YgC1qEMfErRijKqmQ6QCHcJU9b83L4oBR8rDDsaczbohx8mNP93r
+//Q+K66030vYlc1wmDgT/zI3bjXN+GgSeMh9ux6y7XwedX/OOHiTNyfjphwPyFH/V78dmUjro9p7NVSqKZ
+//zmF0KEQ9abQfqy3fw1USZ4KyGKeC+KBAxyuI5/P+OuPnO+fpxb47S+O7+xlIo540KiqQVIGkCnSokGV3
+//Npmm6d3L2faK4zOvk7P3Uic5OJQfzGeY5s9Pql8kLVfNFOeLRDEbp/n9WK+C0XT8OL/vXrkACACdGqD/
+//LGjBR8xxC/AwwAN4WoSHtMJD7cKDygN4jGndjsqSqsZNzD3gATz2tW2N0ZE3bZrAQcsGcAxp2RqDQ6cC
+//hwEcgHM6cEgPOIRWDeBcskUtFCRlBnWuCXgAj832dBl0qpnTDcHBPgfgnIM1XQYcahMcVByAcw62dJNm
+//TW4RAByAY70lXb9R0wIN2jRAY74dXb9J0w4NrGhAY6YVXR8aarM9Y4AG0BhlQ5MGG5oAD+Cx34Ym5TY0
+//6dnfAByAY5INTcptaFQcgHMBNjQpt6EBDsCx3oYmxTY02jRAY70NTYptaNJjQwMaQGOODU2KbWiF7VkC
+//DVf0343u5bKblUuXLi/Q4I2h0X1nVRZ8laXdMGMHV8Gl8/Fm+5ojbLiirz7F58GrfUrwOnsDO2DHBHZY
+//hYLDlXz0CW7AzeXWnCavdMrJKfHOALgBN2ddb+q/0dkmMwzMgBmDag0przUEbsCN5bWGFNeassz8AYTH
+//dxU=

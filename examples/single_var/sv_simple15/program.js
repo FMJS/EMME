@@ -68,54 +68,42 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 131073;id7_R_t3: 0";
-outputs[1] = "id6_R_t3: 0;id7_R_t3: 0";
-outputs[2] = "id6_R_t3: 256;id7_R_t3: 2";
-outputs[3] = "id6_R_t3: 256;id7_R_t3: 0";
-outputs[4] = "id6_R_t3: 131329;id7_R_t3: 2";
-outputs[5] = "id6_R_t3: 131329;id7_R_t3: 0";
-outputs[6] = "id6_R_t3: 1;id7_R_t3: 2";
-outputs[7] = "id6_R_t3: 1;id7_R_t3: 0";
-outputs[8] = "id6_R_t3: 0;id7_R_t3: 2";
-outputs[9] = "id6_R_t3: 131073;id7_R_t3: 2";
-outputs[10] = "id6_R_t3: 131328;id7_R_t3: 2";
-outputs[11] = "id6_R_t3: 131328;id7_R_t3: 0";
-outputs[12] = "id6_R_t3: 131584;id7_R_t3: 2";
-outputs[13] = "id6_R_t3: 131584;id7_R_t3: 0";
-outputs[14] = "id6_R_t3: 131072;id7_R_t3: 0";
-outputs[15] = "id6_R_t3: 131072;id7_R_t3: 2";
-outputs[16] = "id6_R_t3: 513;id7_R_t3: 0";
+outputs[0] = "id6_R_t3: 0;id7_R_t3: 0";
+outputs[1] = "id6_R_t3: 1;id7_R_t3: 0";
+outputs[2] = "id6_R_t3: 256;id7_R_t3: 0";
+outputs[3] = "id6_R_t3: 257;id7_R_t3: 0";
+outputs[4] = "id6_R_t3: 512;id7_R_t3: 0";
+outputs[5] = "id6_R_t3: 513;id7_R_t3: 0";
+outputs[6] = "id6_R_t3: 131072;id7_R_t3: 0";
+outputs[7] = "id6_R_t3: 131073;id7_R_t3: 0";
+outputs[8] = "id6_R_t3: 131328;id7_R_t3: 0";
+outputs[9] = "id6_R_t3: 131329;id7_R_t3: 0";
+outputs[10] = "id6_R_t3: 131584;id7_R_t3: 0";
+outputs[11] = "id6_R_t3: 131585;id7_R_t3: 0";
+outputs[12] = "id6_R_t3: 0;id7_R_t3: 2";
+outputs[13] = "id6_R_t3: 1;id7_R_t3: 2";
+outputs[14] = "id6_R_t3: 256;id7_R_t3: 2";
+outputs[15] = "id6_R_t3: 257;id7_R_t3: 2";
+outputs[16] = "id6_R_t3: 512;id7_R_t3: 2";
 outputs[17] = "id6_R_t3: 513;id7_R_t3: 2";
-outputs[18] = "id6_R_t3: 257;id7_R_t3: 2";
-outputs[19] = "id6_R_t3: 257;id7_R_t3: 0";
-outputs[20] = "id6_R_t3: 512;id7_R_t3: 0";
-outputs[21] = "id6_R_t3: 512;id7_R_t3: 2";
-outputs[22] = "id6_R_t3: 131585;id7_R_t3: 2";
-outputs[23] = "id6_R_t3: 131585;id7_R_t3: 0";
+outputs[18] = "id6_R_t3: 131072;id7_R_t3: 2";
+outputs[19] = "id6_R_t3: 131073;id7_R_t3: 2";
+outputs[20] = "id6_R_t3: 131328;id7_R_t3: 2";
+outputs[21] = "id6_R_t3: 131329;id7_R_t3: 2";
+outputs[22] = "id6_R_t3: 131584;id7_R_t3: 2";
+outputs[23] = "id6_R_t3: 131585;id7_R_t3: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id6_R_t3: 131073;id7_R_t3: 0
-//output// id6_R_t3: 0;id7_R_t3: 0
-//output// id6_R_t3: 256;id7_R_t3: 2
-//output// id6_R_t3: 256;id7_R_t3: 0
-//output// id6_R_t3: 131329;id7_R_t3: 2
-//output// id6_R_t3: 131329;id7_R_t3: 0
-//output// id6_R_t3: 1;id7_R_t3: 2
-//output// id6_R_t3: 1;id7_R_t3: 0
-//output// id6_R_t3: 0;id7_R_t3: 2
-//output// id6_R_t3: 131073;id7_R_t3: 2
-//output// id6_R_t3: 131328;id7_R_t3: 2
-//output// id6_R_t3: 131328;id7_R_t3: 0
-//output// id6_R_t3: 131584;id7_R_t3: 2
-//output// id6_R_t3: 131584;id7_R_t3: 0
-//output// id6_R_t3: 131072;id7_R_t3: 0
-//output// id6_R_t3: 131072;id7_R_t3: 2
-//output// id6_R_t3: 513;id7_R_t3: 0
-//output// id6_R_t3: 513;id7_R_t3: 2
-//output// id6_R_t3: 257;id7_R_t3: 2
-//output// id6_R_t3: 257;id7_R_t3: 0
-//output// id6_R_t3: 512;id7_R_t3: 0
-//output// id6_R_t3: 512;id7_R_t3: 2
-//output// id6_R_t3: 131585;id7_R_t3: 2
-//output// id6_R_t3: 131585;id7_R_t3: 0
+// Expected Output (Compressed Data) //
+//eNrt20tPwkAUhuG9v6JLTUxKZ5gWNS40xrhRE1ywJCZ1QaLiAlbG/25LKwwwXGp7pkbeXXPaOVwKT74w
+//nDAcTycf00kYBqM0HvaHE30edC5GafJzHIZv4/TlNbvg7jq4DD6PR6kaDoaT6DRboWdHJ6dBVu3mxyqv
+//mtlRUS165tWiY1GNsivenkfveV1ZPey63lDvWt3tutlQjzc8bvl8voKrh5vg/vE/vrZZffGK7O6LqnFW
+//Y2cHu6929tXOvtrZVzv7Lt7r2Fm1rzXOa83qtcU97l/fzm7y0p37edeylZ189aaT0baTattJXZ5Mtq1M
+//3CvLJ35bfjid/d2ri5VPg3JllS/EUehCIQIFUDg8FOp/7xcn5ze+I0+C41ErQ7EdBGViSIAEckIdEuY3
+//OPJJghYjIYEESDg8EuoGgbZBsD9s8kyYSMEETJAc6hgyf0u8QmHfiGZJ0JAACSSH3yeHdkBwJwcpJiId
+//dRLCA1IQHir8TLnOyPzFK59WGEkVyA+owP5EjfzQjgnu/CAohVY9pEAK8kPVnYm2pdD+pThDCqQ4PCnq
+//bVj8zUThXQ/T66IHepAzqu5jtO1H1/nRFJXCIAVSkDOqbW/8zZzhVw97UkMBB3AQMaQmNdZPWuz8fk5j
+//pV723D29sceUBiAAArsgQlMaTXCw94zGbiT2mtEABEAgIQjNaDQLghYDIQEEQOB/ltITGnL5QB6J5fkM
+//kAAJUoPQfEazTOz423UNEDQgAAKpQXo6w0dqkEJibTYDJ3CC4CA0m9GsFEbSBLIDJrAnIT6Z4SM7CDqx
+//PJeBEzhBdhCZy5DbqPDkxBlO4AT/lpSdyvC9f+HFjuWZDOzADjKGyEyG3LaGJycMTuAEGUN2IsP3bkeT
+//dnwDYR4SrA==

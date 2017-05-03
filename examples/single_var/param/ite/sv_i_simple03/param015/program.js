@@ -64,20 +64,23 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0";
 outputs[1] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2";
-outputs[2] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2";
-outputs[3] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0";
-outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2";
-outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
-outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0";
-outputs[7] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2";
+outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[3] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0";
+outputs[4] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0";
+outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2";
+outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2";
+outputs[7] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2
+// Expected Output (Compressed Data) //
+//eNrtmjtvwjAUhff+iowgIQV8iZFaMYBa1KEPCVoxRlXTIVKBDmGq+t+bZwmpI5HYDq57NusanxDjTyf3
+//ENfd7aOPfeS6ThiM/aUfsUtneBUGXj5m8XhS1F13swve3uMP386dqfPZCwPmr/1oNIhXUzrqD5xeoZRU
+//M51qdVKqesLqKFbbvITbpM5KyuU61dTHNTpeTT2/7pcze7h27h/tu7O0frifsbDqCatlBRIqkFCBqgrZ
+//7i7ni3R7j/as+MbxymGy+mjrfraomJqI1+X6i/zXE6qLhcWamd5qnehl43RvX3fbYLqY3a1u+hcu4AE8
+//54aHqnwoRKe8k2cDhwEcgGOQ65SmFHlOXgU4AMdexzkFmyZ+owkaPKYBGpPchpS7DQEcgGO725Bit1EI
+//TTLmiqDRfVwOV+XCo8trNLg0NLrvrMmBb3K0JXes8i248Hpczm0Ek1xRpnZc583Cgaflcx0/DPyAnw75
+//YfWmo4AeJjQeXezAe8BOl+yQVnaoU3ZYpdkBO2DnTL7za0qN65Sr8BxwY2G/Q7Lk1HU7pIUd9DpgxxDP
+//IT2eQ/AccGNznyPNDRnADQM34MaobFrmzZu6hOCE1whaPKuBHbBjUi59CjnNUmk5buA54OYvZNLtX1rT
+//7zcM3IAbI/Po9m4jTqPhNWDG/ixaprshDdygtwE35ufQ7b2G4DVg5l9m0O27mi6Zwf82YMas/Jk05M+k
+//5RkN7IAdk/JnUp4/EzwH3FifP5Py/Jm05M/gBtyYkz+T4vwZXgNm7M+fSXn+jN4G3NieP5Pi/BleA2Zs
+//z59Jcf58KjPfQAhz6w==

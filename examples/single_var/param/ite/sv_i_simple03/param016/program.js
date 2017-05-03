@@ -62,22 +62,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 1";
-outputs[1] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
+outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 1";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
+outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
 outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0";
 outputs[6] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1";
-outputs[7] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[7] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
+// Expected Output (Compressed Data) //
+//eNrtmztvwjAUhff+iowgIYX4EiO1YgC1qEMfErRiRFXTAalAB5iq/veSB8WkjorxdRXM2awbOMFOPt2c
+//gxOGy/XqY70Kw2CWdKaj6UpcBtHVLImLcXsz7m7HYThfJm/vmw/fDoJe8NmYJWI6ma6i1ubblI2araCx
+//VUqruU652lWqsbYabdTmL7NFWheKslqninqnQieuqBfn/Qr6D9fB/aN/M8vqu/l0tNVYW1UVSKtAWgUq
+//K+SrOxoMs+XdW7Of2bbT7+4t3HYyysGu/mChPyyunka9SlivmeuNJ6lePs7W9nW5SHrD/t34pnkRAh7A
+//U2N4RPkQDzrqujOC01bAiQAOwHEMjqa1xNVUmaKz319iLVKAB/CcKDyiuutYoyO0XccROHhcAzin4HUU
+//4JicTqEIcACOvz7neGz0LscSGjymAZpT8DiHYGPmcAAOwPHe3xyCjYm7cfSIFgEaQFMjb0Ps3oYADsDx
+//3dsQs7chN49ogAbQ1MnbELu3ATgAx3tvQ8zehhGadCyZAgHXt8vurFJ768oKDWkNjeuZmdzwJre25YqV
+//foXUnk/adRvNQcm0X2C/Ls3++HwaPYMf8FMHfoRRNiBZtgyAHbDjfe/5BRZX51GvE9gBO971HWtyxJ/h
+//Gh83USkkADfgxiU3ZBASSJbXCgj9BtyccU5gs+emyukcsIEA7ICdE88Ijt92A27AzfnmAzYdR+9ywA24
+//8T0bOL7buGAGuQCYqX8ucPxrOPSPfSYCM2CmVpkAOcgECOyAHe8zAWLPBMANuPE/EyD2TADcgBvfMwFi
+//zgTISSYAZsBMfTIBYs4EDmXmG9XJdRQ=

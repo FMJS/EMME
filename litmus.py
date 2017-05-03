@@ -160,31 +160,31 @@ def litmus(config):
             return 1
     else:
         try:
+            modelstr = None
             with open(config.input_file, "r") as f:
+                strfile = f.read()
+                if JSPrinter.DATA in strfile:
+                    modelstr = strfile[strfile.find(JSPrinter.DATA)+len(JSPrinter.DATA):]
+                    modelstr = modelstr.replace("//","")
+            if modelstr:
+                input_file_has_models = True
                 i = 1
-                for line in f.readlines():
-                    if JSPrinter.OUT in line:
-                        model = None
-                        if JSPrinter.MOD in line:
-                            model = line[line.find(JSPrinter.MOD)+len(JSPrinter.MOD):]
-                            line = line[:line.find(JSPrinter.MOD)]
-                            input_file_has_models = True
-                        line = line.replace(JSPrinter.OUT,"")                        
-                        line = line.replace("\n","")
-                        line = line.split(";")
-                        line.sort()
-                        line = ";".join(line)
-                        outputs_dic[line] = [i, 0, model]
-                        i += 1
+                for line in uncompress_string(modelstr).split("\n"):
+                    model = line[line.find(JSPrinter.MOD)+len(JSPrinter.MOD):]
+                    output = line[len(JSPrinter.OUT):line.find(JSPrinter.MOD)]
+                    output = output.split(";")
+                    output.sort()
+                    output = ";".join(output)
+                    outputs_dic[output] = [i, 0, model]
+                    i += 1
         except Exception:
             print("File not found \"%s\""%config.input_file)
             return 1
 
-        
     if config.models and not input_file_has_models:
         print("ERROR: the input file does not contain model information")
         return 0
-        
+
     original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
             
     num_t = config.threads
@@ -241,7 +241,7 @@ def litmus(config):
         table = PrettyTable()
 
     mmatched = set([])
-        
+
     matches = 0
     for result in results:
         if result[0] > 0:
@@ -289,8 +289,8 @@ def litmus(config):
     if not config.silent and config.models:
         nmatched = [outputs_dic[x] for x in outputs_dic if tuple(x) not in mmatched]
 
-        mmatched = [uncompress_string(x[2]) for x in mmatched]
-        nmatched = [uncompress_string(x[2]) for x in nmatched]
+        mmatched = [x[2] for x in mmatched]
+        nmatched = [x[2] for x in nmatched]
 
         beparser = BeParser()    
         mmatched = beparser.executions_from_string("\n".join(mmatched))

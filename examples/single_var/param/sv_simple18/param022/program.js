@@ -59,22 +59,23 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t2: 1;id7_R_t2: 256";
-outputs[1] = "id6_R_t2: 0;id7_R_t2: 256";
+outputs[0] = "id6_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id6_R_t2: 1;id7_R_t2: 0";
 outputs[2] = "id6_R_t2: 256;id7_R_t2: 0";
-outputs[3] = "id6_R_t2: 0;id7_R_t2: 0";
-outputs[4] = "id6_R_t2: 256;id7_R_t2: 256";
-outputs[5] = "id6_R_t2: 1;id7_R_t2: 0";
-outputs[6] = "id6_R_t2: 257;id7_R_t2: 256";
-outputs[7] = "id6_R_t2: 257;id7_R_t2: 0";
+outputs[3] = "id6_R_t2: 257;id7_R_t2: 0";
+outputs[4] = "id6_R_t2: 0;id7_R_t2: 256";
+outputs[5] = "id6_R_t2: 1;id7_R_t2: 256";
+outputs[6] = "id6_R_t2: 256;id7_R_t2: 256";
+outputs[7] = "id6_R_t2: 257;id7_R_t2: 256";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id6_R_t2: 1;id7_R_t2: 256
-//output// id6_R_t2: 0;id7_R_t2: 256
-//output// id6_R_t2: 256;id7_R_t2: 0
-//output// id6_R_t2: 0;id7_R_t2: 0
-//output// id6_R_t2: 256;id7_R_t2: 256
-//output// id6_R_t2: 1;id7_R_t2: 0
-//output// id6_R_t2: 257;id7_R_t2: 256
-//output// id6_R_t2: 257;id7_R_t2: 0
+// Expected Output (Compressed Data) //
+//eNrt2k9rgzAYBvD7PkWOGxRS8xqFjR1WRtllG3SHHmXgDsK67mBPo999Wq1Yfd1sjG0Kz03evPFPlB/y
+//ECnXm/R7k0opkjiIFlGqbsX0LonD/bGUq3X88Zk1PM3Evfi5TmIVLaPUm2QzaHd0MxEHVZ+t6lqV2F5i
+//e322WtxrXi3utKh6WcfqPfnK66rWXa9TR93vqOuOetBx3fJ+tuLh5VE8v2LN+q9Z4+kDtlrvJbaX2F6f
+//7fXZXs326mZv8Y4Xs/nuJR+s8P7pspnTfHbXoFcOhtyg+muQ9pefl58Ye35+djHzbZnP3F5JDgEPCAAB
+//IGALAa+FQLXM0/EJYK5qDIPSAWgADaBhvP+Dajm9U9JAFmgIQQNoAA2DaGj9GJwKBsW+8OEsIE8ACkDB
+//gTyBWoPVgqsBaUKjXp4TGQNgAAyXkDHYYKF3wmCMBXIHcAEuHMgd7HJBo3GBLAJcgIszZxFmWBglEcZU
+//1POJ7C8DVIAKUOHKjodqYcleQqGNEgrQABpAgzP7II6HwTSj0IYZBcAAGADDmd0RQ8Cg0cAIAQbAABju
+//7Znow4WNnEIjpwAVoOICcopacmkzpfBZLpBRgAWw4H5GYRWF/xKKoVQgnwAWwOJ8+cRIWNBIWCCbABbA
+//4jzZxEAqjkkm+kPxC6eCYkg=

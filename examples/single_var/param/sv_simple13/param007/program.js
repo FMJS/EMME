@@ -68,22 +68,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 0;id7_R_t3: 2";
-outputs[1] = "id6_R_t3: 0;id7_R_t3: 0";
-outputs[2] = "id6_R_t3: 512;id7_R_t3: 0";
-outputs[3] = "id6_R_t3: 512;id7_R_t3: 2";
-outputs[4] = "id6_R_t3: 131584;id7_R_t3: 2";
-outputs[5] = "id6_R_t3: 131584;id7_R_t3: 0";
-outputs[6] = "id6_R_t3: 131072;id7_R_t3: 0";
-outputs[7] = "id6_R_t3: 131072;id7_R_t3: 2";
+outputs[0] = "id6_R_t3: 0;id7_R_t3: 0";
+outputs[1] = "id6_R_t3: 512;id7_R_t3: 0";
+outputs[2] = "id6_R_t3: 131072;id7_R_t3: 0";
+outputs[3] = "id6_R_t3: 131584;id7_R_t3: 0";
+outputs[4] = "id6_R_t3: 0;id7_R_t3: 2";
+outputs[5] = "id6_R_t3: 512;id7_R_t3: 2";
+outputs[6] = "id6_R_t3: 131072;id7_R_t3: 2";
+outputs[7] = "id6_R_t3: 131584;id7_R_t3: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id6_R_t3: 0;id7_R_t3: 2
-//output// id6_R_t3: 0;id7_R_t3: 0
-//output// id6_R_t3: 512;id7_R_t3: 0
-//output// id6_R_t3: 512;id7_R_t3: 2
-//output// id6_R_t3: 131584;id7_R_t3: 2
-//output// id6_R_t3: 131584;id7_R_t3: 0
-//output// id6_R_t3: 131072;id7_R_t3: 0
-//output// id6_R_t3: 131072;id7_R_t3: 2
+// Expected Output (Compressed Data) //
+//eNrtm09PwjAYh+9+ih01IRlbKRiNB4khXtQEDxyJyTwsEfEAJ8N3d2NjFCh/5tpukOe2vG1f2Lrfwy+8
+//fX1/Op/9zGe+78VRdzwcz8Sd176Po97q2vcn0+jzK5nw3PcevN/rOArHo/EsaCUrxPLqpuUl0U56HaZR
+//ubzKolnONJplzKJBMmPyEX+n8VDJocbFnnhHya7G5Z54d8/n5t9n4T2+Pnkvb5d4b8v4+o7U7Ouo1Ea7
+//2gxqXqHNK7R5hTav0OZdP+uuNqrOldq5cntutsfD/mC5yRs7t3pqycp2unrfYHBoMDw0KPLB3qGVPf3K
+///IsP8pdTm1+/Olv5PkpXLq58ZI7MkbkhJa8Hi41v2xe55lORPtJH+oZ+4UtKv9jgwKX0BdJH+ki/vPSr
+///rDXLXz1ZTOJAxmEAAEg4AWq0KJ4JE6RoG4E4kf8iL8GN1CP9PVuoDoQAhG0ezABJmAISvxpuAuM4uZD
+//l1SQ6B/9o38bdYFSnqAe9es9AUyACTDBiic4oSZQNxMETIAJMMEoE6oVC5rpEixyQt524AScwDuUrSHU
+//TYqO9tWECTABJjjxDo0jwvGqg0lOqAeVQhABIrANtroQdgcVwPy/B2ErnudE+kgf6TejM8GE8E/uSwAH
+//4AAcNLlbwSwOBDgAB+DgXDsY7HkD+4jYPNgMJIAEnsFSV4NZTBw5wgwQAAJAaHKngwvXYAsSO6ea4ASc
+//wDhY6n4wSwoJE2ACTDjrjggX3gFOwAk4cd5dEvbKFHACTsCJy+iccF2/cMKOzZPTsAN24DGsdFPYK2vA
+//CTgBJy6jw8J1tcMkO/4A88Stow==

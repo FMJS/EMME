@@ -62,22 +62,24 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0";
-outputs[1] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2";
-outputs[5] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2";
+outputs[4] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2";
+outputs[5] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2";
 outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0";
 outputs[7] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2
+// Expected Output (Compressed Data) //
+//eNrtm0tPwkAUhff+ii4hISnMpUOiYQFR4sJHAhqWjbEumgi4KCvjf7cvZMBp7GMGh+nZTW7paXvpl3t6
+//0rruZht9bCPXdcJg6M/9iF06/asw8IT1aLd23dUmeHuPf3w7dcbOZycMmL/0o0Ev3pvSVbfndHZKSTXT
+//Oa6OhKonrQ5itdVLuE7qTFAW61RQHxboeAX1/LhfzuTh2rl/tO/K0vr+eobSqietigokVSCpAh0rZN2d
+//T2dpew96tjvjeM9+svdB6yQbR/KN+RFm+f8n1S+Slqtmiotlopit0/6+btbBeDa5W9x0L9y/AGIACAD9
+//J0A/LVKNj9h7hfAwwAN4TgjPLz4UoiN2GOAAHKvAIY3g0CnBgV0DOMbYNdJl1whTB/BYbddIj10DOADH
+//brtGeuwa6bdrYjzNAA7AMSqeFmaVsnA611T9rAN4AI9J0XQTdOQxQUNwGMABOMbH0mWwqRJKAxpAY30k
+//XQYaOh00sGiA5hzi6CYWjTBtAE47o+j6Fg3QAJqWxtD1LRrptmiIoAGNuRE0aYigCc83gMf+CJqUR9AE
+//qwZwbI+gSXEEDWgAjfURNCmOoGHRAE0LImhSHkFj2gAc6yNoUhxBAxpAY30ETYojaIXQJHaNK/p8QPft
+//sj8ql966vECDN4ZG95VVueGr3NoNO3Z0Flx6PN5k0kjcG1fy5c2hdePVPiF4mj+DHbBjAjuklR0ygh0G
+//dsCOQXOn/ms2ReSUeGcA3ICbM5859d+0ATfgpr3zhpTPGwI34Mb6eUPK501Zbr4BHI53Sw==

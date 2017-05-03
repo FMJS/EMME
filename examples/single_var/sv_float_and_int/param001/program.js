@@ -61,5 +61,10 @@ var outputs = [];
 outputs[0] = "id3_R_t1: 553648128;id4_R_t2: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id3_R_t1: 553648128;id4_R_t2: 0.0000
+// Expected Output (Compressed Data) //
+//eNrtlD+LwkAQxfv7FFOeIG5mRg/xsFBErlFBC8twEIvA+aeIlfjd3XOjJNmddIa7MKnCezuzk32bnzHH
+//c3Y6Z8ZAmnC8jjMcwWDAH/0h0vAzTfq/Go0g6kX2MWZ/THY/dvXXFMZweU8Tire2KI668HzHThfCDokO
+//+44bp6Sj2AvFXij0IrGChAqu6mj1/Xd6KHSKREeuIdFh35H2d0F1rjBZzmCx0nT+YjreKQZ0FHQSdK7q
+//bgbvTqyn8/ulKK14zGgr72cjmVhnkmcWDohz080i7Bk0sc6kOpMfnzzPf4Pg2NLE4a6u42abdwz9em9G
+//aao01XSUpv+fpoWIX0HTiv7crUhZ5anyVNNRnraJp9goT1F5qjzVdJSnreUpNcpTUp4qTzUd5WlrecqN
+//8pTLPL0BSJ6zDw==

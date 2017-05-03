@@ -68,5 +68,8 @@ var outputs = [];
 outputs[0] = "id4_R_t3: 0.0000";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t3: 0.0000
+// Expected Output (Compressed Data) //
+//eNrT188vLSkoLdHXV8hMMYkPii8xtlIw0DMAAn393PyU1BygjIeTgq1CtUZmimF8eHxuYmaeDlCxEZBd
+//Yqipo4AmbgwSN8IUhxiuWavg6Oei4OtPPRPB4hC96KoRoshqISow3BTk5AZ2lAZMHKQCZh9QpwFINy5J
+//Q3ySRvgk4da7QYMEiyqIiuBwLIEG8wKX/mhMEhuTlEQWuiTcqwZExCPY0Rh6kWN3NB4HKB7hjiQjHqF6
+//R+ORzHgkN8sZUjUWkQMJf9wCAEmoGqI=

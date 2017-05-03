@@ -62,22 +62,24 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
-outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1";
-outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0";
-outputs[6] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1";
+outputs[4] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
+outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1";
+outputs[6] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
 outputs[7] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1
+// Expected Output (Compressed Data) //
+//eNrtm0tvgkAUhff9FSw1MaF4ZUzauNC0pos+Em3jkjSlC5KqXeCq6X8vL+uol0RgBnE4u8lFzsBlvhw4
+//gm2vN+H3JrRtK/AH3swL+zfW9W3gu9J4uB3b9nLtf35FP36YWCPrpxP4fW/hhU4v2puSUbdndbZKcTXV
+//OawOparLVp1IbfkerOJ6X1KW65RTH+TouDn1bN5fa/x8Zz29mHdmSX13PgO26rJVWYFYBWIV6FAh7e5s
+//Mk3au9ez7RFHe17He++1jtk45DdmM0yz68fq50nzqqnifBErpuOkvx/rlT+ajh/n990rGwABoHMD9N8F
+//LfjIPQY8gKdN7nNElirvkXsPeACPec5TGR3ed2oAxwE4AOecrkO6XIcAD+Ax2nVIj+toAscBOACnRnBI
+//IzhUJzh4zgE4lxFRS16lLKDONAEP4DE5nj4FnWLhNMABOC2Ipqt4Dp+vARyAY3wsXd5vtEODcADQNDWS
+//ruI2BHAATjvj6PJuowUaRNGApvlR9CnQUH3Q5D3XOIAG0DQqhiYNMTQBHsBjfgxNymNogANwWhBDk/IY
+//GuAAHONjaFIcQ5OeNA3QAJomxdCkPIYGOADH+BiaFMfQpCeGBjSApjkxNCmOoRVCE7uOUPTfje7lsptV
+//sEtX5GiIytDoPrMiC77I0q7YsYOjEOx8ogo0zN2bUPIhwf6tmyj2KcHr7A3sgJ2Gs3N0A6eGHPkagRtw
+//0y7PKf/GQJ7jnPDOALgBNxftN+Wp4d1GDzMOmAEzDfIaUu41BG7AjeFeQ4q95lRm/gDhWnb6

@@ -74,6 +74,9 @@ outputs[0] = "id3_R_t2: 0;id6_R_t3: 0";
 outputs[1] = "id3_R_t2: 0;id6_R_t3: 256";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id3_R_t2: 0;id6_R_t3: 0
-//output// id3_R_t2: 0;id6_R_t3: 256
+// Expected Output (Compressed Data) //
+//eNrtlr0OgjAUhXefoqMkJgWMDBoGiBIHfxIcHIkRBxIBB5iM725LLVSKGkRilLvdnPbc3jZfTopxnCan
+//NMEYBf7Qc71EHyN1EvgGrYekxjiM/cORbJjbyETnPt83II6RtyWVMkBE1Ugd7oKI6jrVNVlnTll/1IdN
+//oVyQtZqi5fpb52c661nuUqhij0IVOxRziyrzSbd1bSe77p2Pz0acKnX3uanOosZPcKT3FHZVu5lzs6VO
+//Vmcvto8j33SsxWam9DAg9UtI5fdqBSjx1QAnSCiBmfKiAOL7+VTSbz0Bs26m1nuQvcis9hDTRwZA9he/
+//rXw67XNZdusJoMEfrA5m9dIMIOtmmj0hsEmWVcMHkHUxyRoiVo1SQ8CuAzqSAA==

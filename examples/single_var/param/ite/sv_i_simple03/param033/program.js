@@ -62,22 +62,24 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0";
-outputs[1] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2";
-outputs[5] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2";
+outputs[4] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2";
+outputs[5] = "id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2";
 outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0";
 outputs[7] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id7_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2
+// Expected Output (Compressed Data) //
+//eNrtm0tvgkAUhff9FSw1MaFyZUzauNC0pos+Em3jkjSlC5KqXeCq6X8vL+uol0RgBnE4u8lFzsBlvhw4
+//gm2vN+H3JrRtK/AH3swLnRvr+jbwXWk83I5te7n2P7+iHz9MrJH10wl8x1t4Yb8X7U3JqNuzOluluJrq
+//HFaHUtVlq/1IbfkerOK6IynLdcqpD3J03Jx6Nu+vNX6+s55ezDuzpL47nwFbddmqrECsArEKdKiQdnc2
+//mSbt3evZ9oijPa/jvfdax2wc8huzGabZ9WP186R51VRxvogV03HS34/1yh9Nx4/z++6VDYAA0LkB+u+C
+//FnzkHgMewNMm9zkiS5X3yL0HPIDHPOepjA7vOzWA4wAcgHNO1yFdrkOAB/AY7Tqkx3U0geMAHIBTIzik
+//ERyqExw85wCcy4ioJa9SFlBnmoAH8JgcT5+CTrFwGuAAnBZE01U8h8/XAA7AMT6WLu832qFBOABomhpJ
+//V3EbAjgAp51xdHm30QINomhA0/wo+hRoqD5o8p5rHEADaBoVQ5OGGJoAD+AxP4Ym5TE0wAE4LYihSXkM
+//DXAAjvExNCmOoUlPmgZoAE2TYmhSHkMDHIBjfAxNimNo0hNDAxpA05wYmhTH0AqhiV1HKPrvRvdy2c0q
+//2KUrcjREZWh0n1mRBV9kaVfs2MFRCHY+UQUa5u5NKPmQYP/WTRT7lOB19gZ2wE7D2Tm6gVNDjnyNwA24
+//aZfnlH9jIM9xTnhnANyAm4v2m/LU8G6jhxkHzICZBnkNKfcaAjfgxnCvIcVecyozf0WJdxU=
