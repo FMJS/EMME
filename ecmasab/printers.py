@@ -16,6 +16,7 @@ from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_State
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
+from ecmasab.utils import compress_string
 
 LICENSE = ""
 LICENSE += "// Copyright 2017 Cristian Mattarei\n"
@@ -90,6 +91,7 @@ class JSPrinter(object):
     TYPE = PrinterType.JS
 
     OUT = "//output// "
+    MOD = "//model// "
     
     float_app_js = ".toFixed("+str(FLOAT_APPROX)+")"
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
@@ -100,14 +102,16 @@ class JSPrinter(object):
     def print_executions(self, program, interps):
         return "\n".join(self.compute_possible_executions(program, interps))
 
-    def compute_possible_executions(self, program, interps):
-        ret = set([])
+    def compute_possible_executions(self, program, interps, models=False):
+        ret = []
         for interp in interps.get_coherent_executions():
-            ret.add(self.print_execution(program, interp))
+            exe = self.print_execution(program, interp, models)
+            if exe not in ret:
+                ret.append(exe)
 
-        return list(ret)
+        return ret
     
-    def print_execution(self, program, interp):
+    def print_execution(self, program, interp, models=False):
         pass
     
     def print_program(self, program, executions=None):
@@ -339,7 +343,7 @@ class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
     DESC = "Google V8 format"
 
-    def print_execution(self, program, interp):
+    def print_execution(self, program, interp, models=False):
         reads = []
         for el in interp.reads_values:
             value = el.get_correct_read_value()
@@ -538,19 +542,29 @@ class JST262Printer(JSPrinter):
 
     str_report = False
 
-    def print_execution(self, program, interp):
+    def print_execution(self, program, interp, models=False):
         reads = []
+        output = ""
         for el in interp.reads_values:
             value = el.get_correct_read_value()
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                reads.append(("%s: "+self.float_pri_js)%(el.name, float_approx(value)))
+                output = ("%s: "+self.float_pri_js)%(el.name, float_approx(value))
             else:
-                reads.append("%s: %s"%(el.name, value))
+                output = "%s: %s"%(el.name, value)
+            reads.append(output)
         ret = ";".join(reads)
         ret = ret.replace("nan", "NaN")
+        if models:
+            ret += self.print_compact_interpretation(interp)
+
         return ret
+
+    def print_compact_interpretation(self, interp):
+        cprinter = CVC4Printer()
+        int_str = cprinter.print_execution(interp)
+        return "%s%s"%(self.MOD, compress_string(int_str))
     
     def print_program(self, program, executions=None):
         program.sort_threads()
@@ -649,7 +663,7 @@ class JST262Printer(JSPrinter):
             ret += "assert(-1 != outputs.indexOf(report));\n"
 
         if executions:
-            execs = self.compute_possible_executions(program, executions)
+            execs = self.compute_possible_executions(program, executions, True)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
             ret += "\n// Expected outputs //\n%s\n"%"\n".join(execs)
             

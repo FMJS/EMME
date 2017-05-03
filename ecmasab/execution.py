@@ -207,6 +207,9 @@ class Execution(object):
     def get_RBF(self):
         return self.reads_bytes_from
 
+    def get_RBF_list(self):
+        return self.to_list(self.reads_bytes_from)
+
     def set_RBF(self, rel):
         self.reads_bytes_from = rel
     
@@ -238,6 +241,21 @@ class Execution(object):
 
         return rel
 
+    def to_list(self, RBF):
+        RBF_dict = {}
+        for el in RBF.tuples:
+            if el[0] not in RBF_dict:
+                RBF_dict[el[0]] = []
+            RBF_dict[el[0]].append([el[2], el[1]])
+
+        ret = []
+        for el in RBF_dict:
+            RBF_dict[el].sort()
+            RBF_dict[el] = [x[1] for x in RBF_dict[el]]
+            ret.append((el, tuple(RBF_dict[el])))
+            
+        return ret
+    
     def add_condition(self, condition, value):
         if not self.conditions:
             self.conditions = []
@@ -278,6 +296,13 @@ class Relation(object):
     @staticmethod
     def get_tr_tuple(ev1, ev2, addr):
         return (ev1, ev2, addr)
+
+    def get_union(self, relation):
+        tuples = list(set(self.tuples + relation.tuples))
+        newrel = Relation(self.name)
+        newrel.tuples = tuples
+        return newrel
+
         
 class Program(object):
     threads = []

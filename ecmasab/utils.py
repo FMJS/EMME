@@ -9,6 +9,7 @@
 # limitations under the License.
 
 import struct
+import zlib, base64
 from ecmasab.exceptions import UnreachableCodeException
 
 def values_from_int(int_value, begin, end):
@@ -51,3 +52,8 @@ def get_float_type(size):
     else:
         raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
     
+def compress_string(input_str):
+    return str(base64.b64encode(zlib.compress(input_str,9)))
+
+def uncompress_string(input_str):
+    return str(zlib.decompress(base64.b64decode(input_str)))

@@ -19,6 +19,8 @@ import time
 from six.moves import range
 from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
+from ecmasab.beparsing import BeParser, T_DONE
+from ecmasab.utils import compress_string, uncompress_string
 
 K = "k"
 M = "M"
@@ -27,6 +29,7 @@ class Config(object):
     command = None
     outputs = None
     input_file = None
+    models = None
     number = None
     threads = None
     percent = None
@@ -37,6 +40,7 @@ class Config(object):
         self.command = None
         self.outputs = None
         self.input_file = None
+        self.models = None
         self.number = 10
         self.threads = 4
         self.percent = True
@@ -78,11 +82,45 @@ def run_command(command, number, silent):
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
 
+def evaluate_models(mmatched, nmatched):
+    mmatched = [uncompress_string(x[2]) for x in mmatched]
+    nmatched = [uncompress_string(x[2]) for x in nmatched]
+
+    beparser = BeParser()    
+    mmatched = beparser.executions_from_string("\n".join(mmatched))
+    nmatched = beparser.executions_from_string("\n".join(nmatched))
+
+    mmatched_RBF = set([])
+    nmatched_RBF = set([])
+    
+    for mmatch in mmatched.executions:
+        mmatched_RBF = mmatched_RBF.union(set(mmatch.get_RBF_list()))
+        
+    for nmatch in nmatched.executions:
+        nmatched_RBF = nmatched_RBF.union(set(nmatch.get_RBF_list()))
+
+    mmatched_HB = set([])
+    nmatched_HB = set([])
+    
+    for mmatch in mmatched.executions:
+        mmatched_HB = mmatched_HB.union(set(mmatch.get_HB().tuples))
+        
+    for nmatch in nmatched.executions:
+        nmatched_HB = nmatched_HB.union(set(nmatch.get_HB().tuples))
+        
+    
+    return (list(nmatched_RBF.difference(mmatched_RBF)),
+            list(nmatched_HB.difference(mmatched_HB)),
+            list(nmatched_HB),
+            list(mmatched_RBF))
+    
 def litmus(config):
 
     command = config.command.split(" ")
     number = config.number
 
+    input_file_has_models = False
+    
     if config.input_file:
         command.append(config.input_file)
     
@@ -108,31 +146,44 @@ def litmus(config):
     if config.outputs:
         try:
             with open(config.outputs, "r") as f:
+                i = 1
                 for line in f.readlines():
                     line = line.replace("\n","")
                     line = line.split(";")
                     line.sort()
                     line = ";".join(line)
-                    outputs_dic[line] = 0
+                    outputs_dic[line] = [i, 0]
+                    i += 1
         except Exception:
             print("File not found \"%s\""%config.outputs)
             return 1
     else:
         try:
             with open(config.input_file, "r") as f:
+                i = 1
                 for line in f.readlines():
                     if JSPrinter.OUT in line:
+                        model = None
+                        if JSPrinter.MOD in line:
+                            model = line[line.find(JSPrinter.MOD)+len(JSPrinter.MOD):]
+                            line = line[:line.find(JSPrinter.MOD)]
+                            input_file_has_models = True
                         line = line.replace(JSPrinter.OUT,"")                        
                         line = line.replace("\n","")
                         line = line.split(";")
                         line.sort()
                         line = ";".join(line)
-                        outputs_dic[line] = 0
+                        outputs_dic[line] = [i, 0, model]
+                        i += 1
         except Exception:
             print("File not found \"%s\""%config.input_file)
             return 1
 
-            
+        
+    if config.models and not input_file_has_models:
+        print("ERROR: the input file does not contain model information")
+        return 0
+        
     original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
             
     num_t = config.threads
@@ -169,11 +220,11 @@ def litmus(config):
             if el not in outputs_dic:
                 not_matched.append(el)
             else:
-                outputs_dic[el] += outputs[el]
+                outputs_dic[el][1] += outputs[el]
 
     not_matched = list(set(not_matched))
 
-    results = [(outputs_dic[x], x) for x in outputs_dic]    
+    results = [(outputs_dic[x][1], x) for x in outputs_dic]    
     results.sort()
     results.reverse()
 
@@ -187,6 +238,8 @@ def litmus(config):
 
     if config.pretty:
         table = PrettyTable()
+
+    matched = set([])
         
     matches = 0
     for result in results:
@@ -197,9 +250,9 @@ def litmus(config):
             if config.percent:
                 if not config.silent:
                     if config.pretty:
-                        row = ["%.2f%%"%num] + res_val.split(";")
+                        row = [outputs_dic[res_val][0]] + ["%.2f%%"%num] + res_val.split(";")
                     else:
-                        lines.append("%.2f%%\t\"%s\""%(num, result[1]))
+                        lines.append("%s\t%.2f%%\t\"%s\""%(outputs_dic[res_val][0], num, result[1]))
             else:
                 if not config.silent:
                     if config.pretty:
@@ -207,11 +260,12 @@ def litmus(config):
                     else:
                         lines.append("%s\t\"%s\""%(num, result[1]))
             matches += 1
+            matched.add(tuple(outputs_dic[res_val]))
             if row:
                 table.add_row(row)
 
     if (not config.silent) and (config.pretty):
-        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(row)-1)]
+        table.field_names = ["ID"] + ["Frequency"] + ["Output %s"%(x+1) for x in range(len(row)-2)]
         table.align = "l"
         lines.append(str(table))
 
@@ -230,6 +284,39 @@ def litmus(config):
         else:
             print("ok")
             return 0
+
+    if not config.silent and config.models:
+        nmatched = [outputs_dic[x] for x in outputs_dic if tuple(x) not in matched]
+
+        mmatched = [uncompress_string(x[2]) for x in mmatched]
+        nmatched = [uncompress_string(x[2]) for x in nmatched]
+
+        beparser = BeParser()    
+        mmatched = beparser.executions_from_string("\n".join(mmatched))
+        nmatched = beparser.executions_from_string("\n".join(nmatched))
+
+        evaluator = Evaluator(mmatched, nmatched)
+        
+        
+        (RBF_nmatched, HB_nmatched, HB, RBF_mmatched) = evaluate_models(matched, nmatched)
+        
+        print("\n== Missing (single) Reads Bytes From ==")
+        out_str = []
+        for x in RBF_nmatched:
+#            hb = ["(%s, %s)"%(y) for y in HB if y[0] == x[0] or y[1] == x[0] or y[0] in x[1] or y[1] in x[1]]
+            hb = ["(%s, %s)"%(y) for y in HB if y[0] == x[0] or y[1] == x[0]]
+            out_str.append("%s := [%s] (with HB = {%s})"%(x[0], ", ".join(x[1]), ", ".join(hb)))
+        out_str.sort()
+        print("\n".join(out_str))
+
+        print("\n== Reads Bytes From (For missing events) ==")
+        out_str = []
+        out_str = ["%s := [%s]"%(x[0], ", ".join(x[1])) for x in RBF_mmatched if x[0] in [y[0] for y in RBF_nmatched]]
+        out_str.sort()
+        print("\n".join(out_str))
+        
+        print("\n== Difference Between Happens Before ==")
+        print(HB_nmatched)
             
 if __name__ == "__main__":
 
@@ -241,11 +328,15 @@ if __name__ == "__main__":
 
     parser.set_defaults(input_file=None)
     parser.add_argument('-i', '--input_file', metavar='input_file', type=str, required=False,
-                       help='input_file')
+                       help='input file')
     
     parser.set_defaults(outputs=None)
     parser.add_argument('-o', '--outputs', metavar='outputs', type=str, required=False,
                        help='possible outputs')
+
+    parser.set_defaults(models=False)
+    parser.add_argument('-m', '--models', dest='models', action='store_true',
+                       help='evaluates models')
 
     parser.set_defaults(number="100")
     parser.add_argument('-n', '--number', metavar='number', type=str, 
@@ -276,5 +367,6 @@ if __name__ == "__main__":
     config.threads = args.threads
     config.percent = args.percent
     config.silent = args.silent
+    config.models = args.models
 
     sys.exit(litmus(config))
