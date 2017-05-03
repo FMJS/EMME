@@ -21,6 +21,7 @@ from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
 from ecmasab.beparsing import BeParser, T_DONE
 from ecmasab.utils import compress_string, uncompress_string
+from ecmasab.models_evaluator import EvaluationResults, Evaluator, MatchType
 
 K = "k"
 M = "M"
@@ -239,7 +240,7 @@ def litmus(config):
     if config.pretty:
         table = PrettyTable()
 
-    matched = set([])
+    mmatched = set([])
         
     matches = 0
     for result in results:
@@ -260,7 +261,7 @@ def litmus(config):
                     else:
                         lines.append("%s\t\"%s\""%(num, result[1]))
             matches += 1
-            matched.add(tuple(outputs_dic[res_val]))
+            mmatched.add(tuple(outputs_dic[res_val]))
             if row:
                 table.add_row(row)
 
@@ -286,7 +287,7 @@ def litmus(config):
             return 0
 
     if not config.silent and config.models:
-        nmatched = [outputs_dic[x] for x in outputs_dic if tuple(x) not in matched]
+        nmatched = [outputs_dic[x] for x in outputs_dic if tuple(x) not in mmatched]
 
         mmatched = [uncompress_string(x[2]) for x in mmatched]
         nmatched = [uncompress_string(x[2]) for x in nmatched]
@@ -296,27 +297,15 @@ def litmus(config):
         nmatched = beparser.executions_from_string("\n".join(nmatched))
 
         evaluator = Evaluator(mmatched, nmatched)
-        
-        
-        (RBF_nmatched, HB_nmatched, HB, RBF_mmatched) = evaluate_models(matched, nmatched)
+        emod = evaluator.differential_evaluation()
         
         print("\n== Missing (single) Reads Bytes From ==")
-        out_str = []
-        for x in RBF_nmatched:
-#            hb = ["(%s, %s)"%(y) for y in HB if y[0] == x[0] or y[1] == x[0] or y[0] in x[1] or y[1] in x[1]]
-            hb = ["(%s, %s)"%(y) for y in HB if y[0] == x[0] or y[1] == x[0]]
-            out_str.append("%s := [%s] (with HB = {%s})"%(x[0], ", ".join(x[1]), ", ".join(hb)))
+        out_str = ["%s := [%s]"%(x[0], ", ".join(x[1])) for x in emod.get_u_RBF(MatchType.UM)]
         out_str.sort()
         print("\n".join(out_str))
 
-        print("\n== Reads Bytes From (For missing events) ==")
-        out_str = []
-        out_str = ["%s := [%s]"%(x[0], ", ".join(x[1])) for x in RBF_mmatched if x[0] in [y[0] for y in RBF_nmatched]]
-        out_str.sort()
-        print("\n".join(out_str))
-        
         print("\n== Difference Between Happens Before ==")
-        print(HB_nmatched)
+        print(["(%s, %s)"%(x) for x in emod.get_u_HB(MatchType.UM)])
             
 if __name__ == "__main__":
 
