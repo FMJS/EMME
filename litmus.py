@@ -251,9 +251,9 @@ def litmus(config):
             if config.percent:
                 if not config.silent:
                     if config.pretty:
-                        row = [outputs_dic[res_val][0]] + ["%.2f%%"%num] + res_val.split(";")
+                        row = ["%.2f%%"%num] + res_val.split(";")
                     else:
-                        lines.append("%s\t%.2f%%\t\"%s\""%(outputs_dic[res_val][0], num, result[1]))
+                        lines.append("%.2f%%\t\"%s\""%(num, result[1]))
             else:
                 if not config.silent:
                     if config.pretty:
@@ -266,7 +266,7 @@ def litmus(config):
                 table.add_row(row)
 
     if (not config.silent) and (config.pretty):
-        table.field_names = ["ID"] + ["Frequency"] + ["Output %s"%(x+1) for x in range(len(row)-2)]
+        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(row)-1)]
         table.align = "l"
         lines.append(str(table))
 

@@ -53,7 +53,7 @@ def get_float_type(size):
         raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
     
 def compress_string(input_str):
-    return str(base64.b64encode(zlib.compress(input_str,9)))
+    return str(base64.b64encode(zlib.compress(bytes(input_str),9)))
 
 def uncompress_string(input_str):
-    return str(zlib.decompress(base64.b64decode(input_str)))
+    return str(zlib.decompress(base64.b64decode(bytes(input_str))))
