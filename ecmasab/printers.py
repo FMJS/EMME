@@ -416,7 +416,7 @@ class JSV8Printer(JSPrinter):
             execs = self.compute_possible_executions(program, executions, True)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
             data = compress_string("\n".join(execs))
-            data = [data[i:i+linesize] for i in range(0, len(data), linesize)]
+            data = [data[x:x+linesize] for x in range(0, len(data), linesize)]
             ret += "\n%s\n//%s\n"%(self.DATA, "\n//".join(data))
         
         return ret
@@ -653,14 +653,11 @@ class JST262Printer(JSPrinter):
         if self.asserts and executions:
             ret += "report.sort();\n"
             ret += "report = report.join(\";\");\n"
-
             ret += "var outputs = [];\n"
-            i = 0
-            for ex_out in self.compute_possible_executions(program, executions):
-                ret += "outputs[%s] = \"%s\";\n"%(i, ex_out)
-                i += 1
-
-            ret += "assert(-1 != outputs.indexOf(report));\n"
+            
+            execs = self.compute_possible_executions(program, executions)
+            ret += "\n".join(["outputs[%s] = \"%s\";"%(execs.index(x), x) for x in execs])
+            ret += "\nassert(-1 != outputs.indexOf(report));\n"
 
         if executions:
             linesize = 80
