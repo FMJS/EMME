@@ -412,9 +412,12 @@ class JSV8Printer(JSPrinter):
         ret += "}\n"
 
         if executions:
-            execs = self.compute_possible_executions(program, executions)
+            linesize = 80
+            execs = self.compute_possible_executions(program, executions, True)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
-            ret += "\n%s%s%s\n"%(self.DATA, "\n".join(execs))
+            data = compress_string("\n".join(execs))
+            data = [data[i:i+linesize] for i in range(0, len(data), linesize)]
+            ret += "\n%s\n//%s\n"%(self.DATA, "\n//".join(data))
         
         return ret
 
