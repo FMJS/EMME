@@ -20,7 +20,7 @@ from six.moves import range
 from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
 from ecmasab.beparsing import BeParser, T_DONE
-from ecmasab.utils import compress_string, uncompress_string
+from ecmasab.utils import compress_string, decompress_string
 from ecmasab.models_evaluator import EvaluationResults, Evaluator, MatchType
 
 K = "k"
@@ -166,10 +166,11 @@ def litmus(config):
                 if JSPrinter.DATA in strfile:
                     modelstr = strfile[strfile.find(JSPrinter.DATA)+len(JSPrinter.DATA):]
                     modelstr = modelstr.replace("//","")
+                    modelstr = modelstr.replace("\n","")
             if modelstr:
                 input_file_has_models = True
                 i = 1
-                for line in uncompress_string(modelstr).split("\n"):
+                for line in decompress_string(modelstr).split("\n"):
                     model = line[line.find(JSPrinter.MOD)+len(JSPrinter.MOD):]
                     output = line[len(JSPrinter.OUT):line.find(JSPrinter.MOD)]
                     output = output.split(";")
@@ -178,7 +179,7 @@ def litmus(config):
                     outputs_dic[output] = [i, 0, model]
                     i += 1
         except Exception:
-            print("File not found \"%s\""%config.input_file)
+            print("Error while reading \"%s\""%config.input_file)
             return 1
 
     if config.models and not input_file_has_models:
