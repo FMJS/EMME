@@ -165,8 +165,9 @@ def litmus(config):
                 strfile = f.read()
                 if JSPrinter.DATA in strfile:
                     modelstr = strfile[strfile.find(JSPrinter.DATA)+len(JSPrinter.DATA):]
-                    modelstr = modelstr.replace("//","")
-                    modelstr = modelstr.replace("\n","")
+                    modelstr = modelstr.split("\n")
+                    modelstr = [x[2:] for x in modelstr]
+                    modelstr = "".join(modelstr)
             if modelstr:
                 input_file_has_models = True
                 i = 1
