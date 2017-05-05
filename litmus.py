@@ -19,9 +19,9 @@ import time
 from six.moves import range
 from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
-from ecmasab.beparsing import BeParser, T_DONE
-from ecmasab.utils import compress_string, decompress_string
-from ecmasab.models_evaluator import EvaluationResults, Evaluator, MatchType
+from ecmasab.beparsing import BeParser
+from ecmasab.utils import decompress_string
+from ecmasab.models_evaluator import Evaluator, MatchType
 
 K = "k"
 M = "M"
@@ -82,38 +82,6 @@ def run_command(command, number, silent):
 
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
-
-def evaluate_models(mmatched, nmatched):
-    mmatched = [uncompress_string(x[2]) for x in mmatched]
-    nmatched = [uncompress_string(x[2]) for x in nmatched]
-
-    beparser = BeParser()    
-    mmatched = beparser.executions_from_string("\n".join(mmatched))
-    nmatched = beparser.executions_from_string("\n".join(nmatched))
-
-    mmatched_RBF = set([])
-    nmatched_RBF = set([])
-    
-    for mmatch in mmatched.executions:
-        mmatched_RBF = mmatched_RBF.union(set(mmatch.get_RBF_list()))
-        
-    for nmatch in nmatched.executions:
-        nmatched_RBF = nmatched_RBF.union(set(nmatch.get_RBF_list()))
-
-    mmatched_HB = set([])
-    nmatched_HB = set([])
-    
-    for mmatch in mmatched.executions:
-        mmatched_HB = mmatched_HB.union(set(mmatch.get_HB().tuples))
-        
-    for nmatch in nmatched.executions:
-        nmatched_HB = nmatched_HB.union(set(nmatch.get_HB().tuples))
-        
-    
-    return (list(nmatched_RBF.difference(mmatched_RBF)),
-            list(nmatched_HB.difference(mmatched_HB)),
-            list(nmatched_HB),
-            list(mmatched_RBF))
     
 def litmus(config):
 

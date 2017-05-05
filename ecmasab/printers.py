@@ -984,14 +984,14 @@ class DotPrinter(object):
         if event.name in reads_dic:
             revent = reads_dic[event.name]
             value = revent.get_correct_read_value()
-            bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0])
+            bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0]/revent.get_size())
         else:
             if revent.is_init():
                 value = 0
                 bname = "%s-init"%revent.block.name
             else:
                 value = revent.get_correct_write_value()
-                bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0])
+                bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0]/revent.get_size())
             
         value = self.float_pri_js%(float_approx(value)) if revent.is_wtear() else value
 
