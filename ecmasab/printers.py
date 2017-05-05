@@ -891,9 +891,16 @@ class DotPrinter(object):
 
         color = "red"
         if self.__should_print(interp.get_RBF().name):
+            rbf_dic = {}
             for tup in interp.get_RBF().tuples:
-                label = "%s[%s]"%(interp.get_RBF().name, tup[2])
-                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
+                link = (tup[0], tup[1])
+                if link not in rbf_dic:
+                    rbf_dic[link] = []
+                rbf_dic[link].append(tup[2])
+            for ev in rbf_dic:
+                rbf_dic[ev].sort()
+                label = "%s[%s]"%(interp.get_RBF().name, ", ".join(rbf_dic[ev]))
+                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (ev[0], ev[1], label, color))
 
         relations = []
         defcolor = "black"

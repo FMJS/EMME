@@ -20,7 +20,7 @@ from argparse import RawTextHelpFormatter
 
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JST262Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
-from ecmasab.execution import RF, HB, SW
+from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
@@ -87,7 +87,7 @@ class Config(object):
         self.skip_solving = False
         self.jsprinter = JST262Printer().NAME
         self.graphviz = None
-        self.printing_relations = ",".join([RF,HB,SW])
+        self.printing_relations = ",".join([RBF,HB,SW])
         self.jsdir = None
         self.debug = False
         self.force_solving = False
