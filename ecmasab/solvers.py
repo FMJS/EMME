@@ -25,7 +25,6 @@ from ecmasab.execution import Execution, \
     BLOCKING_RELATIONS
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import CVC4Printer
-from ecmasab.exceptions import UnreachableCodeException
 
 from CVC4 import Options, \
     ExprManager, \
@@ -183,7 +182,7 @@ class CVC4Solver(object):
         is_multithread = shared_execs is not None
         is_master = constraints is None
         
-        if constraints != None:
+        if constraints is not None:
             applying_cons = constraints[id_thread]
             
         if self.incremental:
