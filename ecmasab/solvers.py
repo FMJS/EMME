@@ -14,7 +14,6 @@ import re
 from six.moves import range
 import os
 import random
-import time
 from multiprocessing import Process, Manager
 
 
@@ -125,7 +124,7 @@ class CVC4Solver(object):
         return ret.get_size()
 
     def solve_one(self, model):
-        ret = self.__load_and_solve_n(model, num)
+        ret = self.__load_and_solve_n(model, 1)
         return ret.get_size()
     
     def __load_and_solve_n(self, model, n):
@@ -161,7 +160,6 @@ class CVC4Solver(object):
             for i in range(num_t-1):
                 process = Process(target=self.__solve_n, args=(model, -1, i, rb_cons, shared_execs))
                 threads.append(process)
-#                time.sleep(0.1)
                 process.start()
 
             allexecs = Process(target=self.__solve_n, args=(model, -1, None, None, shared_execs))
@@ -182,8 +180,8 @@ class CVC4Solver(object):
     def __solve_n(self, model, n, id_thread=None, constraints=None, shared_execs=None):
         applying_cons = None
 
-        is_multithread = (shared_execs != None)
-        is_master = constraints == None
+        is_multithread = shared_execs is not None
+        is_master = constraints is None
         
         if constraints != None:
             applying_cons = constraints[id_thread]
@@ -229,7 +227,6 @@ class CVC4Solver(object):
                 f.write("%s\n"%c4printer.print_done())
         
     def __load_models(self):
-        c4printer = CVC4Printer()
         parser = BeParser()
         if self.models_file:
             if os.path.exists(self.models_file):
@@ -267,7 +264,7 @@ class CVC4Solver(object):
         pre_ind = 0
         c4printer = CVC4Printer()
 
-        if not(shared_execs == None):
+        if shared_execs is not None:
             for el in shared_execs:
                 self.executions.add_execution(el)
         
@@ -330,11 +327,11 @@ class CVC4Solver(object):
 
             self.executions.add_execution(exe)
 
-            if not(shared_execs == None):
+            if shared_execs is not None:
                 if exe not in shared_execs:
                     shared_execs.append(exe)
             
-            if (self.verbosity > 0) and (constraints == None):
+            if (self.verbosity > 0) and (constraints is None):
                 sys.stdout.write(".")
                 sys.stdout.flush()
             if self.verbosity > 1:
