@@ -231,6 +231,7 @@ class CVC4Solver(object):
             if os.path.exists(self.models_file):
                 with open(self.models_file, "r") as f:
                     self.executions = parser.executions_from_string(f.read())
+        return self.executions
                     
     def get_models_size(self):
         self.__load_models()
