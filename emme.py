@@ -62,7 +62,8 @@ class Config(object):
     jsdir = None
     debug = None
     force_solving = None
-
+    threads = None
+    
     model = None
     model_ex = None
     instance = None
@@ -91,6 +92,7 @@ class Config(object):
         self.jsdir = None
         self.debug = False
         self.force_solving = False
+        self.threads = 1
         
     def generate_filenames(self):
         if self.prefix:
@@ -199,9 +201,9 @@ def solve(config, program, strmodel):
             c4solver.set_additional_variables(program.get_conditions())
 
         if config.sat:
-            totmodels = c4solver.solve_n(strmodel, 1)
+            totmodels = c4solver.solve_one(strmodel)
         else:
-            totmodels = c4solver.solve_all(strmodel)
+            totmodels = c4solver.solve_all(strmodel, program, config.threads)
 
         if not config.debug:
             del_file(config.block_type)
@@ -375,6 +377,10 @@ def main(args):
     parser.set_defaults(debug=False)
     parser.add_argument('-d', '--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
+
+    parser.set_defaults(threads=1)
+    parser.add_argument('-t', '--threads', metavar='number', type=int,
+                       help='number of threads (experimental)')
     
     parser.set_defaults(no_expand_bounded_sets=False)
     parser.add_argument('-n','--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
@@ -420,7 +426,8 @@ def main(args):
     config.jsdir = args.jsdir
     config.debug = args.debug
     config.force_solving = args.force_solving
-
+    config.threads = args.threads
+    
     if args.silent:
         config.verbosity = 0
     

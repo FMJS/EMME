@@ -115,6 +115,11 @@ class Executions(object):
         assert(isinstance(exe, Execution))
         self.executions.append(exe)
 
+    def merge(self, executions):
+        for exe in executions.executions:
+            if exe not in self.executions:
+                self.executions.append(exe)
+
     def get_coherent_executions(self):
         return [x for x in self.executions if x.is_coherent()]
         
@@ -151,7 +156,15 @@ class Execution(object):
         relations.append(self.reads_from)
         relations.append(self.synchronizes_with)
         return " AND ".join([str(x) for x in relations])
-        
+
+    def __eq__(self, other):
+        ret = True
+        for rel in BLOCKING_RELATIONS:
+            if not(self.get_relation_by_name(rel) == other.get_relation_by_name(rel)):
+                ret = False
+                break
+        return ret
+    
     def add_read_values(self, read_event):
         self.reads_values.append(read_event)
 
@@ -285,7 +298,15 @@ class Relation(object):
 
     def __repr__(self):
         return "%s = {%s}"%(self.name, ", ".join([str(x) for x in self.tuples]))
-        
+
+    def __eq__(self, other):
+        if len(self.tuples) != len(other.tuples):
+            return False
+        for tup in other.tuples:
+            if tup not in self.tuples:
+                return False
+        return True
+    
     def add_tuple(self, tup):
         self.tuples.append(tup)
 
