@@ -123,6 +123,7 @@ def litmus(config):
                     line = ";".join(line)
                     outputs_dic[line] = [i, 0]
                     i += 1
+                input_file_has_models = True
         except Exception:
             print("File not found \"%s\""%config.outputs)
             return 1
@@ -136,7 +137,7 @@ def litmus(config):
                     modelstr = modelstr.split("\n")
                     modelstr = [x[2:] for x in modelstr]
                     modelstr = "".join(modelstr)
-            if modelstr:
+            if modelstr is not None:
                 input_file_has_models = True
                 i = 1
                 for line in decompress_string(modelstr).split("\n"):
@@ -151,7 +152,7 @@ def litmus(config):
             print("Error while reading \"%s\""%config.input_file)
             return 1
 
-    if config.models and not input_file_has_models:
+    if not input_file_has_models:
         print("ERROR: the input file does not contain model information")
         return 0
 
@@ -236,7 +237,7 @@ def litmus(config):
                 table.add_row(row)
 
     if (not config.silent) and (config.pretty):
-        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(row)-1)]
+        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(results[0])-1)]
         table.align = "l"
         lines.append(str(table))
 

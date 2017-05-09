@@ -233,6 +233,7 @@ class CVC4Solver(object):
                     self.executions = parser.executions_from_string(f.read())
                     
     def get_models_size(self):
+        self.__load_models()
         return self.executions.get_size()
 
     def is_done(self):
