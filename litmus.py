@@ -236,7 +236,7 @@ def litmus(config):
                 table.add_row(row)
 
     if (not config.silent) and (config.pretty):
-        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(results[0])-1)]
+        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(results[0][1].split(";")))]
         table.align = "l"
         lines.append(str(table))
 
