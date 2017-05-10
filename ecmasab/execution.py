@@ -306,6 +306,9 @@ class Relation(object):
             if tup not in self.tuples:
                 return False
         return True
+
+    def __hash__(self):
+        return id(self)
     
     def add_tuple(self, tup):
         self.tuples.append(tup)
