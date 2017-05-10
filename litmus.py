@@ -164,7 +164,6 @@ def litmus(config):
     outputs_t = []
     
     signal.signal(signal.SIGINT, original_sigint_handler)
-    
         
     for i in range(num_t):
         async_results.append(pool.apply_async(run_command, (command, int(number/num_t), config.silent)))

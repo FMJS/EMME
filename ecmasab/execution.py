@@ -309,8 +309,7 @@ class Relation(object):
         return True
 
     def __hash__(self):
-        self.tuples.sort()
-        return hash(str(self.tuples))
+        return id(self)
     
     def add_tuple(self, tup):
         self.tuples.append(tup)

@@ -130,7 +130,6 @@ class CVC4Solver(object):
 
         self.__load_models()
         sol = self.__solve_n(model, n, None)
-        self.__write_models()
                 
         return sol
 
@@ -138,15 +137,14 @@ class CVC4Solver(object):
     def __load_and_solve_mt(self, model, program, num_t):
         self.__load_models()
 
-        revents = [x for x in program.get_events() if x.is_read_or_modify()]
-        wevents = [x for x in program.get_events() if x.is_write_or_modify()]
-        
-        rb_set = list(set([(x,y) for y in wevents for x in revents]))
-        if len(revents) > 1:
-            rb_cons = ["ASSERT ((%s, %s) IS_IN RF) AND ((%s, %s) IS_IN RF)"%(x[0], x[1], y[0], y[1]) for x in rb_set for y in rb_set if x[0] != y[0]]
-        else:
-            rb_cons = ["ASSERT ((%s, %s) IS_IN RF)"%(x[0], x[1]) for x in rb_set]
+        c4printer = CVC4Printer()
+        rb_set = c4printer.get_compatible_reads(program)[0]
+        rb_cons = ["ASSERT (%s IS_IN RF)"%(x) for x in rb_set]
 
+        if (self.verbosity > 0):
+            sys.stdout.write("(%s)"%len(rb_cons))
+            sys.stdout.flush()
+        
         if self.shuffle_constraints:
             random.shuffle(rb_cons)
         num_t = min(len(rb_cons), num_t)
@@ -157,11 +155,11 @@ class CVC4Solver(object):
 
             threads = []
             for i in range(num_t-1):
-                process = Process(target=self.__solve_n, args=(model, -1, i, rb_cons, shared_execs))
+                process = Process(target=self.__solve_n, args=(model, -1, shared_execs, i, num_t-1, rb_cons))
                 threads.append(process)
                 process.start()
 
-            allexecs = Process(target=self.__solve_n, args=(model, -1, None, None, shared_execs))
+            allexecs = Process(target=self.__solve_n, args=(model, -1, shared_execs))
             allexecs.start()                            
             allexecs.join()
 
@@ -171,12 +169,10 @@ class CVC4Solver(object):
             for el in shared_execs:
                 if el not in self.executions.executions:
                     self.executions.add_execution(el)
-        
-        self.__write_models()
                 
         return self.executions
 
-    def __solve_n(self, model, n, id_thread=None, constraints=None, shared_execs=None):
+    def __solve_n(self, model, n, shared_execs=None, id_thread=None, total=None, constraints=None):
         applying_cons = None
 
         is_multithread = shared_execs is not None
@@ -194,36 +190,54 @@ class CVC4Solver(object):
         while (solsize < n) or (n == -1):
             prvsolsize = solsize
             (sol, ret) = self.__compute_models(model, 1, applying_cons, shared_execs)
-            solsize = sol.get_size()
+            solsize = sol.get_size() if sol is not None else 0
+
+            if is_master:
+                self.__write_models(ret == 0)
+            
             if (self.verbosity > 0) and is_multithread and is_master:
                 if ((solsize - prvsolsize) > 1):
                     gain = (solsize-prvsolsize)-1
                     sys.stdout.write("+%s%s"%(gain, "."*(gain)))
                     sys.stdout.flush()
-            if (ret == 0) and (not is_master):
-                if id_thread >= len(constraints)-1:
-                    break
-                if (self.verbosity > 0):
-                    sys.stdout.write("d")
-                    sys.stdout.flush()
-                constraints[id_thread] = constraints[-1]
-                del(constraints[-1])
-                if self.shuffle_constraints:
-                    random.shuffle(constraints)                
-                applying_cons = constraints[id_thread]
-                continue
+
+            if not is_master:
+                if ret == 0: #UNSAT
+                    if id_thread >= len(constraints)-1:
+                        break
+                    if (self.verbosity > 0):
+                        sys.stdout.write("d")
+                        sys.stdout.flush()
+                    constraints[id_thread] = constraints[-1]
+                    del(constraints[-1])
+                    applying_cons = constraints[id_thread]
+                    continue
+
+                if ret == 2: # Not interesting constraint
+                    if (self.verbosity > 0):
+                        sys.stdout.write("s")
+                        sys.stdout.flush()
+
+                    if len(constraints) > total:
+                        tmp = constraints[id_thread]
+                        constraints[id_thread] = constraints[-1]
+                        constraints[-1] = tmp
+                        constraints[total:] = constraints[total+1:] + [constraints[total]]
+                        applying_cons = constraints[id_thread]
+            
             if ret == 0:
                 break
 
         return sol
     
-    def __write_models(self):
+    def __write_models(self, done):
         if self.models_file:
             c4printer = CVC4Printer()
             with open(self.models_file, "w") as f:
                 for exe in self.executions.executions:
                     f.write("%s\n"%c4printer.print_execution(exe))
-                f.write("%s\n"%c4printer.print_done())
+                if done:
+                    f.write("%s\n"%c4printer.print_done())
         
     def __load_models(self):
         parser = BeParser()
@@ -331,7 +345,10 @@ class CVC4Solver(object):
             if shared_execs is not None:
                 if exe not in shared_execs:
                     shared_execs.append(exe)
-            
+                else:
+                    if constraints is not None:
+                        return (self.executions, 2)
+                    
             if (self.verbosity > 0) and (constraints is None):
                 sys.stdout.write(".")
                 sys.stdout.flush()

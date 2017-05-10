@@ -316,6 +316,14 @@ class CVC4Printer(object):
         return "DATATYPE BLOCK_TYPE = %s END;" % (" | ".join([str(x) for x in blocks]))
 
     def __print_compatible_reads(self, program):
+        (compat_events, compat_bytes_events) = self.get_compatible_reads(program)
+        ret = ""
+        ret += "ASSERT comp_RF = {%s};\n"%(", ".join(compat_events))
+        ret += "ASSERT comp_RBF = {%s};"%(", ".join(compat_bytes_events))
+
+        return ret
+
+    def get_compatible_reads(self, program):
         compat_events = []
         compat_bytes_events = []
         for read in [x for x in program.get_events() if x.is_read_or_modify()]:
@@ -334,12 +342,8 @@ class CVC4Printer(object):
                 for inter in inters:
                     compat_bytes_events.append("((%s, %s), Int(%s))"%(read.name, write.name, inter))
 
-        ret = ""
-        ret += "ASSERT comp_RF = {%s};\n"%(", ".join(compat_events))
-        ret += "ASSERT comp_RBF = {%s};"%(", ".join(compat_bytes_events))
-
-        return ret
-
+        return (compat_events, compat_bytes_events)
+    
 class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
     DESC = "Google V8 format"
