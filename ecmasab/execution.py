@@ -113,7 +113,8 @@ class Executions(object):
         if (not exe.program) and (self.program):
             exe.program = self.program
         assert(isinstance(exe, Execution))
-        self.executions.append(exe)
+        if exe not in self.executions:
+            self.executions.append(exe)
 
     def merge(self, executions):
         for exe in executions.executions:
@@ -308,7 +309,8 @@ class Relation(object):
         return True
 
     def __hash__(self):
-        return id(self)
+        self.tuples.sort()
+        return hash(str(self.tuples))
     
     def add_tuple(self, tup):
         self.tuples.append(tup)

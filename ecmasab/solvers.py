@@ -192,14 +192,14 @@ class CVC4Solver(object):
         prvsolsize = 0
         solsize = 0
         while (solsize < n) or (n == -1):
+            prvsolsize = solsize
             (sol, ret) = self.__compute_models(model, 1, applying_cons, shared_execs)
             solsize = sol.get_size()
-            if (self.verbosity > 0) and (is_multithread):
-                if (solsize > (prvsolsize+1)) and (is_master):
-                    gain = solsize-prvsolsize-1
+            if (self.verbosity > 0) and is_multithread and is_master:
+                if ((solsize - prvsolsize) > 1):
+                    gain = (solsize-prvsolsize)-1
                     sys.stdout.write("+%s%s"%(gain, "."*(gain)))
                     sys.stdout.flush()
-                prvsolsize = solsize
             if (ret == 0) and (not is_master):
                 if id_thread >= len(constraints)-1:
                     break
