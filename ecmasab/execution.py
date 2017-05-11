@@ -159,12 +159,10 @@ class Execution(object):
         return " AND ".join([str(x) for x in relations])
 
     def __eq__(self, other):
-        ret = True
         for rel in BLOCKING_RELATIONS:
             if not(self.get_relation_by_name(rel) == other.get_relation_by_name(rel)):
-                ret = False
-                break
-        return ret
+                return False
+        return self.conditions == other.conditions
     
     def add_read_values(self, read_event):
         self.reads_values.append(read_event)
