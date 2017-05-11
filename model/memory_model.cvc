@@ -430,7 +430,7 @@ ASSERT en_HB => (FORALL (ee IN ev_set) : Active(ee) => NOT(HB(ee,ee)));
 
 #else
 
-#ifdef en_HB_from_RF
+#if en_HB_from_RF == 1
 
 ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HB(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed) OR RF(ed, ee))))));
 
