@@ -68,22 +68,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 0;id7_R_t3: 2";
-outputs[1] = "id6_R_t3: 0;id7_R_t3: 0";
-outputs[2] = "id6_R_t3: 512;id7_R_t3: 0";
-outputs[3] = "id6_R_t3: 512;id7_R_t3: 2";
-outputs[4] = "id6_R_t3: 131584;id7_R_t3: 2";
-outputs[5] = "id6_R_t3: 131584;id7_R_t3: 0";
-outputs[6] = "id6_R_t3: 131072;id7_R_t3: 0";
-outputs[7] = "id6_R_t3: 131072;id7_R_t3: 2";
+outputs[0] = "id6_R_t3: 0;id7_R_t3: 0";
+outputs[1] = "id6_R_t3: 512;id7_R_t3: 0";
+outputs[2] = "id6_R_t3: 131072;id7_R_t3: 0";
+outputs[3] = "id6_R_t3: 131584;id7_R_t3: 0";
+outputs[4] = "id6_R_t3: 0;id7_R_t3: 2";
+outputs[5] = "id6_R_t3: 512;id7_R_t3: 2";
+outputs[6] = "id6_R_t3: 131072;id7_R_t3: 2";
+outputs[7] = "id6_R_t3: 131584;id7_R_t3: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id6_R_t3: 0;id7_R_t3: 2
-//output// id6_R_t3: 0;id7_R_t3: 0
-//output// id6_R_t3: 512;id7_R_t3: 0
-//output// id6_R_t3: 512;id7_R_t3: 2
-//output// id6_R_t3: 131584;id7_R_t3: 2
-//output// id6_R_t3: 131584;id7_R_t3: 0
-//output// id6_R_t3: 131072;id7_R_t3: 0
-//output// id6_R_t3: 131072;id7_R_t3: 2
+// Expected Output (Compressed Data) //
+//eNrt201PwjAYwPG7n2JHTUjG2gJG40FiiBc1wQNHYoIHEhUP42T87g42oIOOt63di/8bedo+2yj88iTd
+//4/uzefg9D33fm0664+E4lDde+3Y66a0++/7nbPL+EU147Ht33s/ldCLGo3EYtKIVcvnpquWlokqLSmM0
+//vtIiGl8njgbRjM+36dciLrTZelxmxFVGvLOIi914N+O6yf38evfPD97Ty/954q0n0rNsol3jXD2DNGaQ
+//xgzSmEEZMyhjBmXMEK/bnruJpvZ42B8sNzm1R6vvJ1rZXqzOGgz2DYp9gzIZ7O1b2TOvTG58kPw4jfnN
+//q+OVr6Nk5Sl/iAsfKqACKvZQkV+DzeB6i9v2oTBc9WQ+YAImYCJ/RXEiE+utDFwyIWECJmDCLhN5C4ay
+//kRDGH6EtOjqBAA/wAI/iawxVCh8KKIACKOpTZagKVRm28Ahk0O7hB37gR+7jkV1c1g8kXAqif41YgRVY
+//Ucr5yEm1RjlSmGsN/MAP/Ci91jjibKRsPyR+4Ad+lOZHvkOTalYfzk3pXCtMwRRMOasmUVVTReEHfuBH
+//PWoSVY+axK0p+ktjAk7ghHLEbbfK7qCG0fm9KlvxJOfhDhaYgAmYqFqnShFIHN2ncpgOkAAJkKhan0qx
+//SEiQAAmQaFaXir06wj4c6VfPoQM6qC+c9qgUi4eCCZiAiaZ1qLioMGzRsfPOF3qgB0WG0/6UYv04cGqK
+//FEiBFLXsTnFRZ6AHeqBHE3tT7B2VoAd6oEeTO1Ncn6E4ESX9XjmiIAr1iMO+FHtHK+iBHujR5K4U1ycu
+//RYryB1HyqHw=

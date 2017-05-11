@@ -62,22 +62,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 1";
-outputs[1] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
+outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 1";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
+outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
 outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0";
 outputs[6] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1";
-outputs[7] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[7] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
+// Expected Output (Compressed Data) //
+//eNrtms1qwkAUhfd9iiwrCDFeM0KLC6WVLvoD2uIylKYLoWoXcVX67k1MrEm4Q01mRsbp2Q035sQZ8zH3
+//HMf3N9vkc5v4vreMB9EsSvpXXnC9jMNi3EvHw/3Y91eb+P0j/fDdxBt5X5fLuB8toiTopnfTbtTpepd7
+//paya69Srw1I1ZKtBqrZ6Xa6zer+kXK6TpD6Q6ISSevHcb2/8eOM9PLk3s139MJ8BWw3ZalmBWAViFaiu
+//kK/ubDLdLW9lzX5XoZfdW1m4/WRKF4f8xUJ/Wvx6jLpMmNfM9eaLTC8f79b2bbOOR9Px/fy2c+Fz8PRK
+//8ASAB/AYhochJJST1RSeKiYhCxXgATxnCg/Jdx5ldIjddwyBg5YN4FjSspEqOHzDRqcFJwA4AMcir1O6
+//T5PTKT6tu1UDOADHJp9zDDjNXA7AATjOe5xjsGnicBShQZsGaOz3N+2bNDolNAgFAI1N3oa0exsy06IB
+//HIBjk7ch7d4G4AAc570NafY2hDYN0LjubUizt9G402RjoQka06/L4amCfXWFREMoQ2N6Zk1e+CavtuKK
+//1b6FYJ8n1Fo05qLQdNCmWhfN/vh8nr2AH/BjAz/UKBsQWs7amGInqLkcsAN2TLLTb+ByhJbDNuUq9hxw
+//42DPRqrkyDo2Ajtgx+V+TZkc+jMmMM9NAG7AjVU5gcpBNZnTOeIAAdgBO2eeEbQ/q2aGG1k+AG7AjT35
+//QPvDanw6gL0GzLifDah0aQRuwM2/zAXad2inZAZZGpixKxMgA5kAgR2w43wmQNozATKSCYAbcGNPJkCa
+//MwHsNWDG/UyAtGcC4AbcuJ4JkOZM4FhmfgBS6nUU

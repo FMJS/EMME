@@ -113,7 +113,13 @@ class Executions(object):
         if (not exe.program) and (self.program):
             exe.program = self.program
         assert(isinstance(exe, Execution))
-        self.executions.append(exe)
+        if exe not in self.executions:
+            self.executions.append(exe)
+
+    def merge(self, executions):
+        for exe in executions.executions:
+            if exe not in self.executions:
+                self.executions.append(exe)
 
     def get_coherent_executions(self):
         return [x for x in self.executions if x.is_coherent()]
@@ -151,7 +157,13 @@ class Execution(object):
         relations.append(self.reads_from)
         relations.append(self.synchronizes_with)
         return " AND ".join([str(x) for x in relations])
-        
+
+    def __eq__(self, other):
+        for rel in BLOCKING_RELATIONS:
+            if not(self.get_relation_by_name(rel) == other.get_relation_by_name(rel)):
+                return False
+        return self.conditions == other.conditions
+    
     def add_read_values(self, read_event):
         self.reads_values.append(read_event)
 
@@ -207,6 +219,9 @@ class Execution(object):
     def get_RBF(self):
         return self.reads_bytes_from
 
+    def get_RBF_list(self):
+        return self.to_list(self.reads_bytes_from)
+
     def set_RBF(self, rel):
         self.reads_bytes_from = rel
     
@@ -238,6 +253,21 @@ class Execution(object):
 
         return rel
 
+    def to_list(self, RBF):
+        RBF_dict = {}
+        for el in RBF.tuples:
+            if el[0] not in RBF_dict:
+                RBF_dict[el[0]] = []
+            RBF_dict[el[0]].append([el[2], el[1]])
+
+        ret = []
+        for el in RBF_dict:
+            RBF_dict[el].sort()
+            RBF_dict[el] = [x[1] for x in RBF_dict[el]]
+            ret.append((el, tuple(RBF_dict[el])))
+            
+        return ret
+    
     def add_condition(self, condition, value):
         if not self.conditions:
             self.conditions = []
@@ -267,7 +297,18 @@ class Relation(object):
 
     def __repr__(self):
         return "%s = {%s}"%(self.name, ", ".join([str(x) for x in self.tuples]))
-        
+
+    def __eq__(self, other):
+        if len(self.tuples) != len(other.tuples):
+            return False
+        for tup in other.tuples:
+            if tup not in self.tuples:
+                return False
+        return True
+
+    def __hash__(self):
+        return id(self)
+    
     def add_tuple(self, tup):
         self.tuples.append(tup)
 
@@ -278,6 +319,13 @@ class Relation(object):
     @staticmethod
     def get_tr_tuple(ev1, ev2, addr):
         return (ev1, ev2, addr)
+
+    def get_union(self, relation):
+        tuples = list(set(self.tuples + relation.tuples))
+        newrel = Relation(self.name)
+        newrel.tuples = tuples
+        return newrel
+
         
 class Program(object):
     threads = []

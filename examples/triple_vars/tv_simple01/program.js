@@ -61,22 +61,24 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 1";
+outputs[0] = "id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 0";
 outputs[1] = "id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 0";
-outputs[2] = "id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 0";
-outputs[3] = "id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 1";
-outputs[4] = "id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 0";
-outputs[5] = "id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 1";
+outputs[2] = "id7_R_t2: 0;id8_R_t2: 1;id9_R_t2: 0";
+outputs[3] = "id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 0";
+outputs[4] = "id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 1";
+outputs[5] = "id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 1";
 outputs[6] = "id7_R_t2: 0;id8_R_t2: 1;id9_R_t2: 1";
-outputs[7] = "id7_R_t2: 0;id8_R_t2: 1;id9_R_t2: 0";
+outputs[7] = "id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 1
-//output// id7_R_t2: 1;id8_R_t2: 0;id9_R_t2: 0
-//output// id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 0
-//output// id7_R_t2: 1;id8_R_t2: 1;id9_R_t2: 1
-//output// id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 0
-//output// id7_R_t2: 0;id8_R_t2: 0;id9_R_t2: 1
-//output// id7_R_t2: 0;id8_R_t2: 1;id9_R_t2: 1
-//output// id7_R_t2: 0;id8_R_t2: 1;id9_R_t2: 0
+// Expected Output (Compressed Data) //
+//eNrtmT1PwzAQhnd+RUaQKoU4/iqIgQpVLIBUho4RUhgiUcqQToj/TtsU4iR3xG7iFLW3pa/dix2f/eTy
+//huFylX+s8jAMslQlsyRnV8HldZZq43r8cx2Gi2X6+rbufD8JboLP8yyNknmyeMneR+v/s931xSiotcSV
+//Foa28PWvPNroYntVV6WhClAt5rBRixnU1bGhalA1x82NyKYuEF0iukLia0Q3x8OQ+zLkvgyJz5D4MRIn
+//bvb/Cm4f74KHJ1r7A6w9R9bYNScUEt81VziSKwLRsdxSSHyN6OZ4yuzQoGr2FaBaZgcHM0mAqjkXDfbV
+//YN9xXS121Gwy3W6pyj2icndcbv5dCcqajWXs2Gzc3WG627NgfCw0HLWI+DwHTgGb3ILOlbMQ4lBEHCIO
+//Wex95X4iEMmIZP+UZMoT3w5Hst/n64VjHByrK8VY1/VCGGbWUhExjBjWw/ur/mvXE9mIbEdQo+lBKzcv
+//NZqoY6+vCk2Ao3Wtz7D1aqyBRXVGZCOy+XufJd4R706zklOd2SiHquQ60463VqLtrHNbE1vSYX5YRKQj
+//0jl9jZFEL6LXkTtq8rA+mxdHTZZw681Pq4x3bzeteaK4eWnEMGKYP/eBeEe8O03fTQ7lxnnw3Wxo5+a6
+//wazDcgdeE1vSYY4bkY5I58+NINIR6U7Th5NgXw9VoAcfrktdJ9q/obZWdcLu2Tk6cEQ6It2ADhzxj/hH
+//vpzjLlHuBO3dl9u/znNhH3d4as05fwN3y2E3

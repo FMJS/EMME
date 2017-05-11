@@ -62,22 +62,24 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
-outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1";
-outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0";
-outputs[6] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1";
+outputs[4] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
+outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1";
+outputs[6] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
 outputs[7] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1
+// Expected Output (Compressed Data) //
+//eNrtm0tvgkAUhff9FSw1MUG8gkkbF5rWdNFHom1ckqZ0QVK1C1w1/e/lZR3tkPK4Y8fh7CYXOcCVL/dw
+//Ara92UYf28i2rTAY+nM/Glxa/aswcIX1aLe27dUmeHuPf3w7tcbWZycMBv7Sj5xevDelq27P6uyUkmqm
+//c1wdCVVXWnVitdVLuE7qA0FZrFNBfVig4xbU8+N+WZOHa+v+0bwrS+v76xlKq660KiqQVIGkCnSskHV3
+//Pp2l7T3o2e6M4z37yd4HrZNsHMk35keY5f+fVL9IWq6aKS6WiWK2Tvv7ulkH49nkbnHTvbD/AsgBQADo
+//PwH6aRE3PmLvGeFxAA/gOSE8v/hgREfsMMABOEaBQwrBoVOCA7sGcLSxa6TKrhGmDuAx2q6RGrsGcACO
+//2XaN1Ng1Um/XxHjaATgAR6t4WphVbOF0rsn9rAN4AI9O0XQTdOQxQUNwHIADcLSPpctgUyWUBjSAxvhI
+//ugw0dDpoYNEAzTnE0U0sGmHaAJx2RtH1LRqgATQtjaHrWzRSbdEQQQMafSNoUhBBE55vAI/5ETSxR9AE
+//qwZwTI+giTmCBjSAxvgImpgjaFg0QNOCCJrYI2hMG4BjfARNzBE0oAE0xkfQxBxBM0KT2DWP6fMB1bfL
+///qie9Nb1CjS8xtCovrIqN3yVW7thx47OwpMez2syaSTuzWP58ubQunnVPiF4mj+DHbCjAzuklB3Sgh0H
+//7IAdjeZO/ddsisgp8c4AuAE3Zz5z6r9pA27ATXvnDbHPGwI34Mb4eUPs86YsN985GXcV

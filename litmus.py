@@ -19,6 +19,9 @@ import time
 from six.moves import range
 from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
+from ecmasab.beparsing import BeParser
+from ecmasab.utils import decompress_string
+from ecmasab.models_evaluator import Evaluator, MatchType
 
 K = "k"
 M = "M"
@@ -27,6 +30,7 @@ class Config(object):
     command = None
     outputs = None
     input_file = None
+    models = None
     number = None
     threads = None
     percent = None
@@ -37,6 +41,7 @@ class Config(object):
         self.command = None
         self.outputs = None
         self.input_file = None
+        self.models = None
         self.number = 10
         self.threads = 4
         self.percent = True
@@ -77,12 +82,14 @@ def run_command(command, number, silent):
 
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
-
+    
 def litmus(config):
 
     command = config.command.split(" ")
     number = config.number
 
+    input_file_has_models = False
+    
     if config.input_file:
         command.append(config.input_file)
     
@@ -108,31 +115,47 @@ def litmus(config):
     if config.outputs:
         try:
             with open(config.outputs, "r") as f:
+                i = 1
                 for line in f.readlines():
                     line = line.replace("\n","")
                     line = line.split(";")
                     line.sort()
                     line = ";".join(line)
-                    outputs_dic[line] = 0
+                    outputs_dic[line] = [i, 0]
+                    i += 1
+                input_file_has_models = True
         except Exception:
             print("File not found \"%s\""%config.outputs)
             return 1
     else:
         try:
+            modelstr = None
             with open(config.input_file, "r") as f:
-                for line in f.readlines():
-                    if JSPrinter.OUT in line:
-                        line = line.replace(JSPrinter.OUT,"")                        
-                        line = line.replace("\n","")
-                        line = line.split(";")
-                        line.sort()
-                        line = ";".join(line)
-                        outputs_dic[line] = 0
+                strfile = f.read()
+                if JSPrinter.DATA in strfile:
+                    modelstr = strfile[strfile.find(JSPrinter.DATA)+len(JSPrinter.DATA):]
+                    modelstr = modelstr.split("\n")
+                    modelstr = [x[2:] for x in modelstr]
+                    modelstr = "".join(modelstr)
+            if modelstr is not None:
+                input_file_has_models = True
+                i = 1
+                for line in decompress_string(modelstr).split("\n"):
+                    model = line[line.find(JSPrinter.MOD)+len(JSPrinter.MOD):]
+                    output = line[len(JSPrinter.OUT):line.find(JSPrinter.MOD)]
+                    output = output.split(";")
+                    output.sort()
+                    output = ";".join(output)
+                    outputs_dic[output] = [i, 0, model]
+                    i += 1
         except Exception:
-            print("File not found \"%s\""%config.input_file)
+            print("Error while reading \"%s\""%config.input_file)
             return 1
 
-            
+    if not input_file_has_models:
+        print("ERROR: the input file does not contain model information")
+        return 0
+
     original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
             
     num_t = config.threads
@@ -141,7 +164,6 @@ def litmus(config):
     outputs_t = []
     
     signal.signal(signal.SIGINT, original_sigint_handler)
-    
         
     for i in range(num_t):
         async_results.append(pool.apply_async(run_command, (command, int(number/num_t), config.silent)))
@@ -169,11 +191,11 @@ def litmus(config):
             if el not in outputs_dic:
                 not_matched.append(el)
             else:
-                outputs_dic[el] += outputs[el]
+                outputs_dic[el][1] += outputs[el]
 
     not_matched = list(set(not_matched))
 
-    results = [(outputs_dic[x], x) for x in outputs_dic]    
+    results = [(outputs_dic[x][1], x) for x in outputs_dic]    
     results.sort()
     results.reverse()
 
@@ -187,7 +209,9 @@ def litmus(config):
 
     if config.pretty:
         table = PrettyTable()
-        
+
+    mmatched = set([])
+
     matches = 0
     for result in results:
         if result[0] > 0:
@@ -207,11 +231,12 @@ def litmus(config):
                     else:
                         lines.append("%s\t\"%s\""%(num, result[1]))
             matches += 1
+            mmatched.add(tuple(outputs_dic[res_val]))
             if row:
                 table.add_row(row)
 
     if (not config.silent) and (config.pretty):
-        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(row)-1)]
+        table.field_names = ["Frequency"] + ["Output %s"%(x+1) for x in range(len(results[0][1].split(";")))]
         table.align = "l"
         lines.append(str(table))
 
@@ -230,6 +255,27 @@ def litmus(config):
         else:
             print("ok")
             return 0
+
+    if not config.silent and config.models:
+        nmatched = [outputs_dic[x] for x in outputs_dic if tuple(x) not in mmatched]
+
+        mmatched = [x[2] for x in mmatched]
+        nmatched = [x[2] for x in nmatched]
+
+        beparser = BeParser()    
+        mmatched = beparser.executions_from_string("\n".join(mmatched))
+        nmatched = beparser.executions_from_string("\n".join(nmatched))
+
+        evaluator = Evaluator(mmatched, nmatched)
+        emod = evaluator.differential_evaluation()
+        
+        print("\n== Missing (single) Reads Bytes From ==")
+        out_str = ["%s := [%s]"%(x[0], ", ".join(x[1])) for x in emod.get_u_RBF(MatchType.UM)]
+        out_str.sort()
+        print("\n".join(out_str))
+
+        print("\n== Difference Between Happens Before ==")
+        print(["(%s, %s)"%(x) for x in emod.get_u_HB(MatchType.UM)])
             
 if __name__ == "__main__":
 
@@ -241,11 +287,15 @@ if __name__ == "__main__":
 
     parser.set_defaults(input_file=None)
     parser.add_argument('-i', '--input_file', metavar='input_file', type=str, required=False,
-                       help='input_file')
+                       help='input file')
     
     parser.set_defaults(outputs=None)
     parser.add_argument('-o', '--outputs', metavar='outputs', type=str, required=False,
                        help='possible outputs')
+
+    parser.set_defaults(models=False)
+    parser.add_argument('-m', '--models', dest='models', action='store_true',
+                       help='evaluates models')
 
     parser.set_defaults(number="100")
     parser.add_argument('-n', '--number', metavar='number', type=str, 
@@ -276,5 +326,6 @@ if __name__ == "__main__":
     config.threads = args.threads
     config.percent = args.percent
     config.silent = args.silent
+    config.models = args.models
 
     sys.exit(litmus(config))

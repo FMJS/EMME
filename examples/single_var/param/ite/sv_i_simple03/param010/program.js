@@ -62,22 +62,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
-outputs[1] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
-outputs[3] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1";
-outputs[4] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
-outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0";
-outputs[6] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1";
-outputs[7] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
+outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[3] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
+outputs[4] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0";
+outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1";
+outputs[6] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1";
+outputs[7] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
+// Expected Output (Compressed Data) //
+//eNrtmjtvwjAUhff+iowgIQXnkiC1YgC1qEMfErRijKqmQ6QCHcJU9b83zxJSW8rDDq57NusanxDjTyf3
+//ENveH6KPQ2TbVhhM/JUfOZfW+CoM3HzM4vG0qNv2dh+8vccfvl1YM+tzEAaOv/EjNopXUzoajqxBoZRU
+//M51qdVqqutwqi9W2L+EuqTsl5XKdBPWJQMcV1PPrflnzh2vr/tG8O0vrx/uZcKsut1pWIK4CcRWoqpDt
+//7mqxTLf3ZM+KbxyvHCerT7buZ4uKqSl/Xa6/zH89rjpfmK+Z6a03iV42Tvf2db8LZsv53fpmeGEDHsBz
+//bnioyodEdMo7eTZwGMABOBq5TmlKkufkVYADcMx1nDrYNPEbRdDgMQ3Q6OQ2JN1tCOAAHNPdhiS7jURo
+//krEnCRrVx+V4VY97dD2BhtcZGtV31uTANznaHXes8i087vW8bm7DmfQkZWqnda9ZOPC0ehbxw8AP+OmR
+//H0dsOhLocbjGo4odeA/Y6ZMdUsoO9coOqzQ7YAfsnMl3fk3JcZ1yFZ4Dbgzsd6grOaJuh5Swg14H7Gji
+//OaTGcwieA25M7nM6c0MacMPADbjRKpvu8uaNKCGo8RpBi2c1sAN2dMql65DTLJXuxg08B9z8hUy6/Utr
+//6v2GgRtwo2Ue3d5t+Gk0vAbMmJ9Fd+luSAE36G3Ajf45dHuvIXgNmPmXGXT7rqZPZvC/DZjRK38mBfkz
+//KXlGAztgR6f8maTnzwTPATfG588kPX8mJfkzuAE3+uTPJDl/hteAGfPzZ5KeP6O3ATem588kOX+G14AZ
+//0/Nnkpw/12XmGyzPc9A=

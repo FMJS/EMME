@@ -62,22 +62,24 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
-outputs[1] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
-outputs[3] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1";
-outputs[4] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
-outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0";
-outputs[6] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1";
-outputs[7] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
+outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[3] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
+outputs[4] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0";
+outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1";
+outputs[6] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1";
+outputs[7] = "id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
+// Expected Output (Compressed Data) //
+//eNrt2stqwkAUBuB9nyJLBSGOx4zQ4kJppYteQFtchtJ0EajaRVyVvntzrYnOQC4zmk7+3XBiTsyYj6M/
+//2vZuH3ztA9u2fG/sLt1gdG0Nb3zPSdcsXE+yum1vdt7HZ/ji+7k1tb57vjdy127ABuHZFK/6A6uXdYqq
+//SZ/j6iRXdYRVFnbbvPnbqD7Kdc7XSVIfS/o4knp63R9r9nRrPT6bd2dx/XA/Y2HVEVbzHUjYgYQd6LhD
+//srvL+SLe3sKeZe84PHMYnV3Yur8tyg5NxOel/RfppyfsLm4s7pn0W62jfsk63tv33dabLmYPq7v+lQ08
+//wNNqPKQLD50XDwMe4GnR5MkdUjR30irgAI7JU6cJHAIcwOnqxCHlE4cAB3DMnzikfOIohBOtuaKAQPcj
+//c7gqFz6+XNKDN4aj+86qPPRVHu+GO3b0LrjwerwZHMFBrigiKNZ5tZDgZfkq88PgB37O6OfkS5lSPfnP
+//A3Zgxyw7pNUOXcwOgx3YudzcOTmkZurkq3ADN8bNnMZuCG7gpnvzhvTMG4IbuDF53pCeeaPHjSyXZnAD
+//N63KpZv8iUCWDpT4G0GNXA12YKdNmXQZOdUSabiBG/Pz6DJu6EJuGNzATSuz6PrTRpyowQzMmJ5D1580
+//MAMz3cyg688ZghmY6WT+XH/O6DCD7Blm/kf2TBqyZ0KGBjvGZ8+kPHuGG7gxP3sm5dkz4fcN3BiePZPi
+//7BlmYMb07JkUZ88wAzOmZ8+kOHuGGZgxPXsmxdlzWTO/TkZz6w==

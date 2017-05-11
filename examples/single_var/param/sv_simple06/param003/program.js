@@ -55,10 +55,11 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id3_R_t2: 2.1000";
-outputs[1] = "id3_R_t2: 0.0000";
+outputs[0] = "id3_R_t2: 0.0000";
+outputs[1] = "id3_R_t2: 2.1000";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id3_R_t2: 2.1000
-//output// id3_R_t2: 0.0000
+// Expected Output (Compressed Data) //
+//eNrT188vLSkoLdHXV8hMMY4Pii8xslIw0DMAAn393PyU1BygjIeTgq1CtUZmimF8eHxuYmaeDlCxEZBd
+//Yqipo4AmDjFEs1bB0c9FwdefdJ1gcQgbSTXEvCAnN7CBKCpgZgB1GoB045I0xCdphE/SGGa9G9Q7WFRB
+//VASHY/EwLEi49LGFtpGeIcWhDRaHqKFeHOAwD2scwM3DjAG4lCFuKSPcUnjCHiVpwEMe09kA2W3Wbg==

@@ -62,22 +62,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
-outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
-outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1";
-outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0";
-outputs[6] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1";
+outputs[0] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0";
+outputs[2] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1";
+outputs[4] = "id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1";
+outputs[5] = "id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1";
+outputs[6] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0";
 outputs[7] = "id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 0;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 0
-//output// id4_R_t2: 1;id5_R_t2: 1;id7_R_t2: 1
-//output// id4_R_t2: 1;id5_R_t2: 0;id6_R_t2: 1
+// Expected Output (Compressed Data) //
+//eNrtm81vgjAYxu/7KzhqYoLllZps8aDZzA77SHSLR7KMHUim7oCnZf/7+HJWVhI+WujYc2te5IGW/vK0
+//j2Db+0P4cQht2wr8ibfyQufSGl8Fviu0p8e2bW/3/tt79OPbhTWzPgeB73gbL2Sj6GxKWsORNTgqxdVU
+//J1+dClVXWmWR2vYl2MV1R1AW61RQnxTouAX17Lpf1vzh2rp/7F/PkvqpPxNp1ZVWRQWSKpBUgfIK6eiu
+//FstkeM/G7HjH0Znj+OyzoZMcnMoPZldYZs9Pql8kLVdNFdebWDFtJ+P7ut/5s+X8bn0zvLABEADqGqCf
+//3mrBRxzLluFhgAfwdOk+Tp4sVd4jjr1CeBjgATwtwuMUO09jdByp72gCB64DcAxZsjUGh7oCB3sdgNPp
+//co10LdcI8ACeXrsO6XGdlsFhAAfgGBVRC6s5ZQF1pgl4AE+f4+ky6FQLpxWCwwAOwDE0mm7iOfKYoCE4
+//DOAAHONj6TLYVAml4TaApveRdP1FmnZosLcBNKbG0U2WaARwAM7/jKLru02r0OD/G0BjVgxNGmJoAjyA
+//p/8xNCmPoUlPMABwAI5JMTQpj6FJTwwNcACOOTE0KY6h4TaApvcxNCmOobG3ATT/IIYm5TE0wAE4vY+h
+//SXEMrXBfE0PDFUGje7qcrsqlU5cXaPDG0OjuWZUJX2VqNxyx3F1w6fV4k32NxIi4ku8+z12IV/uU4Gn1
+//DHbAjuHs/DIcNeSIz0I/NwzcgBuDPKf+S51FjlPinQFwA27+tN/Up0buNnqYwRoNzJjkNaTcawjcgJue
+//ew0p9pqyzHwDEtd2+g==

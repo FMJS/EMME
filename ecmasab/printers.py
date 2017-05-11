@@ -16,6 +16,7 @@ from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_State
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
+from ecmasab.utils import compress_string
 
 LICENSE = ""
 LICENSE += "// Copyright 2017 Cristian Mattarei\n"
@@ -89,7 +90,9 @@ class JSPrinter(object):
     DESC = "MISSING DESCRIPTION!"
     TYPE = PrinterType.JS
 
+    DATA = "// Expected Output (Compressed Data) //"
     OUT = "//output// "
+    MOD = "//model// "
     
     float_app_js = ".toFixed("+str(FLOAT_APPROX)+")"
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
@@ -100,14 +103,16 @@ class JSPrinter(object):
     def print_executions(self, program, interps):
         return "\n".join(self.compute_possible_executions(program, interps))
 
-    def compute_possible_executions(self, program, interps):
-        ret = set([])
+    def compute_possible_executions(self, program, interps, models=False):
+        ret = []
         for interp in interps.get_coherent_executions():
-            ret.add(self.print_execution(program, interp))
+            exe = self.print_execution(program, interp, models)
+            if exe not in ret:
+                ret.append(exe)
 
-        return list(ret)
+        return ret
     
-    def print_execution(self, program, interp):
+    def print_execution(self, program, interp, models=False):
         pass
     
     def print_program(self, program, executions=None):
@@ -311,6 +316,14 @@ class CVC4Printer(object):
         return "DATATYPE BLOCK_TYPE = %s END;" % (" | ".join([str(x) for x in blocks]))
 
     def __print_compatible_reads(self, program):
+        (compat_events, compat_bytes_events) = self.get_compatible_reads(program)
+        ret = ""
+        ret += "ASSERT comp_RF = {%s};\n"%(", ".join(compat_events))
+        ret += "ASSERT comp_RBF = {%s};"%(", ".join(compat_bytes_events))
+
+        return ret
+
+    def get_compatible_reads(self, program):
         compat_events = []
         compat_bytes_events = []
         for read in [x for x in program.get_events() if x.is_read_or_modify()]:
@@ -329,17 +342,13 @@ class CVC4Printer(object):
                 for inter in inters:
                     compat_bytes_events.append("((%s, %s), Int(%s))"%(read.name, write.name, inter))
 
-        ret = ""
-        ret += "ASSERT comp_RF = {%s};\n"%(", ".join(compat_events))
-        ret += "ASSERT comp_RBF = {%s};"%(", ".join(compat_bytes_events))
-
-        return ret
-
+        return (compat_events, compat_bytes_events)
+    
 class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
     DESC = "Google V8 format"
 
-    def print_execution(self, program, interp):
+    def print_execution(self, program, interp, models=False):
         reads = []
         for el in interp.reads_values:
             value = el.get_correct_read_value()
@@ -407,9 +416,12 @@ class JSV8Printer(JSPrinter):
         ret += "}\n"
 
         if executions:
-            execs = self.compute_possible_executions(program, executions)
+            linesize = 80
+            execs = self.compute_possible_executions(program, executions, True)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
-            ret += "\n// Expected outputs //\n%s\n"%"\n".join(execs)
+            data = compress_string("\n".join(execs))
+            data = [data[x:x+linesize] for x in range(0, len(data), linesize)]
+            ret += "\n%s\n//%s\n"%(self.DATA, "\n//".join(data))
         
         return ret
 
@@ -538,18 +550,24 @@ class JST262Printer(JSPrinter):
 
     str_report = False
 
-    def print_execution(self, program, interp):
+    def print_execution(self, program, interp, models=False):
         reads = []
+        output = ""
         for el in interp.reads_values:
             value = el.get_correct_read_value()
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                reads.append(("%s: "+self.float_pri_js)%(el.name, float_approx(value)))
+                output = ("%s: "+self.float_pri_js)%(el.name, float_approx(value))
             else:
-                reads.append("%s: %s"%(el.name, value))
+                output = "%s: %s"%(el.name, value)
+            reads.append(output)
         ret = ";".join(reads)
         ret = ret.replace("nan", "NaN")
+        if models:
+            cprinter = PrintersFactory.printer_by_name(CVC4Printer.NAME)
+            ret += "%s%s"%(self.MOD, cprinter.print_execution(interp))
+
         return ret
     
     def print_program(self, program, executions=None):
@@ -639,19 +657,19 @@ class JST262Printer(JSPrinter):
         if self.asserts and executions:
             ret += "report.sort();\n"
             ret += "report = report.join(\";\");\n"
-
             ret += "var outputs = [];\n"
-            i = 0
-            for ex_out in self.compute_possible_executions(program, executions):
-                ret += "outputs[%s] = \"%s\";\n"%(i, ex_out)
-                i += 1
-
-            ret += "assert(-1 != outputs.indexOf(report));\n"
+            
+            execs = self.compute_possible_executions(program, executions)
+            ret += "\n".join(["outputs[%s] = \"%s\";"%(execs.index(x), x) for x in execs])
+            ret += "\nassert(-1 != outputs.indexOf(report));\n"
 
         if executions:
-            execs = self.compute_possible_executions(program, executions)
+            linesize = 80
+            execs = self.compute_possible_executions(program, executions, True)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
-            ret += "\n// Expected outputs //\n%s\n"%"\n".join(execs)
+            data = compress_string("\n".join(execs))
+            data = [data[i:i+linesize] for i in range(0, len(data), linesize)]
+            ret += "\n%s\n//%s\n"%(self.DATA, "\n//".join(data))
             
         return ret
 
@@ -877,9 +895,16 @@ class DotPrinter(object):
 
         color = "red"
         if self.__should_print(interp.get_RBF().name):
+            rbf_dic = {}
             for tup in interp.get_RBF().tuples:
-                label = "%s[%s]"%(interp.get_RBF().name, tup[2])
-                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (tup[0], tup[1], label, color))
+                link = (tup[0], tup[1])
+                if link not in rbf_dic:
+                    rbf_dic[link] = []
+                rbf_dic[link].append(tup[2])
+            for ev in rbf_dic:
+                rbf_dic[ev].sort()
+                label = "%s[%s]"%(interp.get_RBF().name, ", ".join(rbf_dic[ev]))
+                ret.append("%s -> %s [label = \"%s\", color=\"%s\"];" % (ev[0], ev[1], label, color))
 
         relations = []
         defcolor = "black"
@@ -970,14 +995,14 @@ class DotPrinter(object):
         if event.name in reads_dic:
             revent = reads_dic[event.name]
             value = revent.get_correct_read_value()
-            bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0])
+            bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0]/revent.get_size())
         else:
             if revent.is_init():
                 value = 0
                 bname = "%s-init"%revent.block.name
             else:
                 value = revent.get_correct_write_value()
-                bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0])
+                bname = "%s%s[%s]"%(revent.block.name, self.__get_block_size(revent), revent.address[0]/revent.get_size())
             
         value = self.float_pri_js%(float_approx(value)) if revent.is_wtear() else value
 

@@ -68,54 +68,42 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 0;id7_R_t3: 1";
-outputs[1] = "id6_R_t3: 0;id7_R_t3: 0";
-outputs[2] = "id6_R_t3: 65792;id7_R_t3: 0";
-outputs[3] = "id6_R_t3: 256;id7_R_t3: 0";
-outputs[4] = "id6_R_t3: 256;id7_R_t3: 1";
+outputs[0] = "id6_R_t3: 0;id7_R_t3: 0";
+outputs[1] = "id6_R_t3: 2;id7_R_t3: 0";
+outputs[2] = "id6_R_t3: 512;id7_R_t3: 0";
+outputs[3] = "id6_R_t3: 514;id7_R_t3: 0";
+outputs[4] = "id6_R_t3: 256;id7_R_t3: 0";
 outputs[5] = "id6_R_t3: 258;id7_R_t3: 0";
-outputs[6] = "id6_R_t3: 2;id7_R_t3: 0";
-outputs[7] = "id6_R_t3: 65792;id7_R_t3: 1";
-outputs[8] = "id6_R_t3: 65538;id7_R_t3: 0";
-outputs[9] = "id6_R_t3: 65538;id7_R_t3: 1";
-outputs[10] = "id6_R_t3: 2;id7_R_t3: 1";
-outputs[11] = "id6_R_t3: 66048;id7_R_t3: 1";
-outputs[12] = "id6_R_t3: 66048;id7_R_t3: 0";
-outputs[13] = "id6_R_t3: 258;id7_R_t3: 1";
-outputs[14] = "id6_R_t3: 514;id7_R_t3: 1";
-outputs[15] = "id6_R_t3: 514;id7_R_t3: 0";
-outputs[16] = "id6_R_t3: 66050;id7_R_t3: 0";
-outputs[17] = "id6_R_t3: 66050;id7_R_t3: 1";
-outputs[18] = "id6_R_t3: 512;id7_R_t3: 1";
-outputs[19] = "id6_R_t3: 512;id7_R_t3: 0";
-outputs[20] = "id6_R_t3: 65794;id7_R_t3: 0";
-outputs[21] = "id6_R_t3: 65794;id7_R_t3: 1";
-outputs[22] = "id6_R_t3: 65536;id7_R_t3: 0";
-outputs[23] = "id6_R_t3: 65536;id7_R_t3: 1";
+outputs[6] = "id6_R_t3: 65536;id7_R_t3: 0";
+outputs[7] = "id6_R_t3: 65538;id7_R_t3: 0";
+outputs[8] = "id6_R_t3: 66048;id7_R_t3: 0";
+outputs[9] = "id6_R_t3: 66050;id7_R_t3: 0";
+outputs[10] = "id6_R_t3: 65792;id7_R_t3: 0";
+outputs[11] = "id6_R_t3: 65794;id7_R_t3: 0";
+outputs[12] = "id6_R_t3: 0;id7_R_t3: 1";
+outputs[13] = "id6_R_t3: 2;id7_R_t3: 1";
+outputs[14] = "id6_R_t3: 512;id7_R_t3: 1";
+outputs[15] = "id6_R_t3: 514;id7_R_t3: 1";
+outputs[16] = "id6_R_t3: 256;id7_R_t3: 1";
+outputs[17] = "id6_R_t3: 258;id7_R_t3: 1";
+outputs[18] = "id6_R_t3: 65536;id7_R_t3: 1";
+outputs[19] = "id6_R_t3: 65538;id7_R_t3: 1";
+outputs[20] = "id6_R_t3: 66048;id7_R_t3: 1";
+outputs[21] = "id6_R_t3: 66050;id7_R_t3: 1";
+outputs[22] = "id6_R_t3: 65792;id7_R_t3: 1";
+outputs[23] = "id6_R_t3: 65794;id7_R_t3: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id6_R_t3: 0;id7_R_t3: 1
-//output// id6_R_t3: 0;id7_R_t3: 0
-//output// id6_R_t3: 65792;id7_R_t3: 0
-//output// id6_R_t3: 256;id7_R_t3: 0
-//output// id6_R_t3: 256;id7_R_t3: 1
-//output// id6_R_t3: 258;id7_R_t3: 0
-//output// id6_R_t3: 2;id7_R_t3: 0
-//output// id6_R_t3: 65792;id7_R_t3: 1
-//output// id6_R_t3: 65538;id7_R_t3: 0
-//output// id6_R_t3: 65538;id7_R_t3: 1
-//output// id6_R_t3: 2;id7_R_t3: 1
-//output// id6_R_t3: 66048;id7_R_t3: 1
-//output// id6_R_t3: 66048;id7_R_t3: 0
-//output// id6_R_t3: 258;id7_R_t3: 1
-//output// id6_R_t3: 514;id7_R_t3: 1
-//output// id6_R_t3: 514;id7_R_t3: 0
-//output// id6_R_t3: 66050;id7_R_t3: 0
-//output// id6_R_t3: 66050;id7_R_t3: 1
-//output// id6_R_t3: 512;id7_R_t3: 1
-//output// id6_R_t3: 512;id7_R_t3: 0
-//output// id6_R_t3: 65794;id7_R_t3: 0
-//output// id6_R_t3: 65794;id7_R_t3: 1
-//output// id6_R_t3: 65536;id7_R_t3: 0
-//output// id6_R_t3: 65536;id7_R_t3: 1
+// Expected Output (Compressed Data) //
+//eNrtm01PwkAQhu/+ih41ISntdosf8SAxxIua4IEjMcEDiYgHOBn/uy0tsMDyUdrZEnluzezu0HbbJ2+Z
+//eX1/PJ18Tye+7w0Hcb/bn6hbr3k3HLTmx74/Gg8+PpMJT23v3vu5HA7Cfq8/CRrJCjU7ump4STRKj8M0
+//qmdHWTTLmUazjFk0SGaM3odfaTw0cphxtSUeGdnNuN4Sj7f8bn4+v97Dy6P3/Pofr20WX16RmX0Z1dZo
+//bM1g5lXWvMqaV1nzKmve5b2OrVFzrrbO1etzsz3utjuzTV7ZufldS1Y209XbBoNdg+GuQZUPtnatbNlX
+//5ifeyR9Oa3776mzlWy9fWeSFuPBtUAiBAlA4PyiUf++Xg4uNb8ojwfKrhUGxGwg6AAkgAZ1QCgmLDQ5c
+//IkGJISECCSDh/JBQVgjUDQTzYZPHRKhjMAEmUA5lGLK4JU5BYW5EtUi4BgkgAeVwvHKoBwh25SCFiVhr
+//hXYAFGiHAv9SblJkcfGhS1RoQSigHoAC1YkS6qEeJNjVgxgo4mYEKAAF6qFwWaJuUCjXoNA0QQGKMwRF
+//uWLFaeoJx/DQrRs6I4AHKqNwCaNufETWR1MSFPRLAApURsHCxmmqDLfwMD9PAsABOFAYUh6NzUEDO8c7
+//NNbiec79vo0D/BkAASBQARHyZ1SBg4PdGfshcZA7AyAABBSCkDujWiAoMSBEAAEg0GEp7c2Q0wfykFh1
+//ZgAJIIFqEHJmVIuJPQ3XJYBwDRAAAqpB2pfhQjVIQWLdlQEmwAS6QciVUS0otCASUA4ggYqEuCfDhXIQ
+//w8SaIwNMgAmUg4gjQ65K4QQTmoYnMEGnpLAfw3XtwsWHyKobA3SADhSGiBtDrqLhBhP0R4AJFIawF8N1
+//naNKdPwBNOoQug==

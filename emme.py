@@ -20,7 +20,7 @@ from argparse import RawTextHelpFormatter
 
 from ecmasab.beparsing import BeParser
 from ecmasab.printers import JST262Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
-from ecmasab.execution import RF, HB, SW
+from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
@@ -62,7 +62,8 @@ class Config(object):
     jsdir = None
     debug = None
     force_solving = None
-
+    threads = None
+    
     model = None
     model_ex = None
     instance = None
@@ -87,10 +88,11 @@ class Config(object):
         self.skip_solving = False
         self.jsprinter = JST262Printer().NAME
         self.graphviz = None
-        self.printing_relations = ",".join([RF,HB,SW])
+        self.printing_relations = ",".join([RBF,HB,SW])
         self.jsdir = None
         self.debug = False
         self.force_solving = False
+        self.threads = 1
         
     def generate_filenames(self):
         if self.prefix:
@@ -199,9 +201,9 @@ def solve(config, program, strmodel):
             c4solver.set_additional_variables(program.get_conditions())
 
         if config.sat:
-            totmodels = c4solver.solve_n(strmodel, 1)
+            totmodels = c4solver.solve_one(strmodel)
         else:
-            totmodels = c4solver.solve_all(strmodel)
+            totmodels = c4solver.solve_all(strmodel, program, config.threads)
 
         if not config.debug:
             del_file(config.block_type)
@@ -333,7 +335,7 @@ def main(args):
                         help='select the JS printer between (Default is \"%s\"):\n%s'%(config.jsprinter, "\n".join(jsprinters)))
 
     parser.set_defaults(jsdir=None)
-    parser.add_argument('-j', '--jsdir', metavar='jsdir', type=str, nargs='?',
+    parser.add_argument('-d', '--jsdir', metavar='jsdir', type=str, nargs='?',
                         help='directory where to store all JS programs. (Default is the same as the input file)')
  
     parser.set_defaults(graphviz=False)
@@ -348,6 +350,10 @@ def main(args):
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
                         help="skips the solving part. (Default is \"%s\")"%False)
 
+    parser.set_defaults(verbosity=1)
+    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
+                        help="verbosity level. (Default is \"%s\")"%1)
+    
     parser.set_defaults(relations=config.printing_relations)
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
                         help='a (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
@@ -355,10 +361,6 @@ def main(args):
     parser.set_defaults(prefix=None)
     parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. (Default is the same as the input file)')
-    
-    parser.set_defaults(verbosity=1)
-    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
-                        help="verbosity level. (Default is \"%s\")"%1)
 
     parser.set_defaults(silent=False)
     parser.add_argument('-l', '--silent', dest='silent', action='store_true',
@@ -372,12 +374,16 @@ def main(args):
     parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
                         help="exits right after the model generation. (Default is \"%s\")"%False)
 
+    parser.set_defaults(threads=1)
+    parser.add_argument('-j', '--threads', metavar='number', type=int,
+                       help='number of threads (Default is \"1\". Experimental)')
+
     parser.set_defaults(debug=False)
-    parser.add_argument('-d', '--debug', dest='debug', action='store_true',
+    parser.add_argument('--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
     
     parser.set_defaults(no_expand_bounded_sets=False)
-    parser.add_argument('-n','--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
+    parser.add_argument('--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
                         help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%False)
     
     parser.set_defaults(defines=None)
@@ -420,7 +426,8 @@ def main(args):
     config.jsdir = args.jsdir
     config.debug = args.debug
     config.force_solving = args.force_solving
-
+    config.threads = args.threads
+    
     if args.silent:
         config.verbosity = 0
     

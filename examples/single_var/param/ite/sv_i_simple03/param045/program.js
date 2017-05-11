@@ -64,20 +64,22 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0";
 outputs[1] = "id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2";
-outputs[2] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2";
-outputs[3] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0";
-outputs[4] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2";
-outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
-outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0";
-outputs[7] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2";
+outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[3] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0";
+outputs[4] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0";
+outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2";
+outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2";
+outputs[7] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 2;id7_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id6_R_t2: 2
+// Expected Output (Compressed Data) //
+//eNrt2stqwkAUBuB9nyJLBSE6x4zQ4kJppYteQFtchtJ0EajaRVyVvntzrYnOQC4zmk7+3XBiTsyYj6M/
+//2vZuH3ztA9u2fG/sLt2AXVvDG99z0jUL15OsbtubnffxGb74fm5Nre+e7zF37QajQXg2xav+wOplnaJq
+//0ue4OslVHWF1FHbbvPnbqM5ynfN1ktTHkj6OpJ5e98eaPd1aj8/m3VlcP9zPWFh1hNV8BxJ2IGEHOu6Q
+//7O5yvoi3t7Bn2TsOzxxGZxe27m+LskMT8Xlp/0X66Qm7ixuLeyb9VuuoX7KO9/Z9t/Wmi9nD6q5/ZQMP
+//8LQaD+nCQ+fFw4AHeFo0eXKHFM2dtAo4gGPy1GkChwAHcLo6cUj5xCHAARzzJw4pnzgK4URrrigg0P3I
+//HK7KhY8vl/TgjeHovrMqD32Vx7vhjh29Cy68Hm8GR3CQK4oIinVeLSR4Wb7K/DD4gZ8z+jn5UqZUT/7z
+//gB3YMcsOabVDF7PDYAd2Ljd3Tg6pmTr5KtzAjXEzp7Ebghu46d68IT3zhuAGbkyeN6Rn3uhxI8ulGdzA
+//Taty6SZ/IpClAyX+RlAjV4Md2GlTJl1GTrVEGm7gxvw8uowbupAbBjdw08osuv60ESdqMAMzpufQ9ScN
+//zMBMNzPo+nOGYAZmOpk/158zOswge4aZ/5E9k4bsmZChwY7x2TMpz57hBm7Mz55JefZM+H0DN4Znz6Q4
+//e4YZmDE9eybF2TPMwIzp2TMpzp5hBmZMz55JcfZc1swvbS10IQ==

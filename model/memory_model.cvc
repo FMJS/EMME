@@ -38,7 +38,8 @@
 #define ASSERT_VE
 
 %% Enables Data Race Freedom constraint
-%#define ENABLE_DRF
+% #define ENABLE_DRF
+% #define ASSERT_DRF
 
 #define ENABLE_RF
 #define ENABLE_RBF
@@ -63,11 +64,11 @@
 % #define ASSERT_NEG_AOT
 
 %% Different conditional encodings for performance comparsion
-% #define enc_RF 0
-% #define enc_RBF1 0
-% #define enc_RBF2 0
-% #define enc_HB 1
-% #define enc_CR 2
+% #define enc_RF 0 # 5
+% #define enc_RBF1 0 # 4
+% #define enc_RBF2 0 # 4
+% #define enc_HB 1 # 2
+% #define enc_CR 2 # 3
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -429,7 +430,14 @@ ASSERT en_HB => (FORALL (ee IN ev_set) : Active(ee) => NOT(HB(ee,ee)));
 
 #else
 
+#if en_HB_from_RF == 1
+
+ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HB(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed) OR RF(ed, ee))))));
+
+#else
+
 ASSERT en_HB => (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HB(ee,ed) <=> (NOT(ee = ed) AND (HB4a(ee,ed) OR HB4b(ee,ed) OR HB4c(ee,ed) OR HB4d(ee,ed))))));
+#endif
 
 #endif
 
@@ -714,6 +722,10 @@ ASSERT en_DRF => (DRF <=> (NOT (EXISTS (ee,ed IN ev_set) : (Active2(ee,ed) AND (
 
 #ifdef ENABLE_DRF
 ASSERT en_DRF;
+#endif
+
+#ifdef ASSERT_DRF
+ASSERT DRF;
 #endif
 
 

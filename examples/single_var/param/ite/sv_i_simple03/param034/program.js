@@ -62,22 +62,25 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2";
-outputs[1] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0";
-outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2";
-outputs[3] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
-outputs[4] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 0";
-outputs[5] = "id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 0";
-outputs[6] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 2";
-outputs[7] = "id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 2";
+outputs[0] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 0";
+outputs[1] = "id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 2";
+outputs[2] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0";
+outputs[3] = "id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 0";
+outputs[4] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0";
+outputs[5] = "id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2";
+outputs[6] = "id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 2";
+outputs[7] = "id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 2
-//output// id4_R_t2: 2;id5_R_t2: 2;id6_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 0;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 0
-//output// id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 0
-//output// id4_R_t2: 2;id5_R_t2: 0;id7_R_t2: 2
-//output// id4_R_t2: 0;id5_R_t2: 2;id6_R_t2: 2
+// Expected Output (Compressed Data) //
+//eNrtm09vgjAYxu/7FBw1MUH7Sk22eNBsZof9SXSLR7KMHUim7oCnZd99CDgrK5NC67A+t+ZFHuhLf3no
+//E3Td1Tr6WEeu64RB35/6Ebt02FUYeNm4G48H27HrLlbB23v849uxM3Q+W2HA/Lkf9Trx2ZSM2h2ntVXa
+//VFOdfHUgVD1ptRerLV7C5abOBGWxTgX1foGOV1DPrvvljB6unftH+2aW1Hfz6UurnrQqKpBUgaQKlFdI
+//uzsdT5L27vXsZ7bdzbl7jdtORjg4kB/M9CfZ05OoFwnLNVO92Xyjl46T3r6ulsFwMrqb3bQvXMADeBoM
+//D8sf0oOO2HeAA3DOzHUEqjR5TqYIcACOvY5THRu53xiChgEaQNMgtyHtbkMAB+DY7jak2W1qQtPNQcM1
+//vaKZXi67q3Lp0uUFGrw2NKZnprLgVZZ2zY7l7oJLr8cPQiOxlD/9hisGA/veUuQ5XC0ceJo+gx/w0wR+
+//mNLbmio9rMT7GtgBOxZ6zy+wdDmP+JzADtixzndqk8MObnfMcMPADbj5T88hU55DYAfs2Ow5ZMZzzHDD
+//wA24OSI3ZJAbOiI32OOAm9PIpst8QqCaTJf4jADsgJ0Tz6XLkKOWSoMbcGN/Jl3HceTJGrgBN7bn0dXd
+//xjQzyAXATFOz6DpeQ+AG3JxlDl3da0wwgwwazDQ/g67+Vxw64p6GgRkw06j8mQzkzwR2wI71+TNpz5/B
+//DbixP38m7fkzuAE3tufPpDl/JiM5GpgBM03Kn0l7/gxuwI3t+TNpzp/JSP4MZsBMc/Jn0pw/l2XmGzkR
+//c+s=

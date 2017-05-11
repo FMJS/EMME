@@ -68,54 +68,41 @@ while (true) {
 report.sort();
 report = report.join(";");
 var outputs = [];
-outputs[0] = "id6_R_t3: 0;id7_R_t3: 1";
-outputs[1] = "id6_R_t3: 0;id7_R_t3: 0";
-outputs[2] = "id6_R_t3: 65792;id7_R_t3: 0";
-outputs[3] = "id6_R_t3: 256;id7_R_t3: 0";
-outputs[4] = "id6_R_t3: 256;id7_R_t3: 1";
+outputs[0] = "id6_R_t3: 0;id7_R_t3: 0";
+outputs[1] = "id6_R_t3: 2;id7_R_t3: 0";
+outputs[2] = "id6_R_t3: 512;id7_R_t3: 0";
+outputs[3] = "id6_R_t3: 514;id7_R_t3: 0";
+outputs[4] = "id6_R_t3: 256;id7_R_t3: 0";
 outputs[5] = "id6_R_t3: 258;id7_R_t3: 0";
-outputs[6] = "id6_R_t3: 2;id7_R_t3: 0";
-outputs[7] = "id6_R_t3: 65792;id7_R_t3: 1";
-outputs[8] = "id6_R_t3: 65538;id7_R_t3: 0";
-outputs[9] = "id6_R_t3: 65538;id7_R_t3: 1";
-outputs[10] = "id6_R_t3: 2;id7_R_t3: 1";
-outputs[11] = "id6_R_t3: 66048;id7_R_t3: 1";
-outputs[12] = "id6_R_t3: 66048;id7_R_t3: 0";
-outputs[13] = "id6_R_t3: 258;id7_R_t3: 1";
-outputs[14] = "id6_R_t3: 514;id7_R_t3: 1";
-outputs[15] = "id6_R_t3: 514;id7_R_t3: 0";
-outputs[16] = "id6_R_t3: 66050;id7_R_t3: 0";
-outputs[17] = "id6_R_t3: 66050;id7_R_t3: 1";
-outputs[18] = "id6_R_t3: 512;id7_R_t3: 1";
-outputs[19] = "id6_R_t3: 512;id7_R_t3: 0";
-outputs[20] = "id6_R_t3: 65794;id7_R_t3: 0";
-outputs[21] = "id6_R_t3: 65794;id7_R_t3: 1";
-outputs[22] = "id6_R_t3: 65536;id7_R_t3: 0";
-outputs[23] = "id6_R_t3: 65536;id7_R_t3: 1";
+outputs[6] = "id6_R_t3: 65536;id7_R_t3: 0";
+outputs[7] = "id6_R_t3: 65538;id7_R_t3: 0";
+outputs[8] = "id6_R_t3: 66048;id7_R_t3: 0";
+outputs[9] = "id6_R_t3: 66050;id7_R_t3: 0";
+outputs[10] = "id6_R_t3: 65792;id7_R_t3: 0";
+outputs[11] = "id6_R_t3: 65794;id7_R_t3: 0";
+outputs[12] = "id6_R_t3: 0;id7_R_t3: 1";
+outputs[13] = "id6_R_t3: 2;id7_R_t3: 1";
+outputs[14] = "id6_R_t3: 512;id7_R_t3: 1";
+outputs[15] = "id6_R_t3: 514;id7_R_t3: 1";
+outputs[16] = "id6_R_t3: 256;id7_R_t3: 1";
+outputs[17] = "id6_R_t3: 258;id7_R_t3: 1";
+outputs[18] = "id6_R_t3: 65536;id7_R_t3: 1";
+outputs[19] = "id6_R_t3: 65538;id7_R_t3: 1";
+outputs[20] = "id6_R_t3: 66048;id7_R_t3: 1";
+outputs[21] = "id6_R_t3: 66050;id7_R_t3: 1";
+outputs[22] = "id6_R_t3: 65792;id7_R_t3: 1";
+outputs[23] = "id6_R_t3: 65794;id7_R_t3: 1";
 assert(-1 != outputs.indexOf(report));
 
-// Expected outputs //
-//output// id6_R_t3: 0;id7_R_t3: 1
-//output// id6_R_t3: 0;id7_R_t3: 0
-//output// id6_R_t3: 65792;id7_R_t3: 0
-//output// id6_R_t3: 256;id7_R_t3: 0
-//output// id6_R_t3: 256;id7_R_t3: 1
-//output// id6_R_t3: 258;id7_R_t3: 0
-//output// id6_R_t3: 2;id7_R_t3: 0
-//output// id6_R_t3: 65792;id7_R_t3: 1
-//output// id6_R_t3: 65538;id7_R_t3: 0
-//output// id6_R_t3: 65538;id7_R_t3: 1
-//output// id6_R_t3: 2;id7_R_t3: 1
-//output// id6_R_t3: 66048;id7_R_t3: 1
-//output// id6_R_t3: 66048;id7_R_t3: 0
-//output// id6_R_t3: 258;id7_R_t3: 1
-//output// id6_R_t3: 514;id7_R_t3: 1
-//output// id6_R_t3: 514;id7_R_t3: 0
-//output// id6_R_t3: 66050;id7_R_t3: 0
-//output// id6_R_t3: 66050;id7_R_t3: 1
-//output// id6_R_t3: 512;id7_R_t3: 1
-//output// id6_R_t3: 512;id7_R_t3: 0
-//output// id6_R_t3: 65794;id7_R_t3: 0
-//output// id6_R_t3: 65794;id7_R_t3: 1
-//output// id6_R_t3: 65536;id7_R_t3: 0
-//output// id6_R_t3: 65536;id7_R_t3: 1
+// Expected Output (Compressed Data) //
+//eNrt2z9PwkAYx/HdV9FRE5PS3rX4Jw4SY1zURAdHYoIDiYhDmYzv3WIrtOUoBe6eI/G7ked6V0rhkx+5
+//PmE4nWWfsywMg/EoHT4NM3UR9C7Ho/7f6zCcTEdv7/kBd4PgKvg6Ho/i4cswi07zGer31clpUKvqSlUZ
+//q8WZ5tXiPEU1yo+YvI4/5vW4cnS1rtbU9Zp6Mq/Hq/V0zXnL9/MdXD/cBPeP/+eKG1dUXWVZTY3HVldQ
+//xhWUcQVlXEEbV9DGFbRxhWJe89hltXaPnwa3vze5do/+Pp98Zm8+e91g1DYYtw2qcrDfNrNvnlm+8dvy
+//y2lc3zy7mPn8Us7c5gdxFJqoiKECKqDClgbLwcUt7rmHwnDWrfloZyKJgAIogKJLptgSisWtjCShUM6g
+//0EABFEBhJzT4ZiI2fgld4REnKXiAB3jYTxnaCx/aGRRnQAEUQGE7ZegDShmu8EiTRJEz4AM+9t4hWbVl
+//cUGxJCDVj9E2FSQNqICK3TRoSRp+oDAnDWd8pD0NH/ABH12SRoetEd98KGk+Eh7lgg/4sLJhcpjZQ5iU
+//pH/OkxyQAim7JRJ9aKhocT54vgM+4MPK5sphJhJZUqp/cCI4gRPSiGyvyupgBaPdO1Ua9XLNzf0rHfpU
+//YAIm2IUR7VOxgUTnLpXNdHTqUoEJmCBNiHap2GVCOWNCwwRMwISfHhV3WcI9HfUOFeiADhKGaIeKXTy0
+//MybOYAImYMJPf4pEwnBFR7M7BTzAg4wh2p1il48NG6d7QUHKAAqg8NSbIpEynOHR6EwBD/AgZQh2prjb
+//KRHBI+GxLfAADy99KdL7JxJ/ZepdKYACKKQRwa4Ud7sqMnjwPAd4gIeXnhTpvRaboPwAyFCoWg==
