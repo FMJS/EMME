@@ -15,16 +15,16 @@ from six.moves import range
 import os
 import random
 from multiprocessing import Process, Manager
-
+import time
 
 from ecmasab.execution import Execution, \
     Relation, \
     Memory_Event, \
     Executions, \
     RELATIONS, \
-    BLOCKING_RELATIONS
+    AO, RF
 from ecmasab.beparsing import BeParser
-from ecmasab.printers import CVC4Printer
+from ecmasab.printers import PrintersFactory, CVC4Printer
 
 from CVC4 import Options, \
     ExprManager, \
@@ -43,6 +43,8 @@ class CVC4Solver(object):
     variables = None
 
     shuffle_constraints = None
+
+    relations = RELATIONS
 
     def __init__(self):
         self.verbosity = 1
@@ -120,16 +122,98 @@ class CVC4Solver(object):
                 sys.stdout.flush()
             return ret.get_size()
         ret = self.__load_and_solve_n(model, -1)
-        return ret.get_size()
+        return len(ret)
 
     def solve_one(self, model):
         ret = self.__load_and_solve_n(model, 1)
         return ret.get_size()
+
+    def solve_all_synth(self, model, program=None, threads=1):
+        self.__load_models()
+        c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
+        assertions = c4printer.print_ex_assertions(self.executions)
+        vmodel = model+"\n"+assertions+"\n"
+
+        vmodel += c4printer.print_general_AO(program)
+
+        prev_executions = self.executions
+        self.executions = Executions()
+        Executions.set_blocking_relations([AO])
+        ret = self.__solve_n(vmodel, -1, self.executions.executions)
+        ao_execs = self.executions
+        Executions.set_blocking_relations([RF])
+        self.executions = prev_executions
+
+        print "DONE"
+        print "Found %s possible candidates"%(ao_execs.get_size())
+        
+        # AO_models = []
+        # AO_models.append("AO = {(id1_W_main, id2_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id3_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id4_R_t1)}")
+        # AO_models.append("AO = empty_rel_set")
+        # AO_models.append("AO = {(id1_W_main, id4_R_t1), (id3_W_t1, id2_W_t1)}")
+        # AO_models.append("AO = {(id3_W_t1, id2_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id3_W_t1), (id3_W_t1, id2_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id3_W_t1), (id4_R_t1, id2_W_t1)}")
+        # AO_models.append("AO = {(id4_R_t1, id2_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id4_R_t1), (id4_R_t1, id2_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id4_R_t1), (id2_W_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id2_W_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id3_W_t1), (id2_W_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id2_W_t1, id3_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id2_W_t1, id3_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1), (id1_W_main, id4_R_t1), (id1_W_main, id3_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id4_R_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id4_R_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id3_W_t1), (id1_W_main, id4_R_t1), (id4_R_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id3_W_t1, id2_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1)}")
+        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id4_R_t1), (id3_W_t1, id2_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1), (id1_W_main, id3_W_t1)}")
+
+        
+        assertions = c4printer.print_neg_assertions(self.executions)
+
+        equivalent_AOs = []
+
+        sys.stdout.write("Checking correctness... ")
+        sys.stdout.flush()
+        
+        for exe in ao_execs.executions:
+            exe = str(exe.get_AO())
+            ok = True
+
+            # Checking if the candidate is not a superset
+            assertion = "\n"+("\n".join(assertions))
+            vmodel = model+assertion
+            vmodel += "\nASSERT (%s);\n"%(exe.replace("{}", "empty_rel_set"))
+            (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)
+            if ret != 0:
+                ok = False
+
+            # Checking if the candidate mathces all executions
+            if ok and (len(assertions) > 1):
+                for assertion in assertions:
+                    vmodel = model+"\n"+assertion+"\n"
+                    vmodel += "\nASSERT (%s);\n"%(exe)
+                    (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)
+                    if ret == 0:
+                        ok = False
+                        break
+
+#            print vmodel
+                
+            if ok:
+                equivalent_AOs.append(exe)
+
+        print "DONE"
+        for el in equivalent_AOs:
+            print "OK: %s"%el
+
+        return ret
     
     def __load_and_solve_n(self, model, n):
 
         self.__load_models()
-        sol = self.__solve_n(model, n, None)
+        sol = self.__solve_n(model, n, self.executions.executions)
                 
         return sol
 
@@ -137,7 +221,7 @@ class CVC4Solver(object):
     def __load_and_solve_mt(self, model, program, num_t):
         self.__load_models()
 
-        c4printer = CVC4Printer()
+        c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
         rb_set = c4printer.get_compatible_reads(program)[0]
         rb_cons = ["ASSERT (%s IS_IN RF)"%(x) for x in rb_set]
 
@@ -159,7 +243,7 @@ class CVC4Solver(object):
                 threads.append(process)
                 process.start()
 
-            allexecs = Process(target=self.__solve_n, args=(model, -1, shared_execs))
+            allexecs = Process(target=self.__solve_n, args=(model, -1, shared_execs, 0))
             allexecs.start()                            
             allexecs.join()
 
@@ -175,23 +259,40 @@ class CVC4Solver(object):
     def __solve_n(self, model, n, shared_execs=None, id_thread=None, total=None, constraints=None):
         applying_cons = None
 
-        is_multithread = shared_execs is not None
-        is_master = constraints is None
+        c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
         
+        is_multithread = id_thread is not None
+        is_master = constraints is None
+
         if constraints is not None:
             applying_cons = constraints[id_thread]
             
         if self.incremental:
-            return self.__compute_models(model, n, applying_cons, shared_execs)[0]
+            assertions = "\n"+("\n".join(c4printer.print_neg_assertions(self.executions)))
+            vmodel = model + assertions
+            
+            return self.__compute_models(model, n, self.__compute_blocking_relation, applying_cons, shared_execs)[0]
             
         sol = None
         prvsolsize = 0
         solsize = 0
         while (solsize < n) or (n == -1):
             prvsolsize = solsize
-            (sol, ret) = self.__compute_models(model, 1, applying_cons, shared_execs)
-            solsize = sol.get_size() if sol is not None else 0
 
+            if shared_execs is not None:
+                for el in shared_execs:
+                    self.executions.add_execution(el)
+        
+            assertions = "\n"+("\n".join(c4printer.print_neg_assertions(self.executions)))
+            vmodel = model + assertions
+
+            (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, applying_cons, shared_execs)
+
+            for el in sol:
+                self.executions.add_execution(el)
+            
+            solsize = self.executions.get_size() if sol is not None else 0
+            
             if is_master:
                 self.__write_models(ret == 0)
             
@@ -232,7 +333,7 @@ class CVC4Solver(object):
     
     def __write_models(self, done):
         if self.models_file:
-            c4printer = CVC4Printer()
+            c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
             with open(self.models_file, "w") as f:
                 for exe in self.executions.executions:
                     f.write("%s\n"%c4printer.print_execution(exe))
@@ -257,11 +358,14 @@ class CVC4Solver(object):
             return False
         return executions.allexecs
 
-    def __compute_models(self, model, num, constraints=None, shared_execs=None):
+    def __compute_models(self, model, num, compute_blocking_clauses, constraints=None, shared_objects=None):
         opts = Options()
         opts.setInputLanguage(CVC4.INPUT_LANG_CVC4)
 
         exit_with_unknown = False
+
+        if shared_objects is None:
+            shared_objects = []
         
         exprmgr = ExprManager(opts)
 
@@ -276,17 +380,6 @@ class CVC4Solver(object):
 #        smt.setOption("incremental", SExpr(True))
 
         ind = 0
-        pre_ind = 0
-        c4printer = CVC4Printer()
-
-        if shared_execs is not None:
-            for el in shared_execs:
-                self.executions.add_execution(el)
-        
-        assertions = c4printer.print_assertions(self.executions)
-            
-        pre_ind = len(assertions)
-        model += "\n"+("\n".join(assertions))
 
         if constraints:
             model += "\n%s;"%(constraints)
@@ -316,44 +409,19 @@ class CVC4Solver(object):
             exitcond = (not sat) if exit_with_unknown else uns
             
             if exitcond:
-                return (self.executions, 0)
+                return (shared_objects, 0)
 
-            assigns = exprmgr.mkBoolConst(True)
+            (assigns, shared_obj) = compute_blocking_clauses(exprmgr, symboltable, smt)
 
-            exe = Execution()
-            for relation in RELATIONS:
-                assign = symboltable.lookup(relation)
-                value = smt.getValue(assign)
-                rel = self.__relation_from_formula(relation, value)
-
-                exe.set_relation_by_name(relation, rel)
-
-                if relation in BLOCKING_RELATIONS:
-                    assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
-                    assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
-
-            for variable in self.variables:
-                assign = symboltable.lookup(variable)
-                value = smt.getValue(assign).toString()
-                exe.add_condition(variable, value)
-
-                assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
-                assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
-
-            self.executions.add_execution(exe)
-
-            if shared_execs is not None:
-                if exe not in shared_execs:
-                    shared_execs.append(exe)
-                else:
-                    if constraints is not None:
-                        return (self.executions, 2)
+            if shared_obj not in shared_objects:
+                shared_objects.append(shared_obj)
+            else:
+                if constraints is not None:
+                    return (shared_objects, 2)
                     
             if (self.verbosity > 0) and (constraints is None):
                 sys.stdout.write(".")
                 sys.stdout.flush()
-            if self.verbosity > 1:
-                print("%s: %s"%(ind+pre_ind+1, c4printer.print_execution(exe)))
 
             blocking = exprmgr.mkExpr(CVC4.NOT, assigns)
 
@@ -362,6 +430,32 @@ class CVC4Solver(object):
             ind +=1
 
             if (num != -1) and (ind >= num):
-                return (self.executions, 1)
+                return (shared_objects, 1)
             
         return (None, -1)
+
+    def __compute_blocking_relation(self, exprmgr, symboltable, smt):
+        assigns = exprmgr.mkBoolConst(True)
+        exe = Execution()
+        
+        for relation in self.relations:
+            assign = symboltable.lookup(relation)
+            value = smt.getValue(assign)
+            rel = self.__relation_from_formula(relation, value)
+            assert(rel is not None)
+
+            exe.set_relation_by_name(relation, rel)
+
+            if relation in Executions.get_blocking_relations():
+                assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
+                assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
+
+        for variable in self.variables:
+            assign = symboltable.lookup(variable)
+            value = smt.getValue(assign).toString()
+            exe.add_condition(variable, value)
+
+            assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
+            assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
+
+        return (assigns, exe)

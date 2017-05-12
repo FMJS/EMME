@@ -45,6 +45,7 @@ EXECS = "outputs.txt"
 ALL = "all"
 
 E_CONDITIONS = ",ENCODE_CONDITIONS=1"
+RELAX_AO = ",en_relaxed_AO=1"
 
 class Config(object):
     inputfile = None
@@ -63,6 +64,7 @@ class Config(object):
     debug = None
     force_solving = None
     threads = None
+    synth = None
     
     model = None
     model_ex = None
@@ -93,6 +95,7 @@ class Config(object):
         self.debug = False
         self.force_solving = False
         self.threads = 1
+        self.synth = False
         
     def generate_filenames(self):
         if self.prefix:
@@ -153,7 +156,7 @@ def generate_model(config, program):
 
     # Generation of the CVC4 bounded execution #
     with open(config.instance, "w") as f:
-        f.write(c4printer.print_program(program))
+        f.write(c4printer.print_program(program, config.synth))
 
     # Generation of the CVC4 memory blocks #
     with open(config.block_type, "w") as f:
@@ -196,14 +199,17 @@ def solve(config, program, strmodel):
     
     totmodels = c4solver.get_models_size()
 
-    if (not config.skip_solving) and (not c4solver.is_done()):
+    if (not config.skip_solving) and (config.synth or (not c4solver.is_done())):
         if program.has_conditions:
             c4solver.set_additional_variables(program.get_conditions())
 
         if config.sat:
             totmodels = c4solver.solve_one(strmodel)
         else:
-            totmodels = c4solver.solve_all(strmodel, program, config.threads)
+            if config.synth:
+                totmodels = c4solver.solve_all_synth(strmodel, program, config.threads)
+            else:
+                totmodels = c4solver.solve_all(strmodel, program, config.threads)
 
         if not config.debug:
             del_file(config.block_type)
@@ -213,6 +219,36 @@ def solve(config, program, strmodel):
             del_file(config.instance)
 
     return totmodels
+
+def synth_program(config):
+    config.generate_filenames()
+
+#    analyze_program(config)
+
+    logger = Logger(config.verbosity)
+    
+    config.synth = True
+    
+    if not config.defines:
+        config.defines = ""
+    config.defines += RELAX_AO
+
+    logger.msg("Generating relaxed SMT model... ", 0)
+    program = parse_program(config)    
+    strmodel = generate_model(config, program)
+    logger.log("DONE", 0)
+
+    if config.only_model:
+        return 0
+
+    if (not config.skip_solving):
+        logger.msg("Solving... ", 0)
+
+    totmodels = solve(config, program, strmodel)
+
+    if (not config.skip_solving):
+        logger.log("DONE", 0)
+
 
 def analyze_program(config):
     config.generate_filenames()
@@ -381,6 +417,10 @@ def main(args):
     parser.set_defaults(debug=False)
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
+
+    parser.set_defaults(synth=False)
+    parser.add_argument('--synth', dest='synth', action='store_true',
+                        help="enables equivalent programs synthesis. (Default is \"%s\")"%False)
     
     parser.set_defaults(no_expand_bounded_sets=False)
     parser.add_argument('--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
@@ -432,6 +472,8 @@ def main(args):
         config.verbosity = 0
     
     try:
+        if args.synth:
+            return synth_program(config)
         return analyze_program(config)
     except Exception as e:
         if config.debug: raise

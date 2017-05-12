@@ -12,7 +12,7 @@ import itertools
 import re
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, BLOCKING_RELATIONS, For_Loop, ITE_Statement, Memory_Event
+from ecmasab.execution import Executions, RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
 from ecmasab.beparsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
@@ -138,12 +138,12 @@ class CVC4Printer(object):
     def print_done(self):
         return T_DONE
     
-    def print_assertions(self, interps):
-        ret = []
-        for interp in interps.executions:
-            ret.append(self.print_assert_execution(interp))
+    def print_neg_assertions(self, interps):
+        return ["ASSERT NOT(%s);"%self.print_assert_execution(x) for x in interps.executions]
 
-        return ret
+    def print_ex_assertions(self, interps):
+        execs = [self.print_assert_execution(x) for x in interps.executions]
+        return "ASSERT (%s);"%(" OR ".join(execs))
     
     def print_execution(self, interp):
         relations = []
@@ -161,7 +161,7 @@ class CVC4Printer(object):
     
     def print_assert_execution(self, interp):
         relations = []
-        for relation in BLOCKING_RELATIONS:
+        for relation in Executions.get_blocking_relations():
             relations.append(interp.get_relation_by_name(relation))
 
         relations = [self.__print_relation(x) for x in relations]
@@ -169,11 +169,38 @@ class CVC4Printer(object):
         conds = []
         if interp.conditions:
             conds += ["(%s=%s)"%x for x in interp.conditions]
-            
-        ret = " AND ".join(relations+conds)
-            
-        return "ASSERT NOT(%s);"%(ret)
 
+        ret = " AND ".join(relations+conds)
+        ret = ret.replace("{}", "empty_rel_set")
+        return ret
+
+    def print_general_AO(self, program):
+        events = program.get_events()
+        ret = ""
+        
+        for i in range(len(events)):
+            ret += "ev_t%s : SET OF MEM_OP_TYPE;\n"%(i+1)
+            
+        for ev in events:
+            ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
+        
+        for ev in events:
+            for i in range(len(events)):
+                ret += "ASSERT (%s IS_IN ev_t%s => NOT(%s));\n"%(ev, i+1, " OR ".join(["(%s IS_IN ev_t%s)"%(ev, j+1) for j in range(len(events)) if i!=j]))
+        
+        for i in range(len(events)):
+            tname = "t%s"%(i+1)
+            ret += "AO_%s : EV_REL;\n"%(tname)
+            ret += "ASSERT ev_%s <= ev_set;\n"%(tname)
+            ret += "ASSERT AO_%s <= pair_ev_set;\n"%(tname)
+            ret += "ASSERT (FORALL (tup : BITUP) : ((tup IS_IN AO_%s)  => ((tup.0 IS_IN ev_%s) AND (tup.1 IS_IN ev_%s))));\n"%(tname, tname, tname)
+            ret += "ASSERT AO_%s = TCLOSURE(AO_%s);\n"%(tname, tname)
+            ret += "ASSERT ((FORALL (e1,e2 : MEM_OP_TYPE) : ((NOT(e1 = e2) AND (e1 IS_IN ev_%s) AND (e2 IS_IN ev_%s)) => (((e1,e2) IS_IN AO_%s) OR ((e2,e1) IS_IN AO_%s)))));\n"%(tname, tname, tname, tname)
+        
+        ret += "ASSERT AO = %s;\n"%(" | ".join(["AO_t%s"%(x+1) for x in range(len(events))]))
+
+        return ret
+    
     def __print_relation(self, relation):
         tuples = relation.tuples
         return "%s = {%s}"%(relation.name, ", ".join([self.__print_tuple(x) for x in tuples]))
@@ -183,7 +210,7 @@ class CVC4Printer(object):
             return "((%s), %s)"%((", ".join([str(x) for x in tup[:2]])), tup[-1])
         return "(%s)"%(", ".join([str(x) for x in tup]))
     
-    def print_program(self, program):
+    def print_program(self, program, relaxed_order=False):
         program.sort_threads()
 
         ret = ""
@@ -199,10 +226,11 @@ class CVC4Printer(object):
 
         for thread in program.threads:
             ret += self.__print_thread_events_set(thread) + "\n"
-            ret += self.__print_thread_program_order(thread) + "\n"
+            if not relaxed_order:
+                ret += self.__print_thread_program_order(thread) + "\n"
 
         ret += self.__print_event_set(program)[0] + "\n"
-        ret += self.__print_agent_order(program) + "\n"
+#        ret += self.__print_agent_order(program, relaxed_order) + "\n"
         ret += self.__print_locations(program) + "\n"
         ret += self.__print_compatible_reads(program) + "\n"
             
@@ -258,10 +286,13 @@ class CVC4Printer(object):
         pairs = [("(%s, %s)" % (x,y)) for x,y in pairs]
         return "ASSERT %s.PO = {%s};" % (thread.name, ", ".join(pairs))
     
-    def __print_agent_order(self, program):
+    def __print_agent_order(self, program, inverted):
         ao = [x.name+".PO" for x in program.threads]
-        ret = "ASSERT AO = %s;" % (" | ".join(ao))
-
+        if inverted:
+            ret = "ASSERT NOT(AO = %s);" % (" | ".join(ao))
+        else:
+            ret = "ASSERT AO = %s;" % (" | ".join(ao))
+            
         return ret
 
     def __print_conditions(self, program):
