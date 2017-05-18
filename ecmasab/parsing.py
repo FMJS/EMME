@@ -247,6 +247,74 @@ class BeParser(object):
 
         return executions
 
+    def program_from_execution(self, execution):
+
+        program = Program()
+
+        program.blocks = execution.program.blocks
+        
+        ao = execution.get_AO()
+
+        threads = []
+
+        for el in ao.tuples:
+            added = False
+            for thread in threads:
+                if (el[0] in thread[0]) or (el[1] in thread[0]):
+                    thread[0].add(el[0])
+                    thread[0].add(el[1])
+                    thread[1].append(el)
+                    added = True
+                    break
+            if not added:
+                thread = [set([]), []]
+                thread[0].add(el[0])
+                thread[0].add(el[1])
+                thread[1].append(el)
+                threads.append(thread)
+
+
+        sevents = set([])
+        
+        ind = 1
+        for thread in threads:
+            rel = Relation("")
+            rel.tuples = thread[1]
+            lstev = self.__list_from_relation(rel)
+            if len([x for x in thread[0] if x.is_init()]) > 0:
+                name = "main"
+            else:
+                name = "t%s"%ind
+                ind += 1
+            n_thread = Thread(name)
+            n_thread.events = lstev
+            program.add_thread(n_thread)
+            sevents = sevents | set(thread[0])
+        
+        for ev in execution.program.get_events():
+            if ev.is_init():
+                continue
+            if (len(sevents) == 0) or (ev not in sevents):
+                n_thread = Thread("t%s"%ind)
+                ind += 1
+                n_thread.append(ev)
+                program.add_thread(n_thread)
+
+        return program
+
+    def __list_from_relation(self, relation):
+        events = {}
+        for tup in relation.tuples:
+            if not tup[0] in events: events[tup[0]] = 0
+            if not tup[1] in events: events[tup[1]] = 0
+            events[tup[0]] += 1
+
+        events = [(events[x], x) for x in events]
+        events.sort()
+        events.reverse()
+        events = [x[1] for x in events]
+        return events
+    
     def __compute_reads_values(self, executions):
         for exe in executions.executions:
             events = exe.get_events()
@@ -498,6 +566,7 @@ class BeParser(object):
     def __populate_program(self, commands):
         program = Program()
         thread = Thread(MAIN)
+        program.add_thread(thread)
         floop = None
         params = False
         used_params = []
@@ -613,8 +682,7 @@ class BeParser(object):
                         program.add_param(par, defined_params[par])
 
                 else:
-                    program.add_thread(thread)
-                    thread = None
+                    pass
             
             elif command_name == P_FLOOP:
                 if ite or floop:

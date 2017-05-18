@@ -349,7 +349,6 @@ class Relation(object):
         newrel.tuples = tuples
         return newrel
 
-        
 class Program(object):
     threads = []
     blocks = []

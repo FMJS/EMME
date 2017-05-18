@@ -15,6 +15,7 @@ from six.moves import range
 import os
 import random
 from multiprocessing import Process, Manager
+from ecmasab.preprocess import QuantPreprocessor
 import time
 
 from ecmasab.execution import Execution, \
@@ -23,8 +24,10 @@ from ecmasab.execution import Execution, \
     Executions, \
     RELATIONS, \
     AO, RF
-from ecmasab.beparsing import BeParser
-from ecmasab.printers import PrintersFactory, CVC4Printer
+from ecmasab.parsing import BeParser
+from ecmasab.encoders import CVC4Encoder
+
+from ecmasab.logger import Logger
 
 from CVC4 import Options, \
     ExprManager, \
@@ -46,13 +49,16 @@ class CVC4Solver(object):
 
     relations = RELATIONS
 
+    encoder = None
+
     def __init__(self):
         self.verbosity = 1
         self.models_file = None
         self.executions = Executions()
         self.variables = []
-        self.incremental = False
+        self.incremental = True
         self.shuffle_constraints = False
+        self.encoder = CVC4Encoder()
 
     def set_additional_variables(self, variables):
         self.variables = variables
@@ -128,24 +134,57 @@ class CVC4Solver(object):
         ret = self.__load_and_solve_n(model, 1)
         return ret.get_size()
 
+    def __check_ao_correctness(self, model, exe):
+        exe = str(exe.get_AO())
+        ok = True
+
+        prev_blocking = Executions.get_blocking_relations()
+        Executions.set_blocking_relations([RF])
+        
+        assertions = self.encoder.print_neg_assertions(self.executions)
+        
+        # Checking if the candidate is not a superset
+        assertion = "\n"+("\n".join(assertions))
+        vmodel = model+assertion
+        vmodel += "\nASSERT (%s);\n"%(exe.replace("{}", "empty_rel_set"))
+        (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)
+        if ret != 0:
+            ok = False
+
+        # Checking if the candidate mathces all executions
+        if ok and (len(assertions) > 1):
+            for assertion in assertions:
+                vmodel = model+"\n"+assertion+"\n"
+                vmodel += "\nASSERT (%s);\n"%(exe)
+                (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)
+                if ret == 0:
+                    ok = False
+                    break
+
+        Executions.set_blocking_relations(prev_blocking)
+                
+        return ok
+    
     def solve_all_synth(self, model, program=None, threads=1):
         self.__load_models()
-        c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
-        assertions = c4printer.print_ex_assertions(self.executions)
+        assertions = self.encoder.print_ex_assertions(self.executions)
         vmodel = model+"\n"+assertions+"\n"
 
-        vmodel += c4printer.print_general_AO(program)
+        vmodel += self.encoder.print_general_AO(program)
+
+        qupre = QuantPreprocessor()
+        qupre.set_expand_sets(True)
+        vmodel = qupre.preprocess_from_string(vmodel)
 
         prev_executions = self.executions
         self.executions = Executions()
         Executions.set_blocking_relations([AO])
         ret = self.__solve_n(vmodel, -1, self.executions.executions)
         ao_execs = self.executions
-        Executions.set_blocking_relations([RF])
         self.executions = prev_executions
 
-        print "DONE"
-        print "Found %s possible candidates"%(ao_execs.get_size())
+        Logger.msg(" ", 0)
+        Logger.log(" -> Found %s possible candidates"%(ao_execs.get_size()), 1)
         
         # AO_models = []
         # AO_models.append("AO = {(id1_W_main, id2_W_t1)}")
@@ -169,46 +208,31 @@ class CVC4Solver(object):
         # AO_models.append("AO = {(id3_W_t1, id2_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1)}")
         # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id4_R_t1), (id3_W_t1, id2_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1), (id1_W_main, id3_W_t1)}")
 
-        
-        assertions = c4printer.print_neg_assertions(self.executions)
-
         equivalent_AOs = []
 
-        sys.stdout.write("Checking correctness... ")
-        sys.stdout.flush()
+        Logger.msg("Checking correctness... ", 1)
+
+        beparser = BeParser()
+
+        eq_progs = []
+        events_dic = dict([(x.name, x) for x in program.get_events()])
         
         for exe in ao_execs.executions:
-            exe = str(exe.get_AO())
-            ok = True
-
-            # Checking if the candidate is not a superset
-            assertion = "\n"+("\n".join(assertions))
-            vmodel = model+assertion
-            vmodel += "\nASSERT (%s);\n"%(exe.replace("{}", "empty_rel_set"))
-            (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)
-            if ret != 0:
-                ok = False
-
-            # Checking if the candidate mathces all executions
-            if ok and (len(assertions) > 1):
-                for assertion in assertions:
-                    vmodel = model+"\n"+assertion+"\n"
-                    vmodel += "\nASSERT (%s);\n"%(exe)
-                    (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)
-                    if ret == 0:
-                        ok = False
-                        break
-
-#            print vmodel
-                
+            rel = Relation(AO)
+            rel.tuples = [(events_dic[x[0]], events_dic[x[1]]) for x in exe.get_AO().tuples]
+            exe.set_AO(rel)
+            exe.program = program
+            ok = self.__check_ao_correctness(model, exe)
             if ok:
                 equivalent_AOs.append(exe)
+                program = beparser.program_from_execution(exe)
+                eq_progs.append(program)
 
-        print "DONE"
+        Logger.log("DONE", 1)
         for el in equivalent_AOs:
-            print "OK: %s"%el
+            Logger.log("OK: %s"%el.get_AO(), 1)
 
-        return ret
+        return eq_progs
     
     def __load_and_solve_n(self, model, n):
 
@@ -221,8 +245,7 @@ class CVC4Solver(object):
     def __load_and_solve_mt(self, model, program, num_t):
         self.__load_models()
 
-        c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
-        rb_set = c4printer.get_compatible_reads(program)[0]
+        rb_set = self.encoder.get_compatible_reads(program)[0]
         rb_cons = ["ASSERT (%s IS_IN RF)"%(x) for x in rb_set]
 
         if (self.verbosity > 0):
@@ -259,8 +282,6 @@ class CVC4Solver(object):
     def __solve_n(self, model, n, shared_execs=None, id_thread=None, total=None, constraints=None):
         applying_cons = None
 
-        c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
-        
         is_multithread = id_thread is not None
         is_master = constraints is None
 
@@ -268,10 +289,17 @@ class CVC4Solver(object):
             applying_cons = constraints[id_thread]
             
         if self.incremental:
-            assertions = "\n"+("\n".join(c4printer.print_neg_assertions(self.executions)))
+            assertions = "\n"+("\n".join(self.encoder.print_neg_assertions(self.executions)))
             vmodel = model + assertions
+
+            (sol, ret) = self.__compute_models(model, n, self.__compute_blocking_relation, applying_cons, shared_execs)
+
+            for el in sol:
+                self.executions.add_execution(el)
             
-            return self.__compute_models(model, n, self.__compute_blocking_relation, applying_cons, shared_execs)[0]
+            self.__write_models(ret == 0)
+            
+            return sol
             
         sol = None
         prvsolsize = 0
@@ -283,7 +311,7 @@ class CVC4Solver(object):
                 for el in shared_execs:
                     self.executions.add_execution(el)
         
-            assertions = "\n"+("\n".join(c4printer.print_neg_assertions(self.executions)))
+            assertions = "\n"+("\n".join(self.encoder.print_neg_assertions(self.executions)))
             vmodel = model + assertions
 
             (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, applying_cons, shared_execs)
@@ -333,12 +361,11 @@ class CVC4Solver(object):
     
     def __write_models(self, done):
         if self.models_file:
-            c4printer = PrintersFactory().printer_by_name(CVC4Printer.NAME)
             with open(self.models_file, "w") as f:
                 for exe in self.executions.executions:
-                    f.write("%s\n"%c4printer.print_execution(exe))
+                    f.write("%s\n"%self.encoder.print_execution(exe))
                 if done:
-                    f.write("%s\n"%c4printer.print_done())
+                    f.write("%s\n"%self.encoder.print_done())
         
     def __load_models(self):
         parser = BeParser()
@@ -373,11 +400,11 @@ class CVC4Solver(object):
         smt.setOption("produce-models", SExpr(True))
         smt.setOption("fmf-bound", SExpr(True))
         smt.setOption("macros-quant", SExpr(True))
-        smt.setOption("finite-model-find", SExpr(True))
+#        smt.setOption("finite-model-find", SExpr(True))
 #        smt.setOption("repeat-simp", SExpr(True))
 #        smt.setOption("check-models", SExpr(True))
 #        smt.setOption("full-saturate-quant", SExpr(True))
-#        smt.setOption("incremental", SExpr(True))
+        smt.setOption("incremental", SExpr(True))
 
         ind = 0
 
@@ -403,15 +430,14 @@ class CVC4Solver(object):
             unk = checksat.getResult().isUnknown()
             uns = (not sat) and (not unk)
 
-            if self.verbosity > 1:
-                print("sat: %s, uns: %s, unk: %s"%(sat, uns, unk))
+            Logger.log("sat: %s, uns: %s, unk: %s"%(sat, uns, unk), 1)
             
             exitcond = (not sat) if exit_with_unknown else uns
             
             if exitcond:
                 return (shared_objects, 0)
 
-            (assigns, shared_obj) = compute_blocking_clauses(exprmgr, symboltable, smt)
+            (bclauses, shared_obj) = compute_blocking_clauses(exprmgr, symboltable, smt)
 
             if shared_obj not in shared_objects:
                 shared_objects.append(shared_obj)
@@ -423,12 +449,11 @@ class CVC4Solver(object):
                 sys.stdout.write(".")
                 sys.stdout.flush()
 
-            blocking = exprmgr.mkExpr(CVC4.NOT, assigns)
-
-            assertion = AssertCommand(blocking)
-            assertion.invoke(smt)
+            for bclause in bclauses:
+                assertion = AssertCommand(bclause)
+                assertion.invoke(smt)
+                
             ind +=1
-
             if (num != -1) and (ind >= num):
                 return (shared_objects, 1)
             
@@ -437,6 +462,8 @@ class CVC4Solver(object):
     def __compute_blocking_relation(self, exprmgr, symboltable, smt):
         assigns = exprmgr.mkBoolConst(True)
         exe = Execution()
+
+        rels = exprmgr.mkBoolConst(True)
         
         for relation in self.relations:
             assign = symboltable.lookup(relation)
@@ -450,6 +477,10 @@ class CVC4Solver(object):
                 assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
                 assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
 
+            if relation in ["HB", "MO", "SW"]:
+                rel = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
+                rels = exprmgr.mkExpr(CVC4.AND, rels, rel)
+                
         for variable in self.variables:
             assign = symboltable.lookup(variable)
             value = smt.getValue(assign).toString()
@@ -458,4 +489,6 @@ class CVC4Solver(object):
             assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
             assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
 
-        return (assigns, exe)
+        blocking = exprmgr.mkExpr(CVC4.NOT, assigns)
+            
+        return ([blocking], exe)

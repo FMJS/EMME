@@ -19,7 +19,8 @@ import subprocess
 from argparse import RawTextHelpFormatter
 
 from ecmasab.beparsing import BeParser
-from ecmasab.printers import JST262Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
+from ecmasab.printers import JST262Printer, DotPrinter, PrintersFactory, PrinterType
+from ecmasab.encoders import CVC4Encoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 
@@ -147,7 +148,7 @@ def generate_model(config, program):
     abspath = os.path.abspath(__file__)
     mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
 
-    c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
+    c4printer = CVC4Encoder()
     
     # Copy of Memory Model (CVC4) into the directory #
     with open(mm, "r") as inmm:
@@ -194,12 +195,12 @@ def solve(config, program, strmodel):
     c4solver.verbosity = config.verbosity
     c4solver.models_file = config.models
 
-    if (not config.skip_solving) and (config.force_solving):
+    if (not config.skip_solving) and (config.force_solving) and not(config.synth):
         del_file(config.models)
     
     totmodels = c4solver.get_models_size()
 
-    if (not config.skip_solving) and (config.synth or (not c4solver.is_done())):
+    if ((not config.skip_solving) and (not c4solver.is_done())) or (config.synth):
         if program.has_conditions:
             c4solver.set_additional_variables(program.get_conditions())
 
@@ -221,11 +222,9 @@ def solve(config, program, strmodel):
     return totmodels
 
 def synth_program(config):
-    config.generate_filenames()
+    analyze_program(config)
 
-#    analyze_program(config)
-
-    logger = Logger(config.verbosity)
+    Logger.log("\n** Program Synthesis **", 0)
     
     config.synth = True
     
@@ -233,53 +232,66 @@ def synth_program(config):
         config.defines = ""
     config.defines += RELAX_AO
 
-    logger.msg("Generating relaxed SMT model... ", 0)
+    Logger.msg("Generating relaxed SMT model... ", 0)
     program = parse_program(config)    
     strmodel = generate_model(config, program)
-    logger.log("DONE", 0)
+    Logger.log("DONE", 0)
 
     if config.only_model:
         return 0
 
-    if (not config.skip_solving):
-        logger.msg("Solving... ", 0)
+    Logger.msg("Solving... ", 0)
 
-    totmodels = solve(config, program, strmodel)
+    programs = solve(config, program, strmodel)
+    totmodels = len(programs)
 
-    if (not config.skip_solving):
-        logger.log("DONE", 0)
+    Logger.log("DONE", 0)
+    
+    if totmodels > 0:
+        Logger.log(" -> Found %s equivalent programs"%(totmodels), 0)
+    else:
+        Logger.log(" -> No viable equivalent programs found", 0)
 
+    printer = PrintersFactory.printer_by_name("BE")
+
+    Logger.log("", 0)
+
+    Logger.log("** Original Program: **\n", 0)
+    Logger.log(printer.print_program(program), 0)
+    
+    for program in programs:
+        Logger.log("** Equivalent Program %s: **\n"%(programs.index(program)+1), 0)
+        Logger.log(printer.print_program(program), 0)
+        
 
 def analyze_program(config):
     config.generate_filenames()
     
-    logger = Logger(config.verbosity)
+    Logger.log("\n** Program Analysis **", 0)
 
-    logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)
-
-    logger.msg("Generating bounded execution... ", 0)
+    Logger.msg("Generating bounded execution... ", 0)
     program = parse_program(config)
-    logger.log("DONE", 0)
+    Logger.log("DONE", 0)
 
-    logger.msg("Generating SMT model... ", 0)
+    Logger.msg("Generating SMT model... ", 0)
     strmodel = generate_model(config, program)
-    logger.log("DONE", 0)
+    Logger.log("DONE", 0)
 
     if config.only_model:
         return 0
 
     if (not config.skip_solving):
-        logger.msg("Solving... ", 0)
+        Logger.msg("Solving... ", 0)
 
     totmodels = solve(config, program, strmodel)
 
     if (not config.skip_solving):
-        logger.log("DONE", 0)
+        Logger.log("DONE", 0)
             
     if totmodels > 0:
-        logger.log(" -> Found %s total models"%(totmodels), 0)
+        Logger.log(" -> Found %s possible models"%(totmodels), 0)
     else:
-        logger.log(" -> No viable executions found", 0)
+        Logger.log(" -> No viable executions found", 0)
         
     # Generation of the JS litmus test #
     jprinter = PrintersFactory.printer_by_name(config.jsprinter)
@@ -299,11 +311,11 @@ def analyze_program(config):
             if config.verbosity > 0:
                 conf = params[idparam]
                 pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
-                logger.log("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))), 0)
+                Logger.log("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))), 0)
 
         executions = None
         if (totmodels > 0):
-            logger.msg("Computing expected outputs... ", 0)
+            Logger.msg("Computing expected outputs... ", 0)
 
             parser = BeParser()
             parser.DEBUG = config.debug
@@ -311,9 +323,9 @@ def analyze_program(config):
             with open(models, "r") as modelfile:
                 executions = parser.executions_from_string(modelfile.read(), program)
                 
-            logger.log("DONE", 0)
+            Logger.log("DONE", 0)
                 
-        logger.msg("Generating JS program... ", 0)
+        Logger.msg("Generating JS program... ", 0)
 
         jsfiles = [config.jsprogram]
         if config.jsdir:
@@ -324,10 +336,10 @@ def analyze_program(config):
             with open(jsfile, "w") as f:
                 f.write(jprinter.print_program(program, executions))
 
-        logger.log("DONE", 0)
+        Logger.log("DONE", 0)
 
         if (totmodels > 0):
-            logger.msg("Generating expected outputs... ", 0)
+            Logger.msg("Generating expected outputs... ", 0)
 
             # Generation of all possible outputs for the JS litmus test #
             
@@ -346,12 +358,10 @@ def analyze_program(config):
                     with open(config.grap%(str(i+1)), "w") as dot:
                         graphviz_gen(config, config.dots%(str(i+1)), config.grap%(str(i+1)))
 
-            logger.log("DONE", 0)
+            Logger.log("DONE", 0)
 
-            logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
+            Logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
 
-    logger.log("\nExiting...", 0)
-    
     return 0
         
 
@@ -470,11 +480,20 @@ def main(args):
     
     if args.silent:
         config.verbosity = 0
+
+    Logger.verbosity = config.verbosity
+
+    Logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)
     
     try:
+        ret = 0
         if args.synth:
-            return synth_program(config)
-        return analyze_program(config)
+            ret = synth_program(config)
+        else:
+            ret = analyze_program(config)
+
+        Logger.log("\nExiting...", 0)
+        return ret
     except Exception as e:
         if config.debug: raise
         print(e)
