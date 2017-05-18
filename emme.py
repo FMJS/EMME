@@ -18,7 +18,7 @@ import subprocess
 
 from argparse import RawTextHelpFormatter
 
-from ecmasab.beparsing import BeParser
+from ecmasab.parsing import BeParser
 from ecmasab.printers import JST262Printer, DotPrinter, PrintersFactory, PrinterType
 from ecmasab.encoders import CVC4Encoder
 from ecmasab.execution import RBF, HB, SW
