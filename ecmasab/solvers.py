@@ -132,7 +132,7 @@ class CVC4Solver(object):
 
     def solve_one(self, model):
         ret = self.__load_and_solve_n(model, 1)
-        return ret.get_size()
+        return len(ret)
 
     def __check_ao_correctness(self, model, exe):
         exe = str(exe.get_AO())

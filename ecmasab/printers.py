@@ -689,7 +689,9 @@ class DotPrinter(object):
         for relation in RELATIONS:
             if (relation != interp.get_RBF().name):
                 if self.__should_print(relation):
-                    relations.append(interp.get_relation_by_name(relation))
+                    rel = interp.get_relation_by_name(relation)
+                    if rel is not None:
+                        relations.append(rel)
 
         event_to_thread = []
         for thread in program.threads:
