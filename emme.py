@@ -19,7 +19,7 @@ import subprocess
 from argparse import RawTextHelpFormatter
 
 from ecmasab.parsing import BeParser
-from ecmasab.printers import JST262Printer, DotPrinter, PrintersFactory, PrinterType
+from ecmasab.printers import JST262Printer, DotPrinter, PrintersFactory, PrinterType, BePrinter
 from ecmasab.encoders import CVC4Encoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
@@ -42,6 +42,7 @@ DOTS = "mm%s.dot"
 GRAP = "gmm%s.png"
 JSPROGRAM = "program.js"
 EXECS = "outputs.txt"
+EQPROGS = "%s_eq%s.bex"
 
 ALL = "all"
 
@@ -78,6 +79,7 @@ class Config(object):
     jsprogram = None
     execs = None
     mm = None
+    eqprogs = None
     
     def __init__(self):
         self.inputfile = None
@@ -111,6 +113,7 @@ class Config(object):
             self.jsprogram = self.prefix+JSPROGRAM
             self.execs = self.prefix+EXECS
             self.mm = FORMAL_MODEL
+            self.eqprogs = self.prefix+EQPROGS
 
             if not os.path.exists(self.prefix):
                 os.makedirs(self.prefix)
@@ -252,16 +255,26 @@ def synth_program(config):
     else:
         Logger.log(" -> No viable equivalent programs found", 0)
 
-    printer = PrintersFactory.printer_by_name("BE")
+    Logger.msg("Generating equivalent programs... ", 0)
+        
+    printer = PrintersFactory.printer_by_name(BePrinter.NAME)
+    filename = (config.inputfile.split("/")[-1]).split(".")[0]
+    
+    for i in range(len(programs)):
+        with open(config.eqprogs%(filename, str(i+1)), "w") as eqprog:
+            eqprog.write(printer.print_program(programs[i]))
+        
 
-    Logger.log("", 0)
+    Logger.log("DONE", 0)
+            
+    Logger.log("", 1)
 
-    Logger.log("** Original Program: **\n", 0)
-    Logger.log(printer.print_program(program), 0)
+    Logger.log("** Original Program: **\n", 1)
+    Logger.log(printer.print_program(program), 1)
     
     for program in programs:
-        Logger.log("** Equivalent Program %s: **\n"%(programs.index(program)+1), 0)
-        Logger.log(printer.print_program(program), 0)
+        Logger.log("** Equivalent Program %s: **\n"%(programs.index(program)+1), 1)
+        Logger.log(printer.print_program(program), 1)
         
 
 def analyze_program(config):

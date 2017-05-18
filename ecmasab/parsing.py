@@ -682,7 +682,8 @@ class BeParser(object):
                         program.add_param(par, defined_params[par])
 
                 else:
-                    pass
+                    if not thread in program.threads:
+                        program.add_thread(thread)
             
             elif command_name == P_FLOOP:
                 if ite or floop:

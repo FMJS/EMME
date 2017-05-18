@@ -138,7 +138,7 @@ class CVC4Encoder(object):
                 ret += self.__print_thread_program_order(thread) + "\n"
 
         ret += self.__print_event_set(program)[0] + "\n"
-#        ret += self.__print_agent_order(program, relaxed_order) + "\n"
+        ret += self.__print_agent_order(program, relaxed_order) + "\n"
         ret += self.__print_locations(program) + "\n"
         ret += self.__print_compatible_reads(program) + "\n"
             
