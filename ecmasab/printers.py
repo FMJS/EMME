@@ -8,13 +8,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import itertools
 import re
 from six.moves import range
 
-from ecmasab.execution import Executions, RELATIONS, For_Loop, ITE_Statement, Memory_Event
-from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN, TYPE
-from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_DONE, T_VAL, T_OPE
+from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event
+from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN
+from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.utils import compress_string
 

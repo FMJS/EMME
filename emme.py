@@ -211,7 +211,7 @@ def solve(config, program, strmodel):
             totmodels = c4solver.solve_one(strmodel)
         else:
             if config.synth:
-                totmodels = c4solver.solve_all_synth(strmodel, program, config.threads)
+                totmodels = c4solver.solve_all_synth(strmodel, program)
             else:
                 totmodels = c4solver.solve_all(strmodel, program, config.threads)
 

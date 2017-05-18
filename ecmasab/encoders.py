@@ -9,7 +9,6 @@
 # limitations under the License.
 
 import itertools
-import re
 from six.moves import range
 
 from ecmasab.execution import Executions

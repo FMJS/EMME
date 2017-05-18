@@ -16,7 +16,6 @@ import os
 import random
 from multiprocessing import Process, Manager
 from ecmasab.preprocess import QuantPreprocessor
-import time
 
 from ecmasab.execution import Execution, \
     Relation, \
@@ -56,7 +55,7 @@ class CVC4Solver(object):
         self.models_file = None
         self.executions = Executions()
         self.variables = []
-        self.incremental = True
+        self.incremental = False
         self.shuffle_constraints = False
         self.encoder = CVC4Encoder()
 
@@ -147,7 +146,7 @@ class CVC4Solver(object):
         assertion = "\n"+("\n".join(assertions))
         vmodel = model+assertion
         vmodel += "\nASSERT (%s);\n"%(exe.replace("{}", "empty_rel_set"))
-        (sol, ret) = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)
+        ret = self.__compute_models(vmodel, 1, self.__compute_blocking_relation, None, None)[1]
         if ret != 0:
             ok = False
 
@@ -165,7 +164,7 @@ class CVC4Solver(object):
                 
         return ok
     
-    def solve_all_synth(self, model, program=None, threads=1):
+    def solve_all_synth(self, model, program=None):
         self.__load_models()
         assertions = self.encoder.print_ex_assertions(self.executions)
         vmodel = model+"\n"+assertions+"\n"
@@ -179,35 +178,13 @@ class CVC4Solver(object):
         prev_executions = self.executions
         self.executions = Executions()
         Executions.set_blocking_relations([AO])
-        ret = self.__solve_n(vmodel, -1, self.executions.executions)
+        self.__solve_n(vmodel, -1, self.executions.executions)
         ao_execs = self.executions
         self.executions = prev_executions
 
         Logger.msg(" ", 0)
         Logger.log(" -> Found %s possible candidates"%(ao_execs.get_size()), 1)
         
-        # AO_models = []
-        # AO_models.append("AO = {(id1_W_main, id2_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id3_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id4_R_t1)}")
-        # AO_models.append("AO = empty_rel_set")
-        # AO_models.append("AO = {(id1_W_main, id4_R_t1), (id3_W_t1, id2_W_t1)}")
-        # AO_models.append("AO = {(id3_W_t1, id2_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id3_W_t1), (id3_W_t1, id2_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id3_W_t1), (id4_R_t1, id2_W_t1)}")
-        # AO_models.append("AO = {(id4_R_t1, id2_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id4_R_t1), (id4_R_t1, id2_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id4_R_t1), (id2_W_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id2_W_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id3_W_t1), (id2_W_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id2_W_t1, id3_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id2_W_t1, id3_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1), (id1_W_main, id4_R_t1), (id1_W_main, id3_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id4_R_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id4_R_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id3_W_t1), (id1_W_main, id4_R_t1), (id4_R_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id3_W_t1, id2_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1)}")
-        # AO_models.append("AO = {(id1_W_main, id2_W_t1), (id1_W_main, id4_R_t1), (id3_W_t1, id2_W_t1), (id4_R_t1, id2_W_t1), (id4_R_t1, id3_W_t1), (id1_W_main, id3_W_t1)}")
-
         equivalent_AOs = []
 
         Logger.msg("Checking correctness... ", 1)
