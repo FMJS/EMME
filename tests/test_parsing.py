@@ -61,7 +61,6 @@ def parse_and_generate(example):
 
     c4printer = CVC4Encoder()
     cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
-    assert(c4printer in cprinters)
 
     c4printer.print_program(program)
     c4printer.print_data_type(program)
