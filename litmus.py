@@ -19,7 +19,7 @@ import time
 from six.moves import range
 from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
-from ecmasab.beparsing import BeParser
+from ecmasab.parsing import BeParser
 from ecmasab.utils import decompress_string
 from ecmasab.models_evaluator import Evaluator, MatchType
 
