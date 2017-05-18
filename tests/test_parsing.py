@@ -14,7 +14,7 @@ import sys
 import unittest
 import re
 
-from ecmasab.beparsing import BeParser, ParsingErrorException
+from ecmasab.parsing import BeParser, ParsingErrorException
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.printers import PrintersFactory, PrinterType, BePrinter
 from ecmasab.encoders import CVC4Encoder
