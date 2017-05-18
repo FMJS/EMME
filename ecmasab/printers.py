@@ -746,7 +746,8 @@ class DotPrinter(object):
                 posx += self.sepx
 
         mo_str = "<br align=\"left\"/>".join(self.__print_memory_order(interp))
-        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, splines=false, overlap=true, margin=0, shape=none, pos=\"%d,%d!\"]"%(mo_str, iposx+(1.5*self.sepx), maxy))
+        options = "splines=false, overlap=true, margin=0, shape=none"
+        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, %s, pos=\"%d,%d!\"]"%(mo_str, options, iposx+(1.5*self.sepx), maxy))
         
         ret.append("}")
                 
