@@ -83,14 +83,12 @@ class CVC4Encoder(object):
         for i in range(len(events)):
             ret += "ev_t%s : SET OF MEM_OP_TYPE;\n"%(i+1)
 
-        if program.has_conditions():
-            for ev in events:
-                ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
-            else:
+        for ev in events:
+            if program.has_conditions():
                 ret += "ASSERT (%s.A = ENABLED) <=> %s;\n"%(ev, " OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
+            else:
+                ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
 
-#        ret += "ASSERT (%s) <= ev_set;\n"%(" | ".join(["ev_t%s"%(x+1) for x in range(len(events))]))
-        
         for ev in events:
             for i in range(len(events)):
                 ret += "ASSERT (%s IS_IN ev_t%s => NOT(%s));\n"%(ev, i+1, " OR ".join(["(%s IS_IN ev_t%s)"%(ev, j+1) for j in range(len(events)) if i!=j]))
@@ -98,16 +96,11 @@ class CVC4Encoder(object):
         for i in range(len(events)):
             tname = "t%s"%(i+1)
             ret += "AO_%s : EV_REL;\n"%(tname)
-#            ret += "ASSERT ev_%s <= ev_set;\n"%(tname)
-#            ret += "ASSERT AO_%s <= pair_ev_set;\n"%(tname)
-#            ret += "ASSERT (FORALL (tup : BITUP) : ((tup IS_IN AO_%s)  => ((tup.0 IS_IN ev_%s) AND (tup.1 IS_IN ev_%s))));\n"%(tname, tname, tname)
             ret += "ASSERT AO_%s = TCLOSURE(AO_%s);\n"%(tname, tname)
             ret += "ASSERT ((FORALL (e1,e2 IN ev_set) : ((NOT(e1 = e2) AND (e1 IS_IN ev_%s) AND (e2 IS_IN ev_%s)) <=> (((e1,e2) IS_IN AO_%s) OR ((e2,e1) IS_IN AO_%s)))));\n"%(tname, tname, tname, tname)
 
         ret += "ASSERT AO <= pair_ev_set;\n"
-            
         ret += "ASSERT AO = %s;\n"%(" | ".join(["AO_t%s"%(x+1) for x in range(len(events))]))
-#        ret += "ASSERT FORALL (ev IN ev_set) : (NOT((ev,ev) IS_IN AO));\n";
 
         return ret
     
