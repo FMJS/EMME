@@ -478,9 +478,10 @@ class JST262Printer(JSPrinter):
             ret += (ind*3)+self.print_event(ev)
 
         ret += (ind*2)+"} else {\n"
-            
-        for ev in ite.else_events:
-            ret += (ind*3)+self.print_event(ev)
+
+        if ite.else_events is not None:
+            for ev in ite.else_events:
+                ret += (ind*3)+self.print_event(ev)
             
         ret += (ind*2)+"}\n"
 
@@ -1057,11 +1058,12 @@ class BePrinter(object):
         for ev in ite.then_events:
             ret += self.print_event(ev)
 
-        ret += "} else {\n"
-            
-        for ev in ite.else_events:
-            ret += self.print_event(ev)
-            
+        if ite.else_events is not None:
+            ret += "} else {\n"
+
+            for ev in ite.else_events:
+                ret += self.print_event(ev)
+
         ret += "}\n"
 
         return ret

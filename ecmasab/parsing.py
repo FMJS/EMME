@@ -248,13 +248,9 @@ class BeParser(object):
         return executions
 
     def program_from_execution(self, execution):
-
         program = Program()
-
         program.blocks = execution.program.blocks
-        
         ao = execution.get_AO()
-
         threads = []
 
         for el in ao.tuples:

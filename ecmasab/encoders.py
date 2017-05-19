@@ -82,11 +82,14 @@ class CVC4Encoder(object):
         
         for i in range(len(events)):
             ret += "ev_t%s : SET OF MEM_OP_TYPE;\n"%(i+1)
-            
-        for ev in events:
-            ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
 
-#        ret += "ASSERT (%s) <= ev_set;\n"%(" & ".join(["ev_t%s"%(x+1) for x in range(len(events))]))
+        if program.has_conditions():
+            for ev in events:
+                ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
+            else:
+                ret += "ASSERT (%s.A = ENABLED) <=> %s;\n"%(ev, " OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
+
+#        ret += "ASSERT (%s) <= ev_set;\n"%(" | ".join(["ev_t%s"%(x+1) for x in range(len(events))]))
         
         for ev in events:
             for i in range(len(events)):

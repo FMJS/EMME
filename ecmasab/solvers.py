@@ -9,7 +9,6 @@
 # limitations under the License.
 
 import CVC4
-import sys
 import re
 from six.moves import range
 import os
@@ -122,9 +121,7 @@ class CVC4Solver(object):
     def solve_all(self, model, program=None, threads=1):
         if threads > 1:
             ret = self.__load_and_solve_mt(model, program, threads)
-            if (self.verbosity > 0):
-                sys.stdout.write(" ")
-                sys.stdout.flush()
+            Logger.msg(" ", 0)
             return ret.get_size()
         ret = self.__load_and_solve_n(model, -1)
         return len(ret)
@@ -225,9 +222,7 @@ class CVC4Solver(object):
         rb_set = self.encoder.get_compatible_reads(program)[0]
         rb_cons = ["ASSERT (%s IS_IN RF)"%(x) for x in rb_set]
 
-        if (self.verbosity > 0):
-            sys.stdout.write("(%s)"%len(rb_cons))
-            sys.stdout.flush()
+        Logger.msg("(%s)"%len(rb_cons), 0)
         
         if self.shuffle_constraints:
             random.shuffle(rb_cons)
@@ -304,25 +299,20 @@ class CVC4Solver(object):
             if (self.verbosity > 0) and is_multithread and is_master:
                 if ((solsize - prvsolsize) > 1):
                     gain = (solsize-prvsolsize)-1
-                    sys.stdout.write("+%s%s"%(gain, "."*(gain)))
-                    sys.stdout.flush()
+                    Logger.msg("+%s%s"%(gain, "."*(gain)), 0)
 
             if not is_master:
                 if ret == 0: #UNSAT
                     if id_thread >= len(constraints)-1:
                         break
-                    if (self.verbosity > 0):
-                        sys.stdout.write("d")
-                        sys.stdout.flush()
+                    Logger.msg("d", 0)
                     constraints[id_thread] = constraints[-1]
                     del(constraints[-1])
                     applying_cons = constraints[id_thread]
                     continue
 
                 if ret == 2: # Not interesting constraint
-                    if (self.verbosity > 0):
-                        sys.stdout.write("s")
-                        sys.stdout.flush()
+                    Logger.msg("s", 0)
 
                     if len(constraints) > total:
                         tmp = constraints[id_thread]
@@ -377,7 +367,7 @@ class CVC4Solver(object):
         smt.setOption("produce-models", SExpr(True))
         smt.setOption("fmf-bound", SExpr(True))
         smt.setOption("macros-quant", SExpr(True))
-#        smt.setOption("finite-model-find", SExpr(True))
+        smt.setOption("finite-model-find", SExpr(True))
 #        smt.setOption("repeat-simp", SExpr(True))
 #        smt.setOption("check-models", SExpr(True))
 #        smt.setOption("full-saturate-quant", SExpr(True))
@@ -416,15 +406,15 @@ class CVC4Solver(object):
 
             (bclauses, shared_obj) = compute_blocking_clauses(exprmgr, symboltable, smt)
 
+            Logger.log("%s"%str(shared_obj), 1)
+            
             if shared_obj not in shared_objects:
                 shared_objects.append(shared_obj)
             else:
                 if constraints is not None:
                     return (shared_objects, 2)
-                    
-            if (self.verbosity > 0) and (constraints is None):
-                sys.stdout.write(".")
-                sys.stdout.flush()
+
+            Logger.msg(".", 0, constraints is None)
 
             for bclause in bclauses:
                 assertion = AssertCommand(bclause)
@@ -467,5 +457,7 @@ class CVC4Solver(object):
             assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
 
         blocking = exprmgr.mkExpr(CVC4.NOT, assigns)
-            
+
+        Logger.log("Blocking: %s"%(blocking.toString()), 1)
+        
         return ([blocking], exe)

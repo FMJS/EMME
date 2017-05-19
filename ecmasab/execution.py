@@ -689,7 +689,8 @@ class ITE_Statement(object):
                     acthen = False
 
         if acthen: uevents += self.then_events
-        if acelse: uevents += self.else_events
+        if self.else_events is not None:
+            if acelse: uevents += self.else_events
         return uevents
     
 class Memory_Event(object):

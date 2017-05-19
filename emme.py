@@ -235,8 +235,12 @@ def synth_program(config):
         config.defines = ""
     config.defines += RELAX_AO
 
+    program = parse_program(config)
+    if program.has_conditions():
+        Logger.msg("Program synthesis does not support conditional programs", 0)
+        return 0
+    
     Logger.msg("Generating relaxed SMT model... ", 0)
-    program = parse_program(config)    
     strmodel = generate_model(config, program)
     Logger.log("DONE", 0)
 
@@ -285,7 +289,7 @@ def analyze_program(config):
     Logger.msg("Generating bounded execution... ", 0)
     program = parse_program(config)
     Logger.log("DONE", 0)
-
+    
     Logger.msg("Generating SMT model... ", 0)
     strmodel = generate_model(config, program)
     Logger.log("DONE", 0)
