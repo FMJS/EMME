@@ -439,7 +439,7 @@ def main(args):
 
     parser.set_defaults(threads=1)
     parser.add_argument('-j', '--threads', metavar='number', type=int,
-                       help='number of threads (Default is \"1\". Experimental)')
+                       help='number of threads - EXPERIMENTAL. (Default is \"1\")')
 
     parser.set_defaults(debug=False)
     parser.add_argument('--debug', dest='debug', action='store_true',
