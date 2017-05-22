@@ -8,8 +8,6 @@ with shared array memory access (i.e., SharedArrayBuffer).
 
 Briefly, given a JavaScript-like SharedArrayBuffer bounded execution program (see .bex files in the examples folder), EMME computes all valid executions according with the ECMA specification (http://tc39.github.io/ecmascript_sharedmem/shmem.html). The valid executions are provided as: 1) a set of graphviz files represeting the memory model relations (i.e., mm*.dot), and 2) an assertion on the automatically generated JavaScript program (i.e., program.js).
 
-For more details have a look at docs/documentation.pdf.
-
 To start playing with the tool, you can run:
 
 1) ``cd ext_tools && bash get_CVC4.sh && cd ..`` (to install the CVC4 SMT solver. See http://cvc4.cs.stanford.edu/ for licensing and additional informations)
