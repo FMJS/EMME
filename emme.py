@@ -19,7 +19,7 @@ import subprocess
 from argparse import RawTextHelpFormatter
 
 from ecmasab.beparsing import BeParser
-from ecmasab.printers import JST262Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
+from ecmasab.printers import JST262_SR_Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 
@@ -86,7 +86,7 @@ class Config(object):
         self.sat = False
         self.only_model = False
         self.skip_solving = False
-        self.jsprinter = JST262Printer().NAME
+        self.jsprinter = JST262_SR_Printer().NAME
         self.graphviz = None
         self.printing_relations = ",".join([RBF,HB,SW])
         self.jsdir = None
