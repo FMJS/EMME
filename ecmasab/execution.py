@@ -319,8 +319,16 @@ class Relation(object):
         self.tuples = []
 
     def __repr__(self):
-        return "%s = {%s}"%(self.name, ", ".join(["(%s)"%(", ".join([str(y) for y in x])) for x in self.tuples]))
+        return "%s = {%s}"%(self.name, ", ".join(self.__print_tuples()))
 
+    def __print_tuples(self):
+        if self.tuples == []:
+            return []
+        if len(self.tuples[0]) > 2:
+            return ["((%s), %s)"%(", ".join(x[:-1]), x[-1]) for x in self.tuples]
+
+        return ["(%s)"%(", ".join(x)) for x in self.tuples]
+        
     def __eq__(self, other):
         if len(self.tuples) != len(other.tuples):
             return False

@@ -262,7 +262,12 @@ def litmus(config):
         mmatched = [x[2] for x in mmatched]
         nmatched = [x[2] for x in nmatched]
 
-        beparser = BeParser()    
+        print("\n== Matched models ==")
+        print("\n".join(mmatched))
+        print("\n== Unmatched models ==")
+        print("\n".join([x for x in nmatched if x not in mmatched]))
+        
+        beparser = BeParser()
         mmatched = beparser.executions_from_string("\n".join(mmatched))
         nmatched = beparser.executions_from_string("\n".join(nmatched))
 
@@ -275,7 +280,7 @@ def litmus(config):
         print("\n".join(out_str))
 
         print("\n== Difference Between Happens Before ==")
-        print(["(%s, %s)"%(x) for x in emod.get_u_HB(MatchType.UM)])
+        print(", ".join(["(%s, %s)"%(x) for x in emod.get_u_HB(MatchType.UM)]))
             
 if __name__ == "__main__":
 
