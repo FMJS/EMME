@@ -97,7 +97,7 @@ class CVC4Encoder(object):
             tname = "t%s"%(i+1)
             ret += "AO_%s : EV_REL;\n"%(tname)
             ret += "ASSERT AO_%s = TCLOSURE(AO_%s);\n"%(tname, tname)
-            ret += "ASSERT ((FORALL (e1,e2 IN ev_set) : ((NOT(e1 = e2) AND (e1 IS_IN ev_%s) AND (e2 IS_IN ev_%s)) <=> (((e1,e2) IS_IN AO_%s) OR ((e2,e1) IS_IN AO_%s)))));\n"%(tname, tname, tname, tname)
+            ret += "ASSERT ((FORALL (e1,e2 IN ev_set) : ((NOT(e1 = e2) AND (e1 IS_IN ev_%s) AND (e2 IS_IN ev_%s)) => (((e1,e2) IS_IN AO_%s) OR ((e2,e1) IS_IN AO_%s)))));\n"%(tname, tname, tname, tname)
 
         ret += "ASSERT AO <= pair_ev_set;\n"
         ret += "ASSERT AO = %s;\n"%(" | ".join(["AO_t%s"%(x+1) for x in range(len(events))]))

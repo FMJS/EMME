@@ -60,8 +60,6 @@ def parse_and_generate(example):
         program.apply_param(dict(program.get_params()[0]))
 
     c4printer = CVC4Encoder()
-    cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
-
     c4printer.print_program(program)
     c4printer.print_data_type(program)
     c4printer.print_block_type(program)

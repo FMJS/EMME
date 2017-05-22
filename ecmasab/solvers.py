@@ -367,7 +367,7 @@ class CVC4Solver(object):
         smt.setOption("produce-models", SExpr(True))
         smt.setOption("fmf-bound", SExpr(True))
         smt.setOption("macros-quant", SExpr(True))
-        smt.setOption("finite-model-find", SExpr(True))
+#        smt.setOption("finite-model-find", SExpr(True))
 #        smt.setOption("repeat-simp", SExpr(True))
 #        smt.setOption("check-models", SExpr(True))
 #        smt.setOption("full-saturate-quant", SExpr(True))
