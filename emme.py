@@ -196,24 +196,20 @@ def generate_model(config, program):
 def solve(config, program, strmodel):
     c4solver = CVC4Solver()
     c4solver.verbosity = config.verbosity
-    c4solver.models_file = config.models
 
-    if (not config.skip_solving) and (config.force_solving) and not(config.synth):
+    if (not config.skip_solving) and (config.force_solving):
         del_file(config.models)
     
     totmodels = c4solver.get_models_size()
 
     if ((not config.skip_solving) and (not c4solver.is_done())) or (config.synth):
-        if program.has_conditions:
-            c4solver.set_additional_variables(program.get_conditions())
-
         if config.sat:
-            totmodels = c4solver.solve_one(strmodel)
+            totmodels = c4solver.solve_one(config.models, strmodel, program)
         else:
             if config.synth:
-                totmodels = c4solver.solve_all_synth(strmodel, program)
+                totmodels = c4solver.solve_all_synth(config.models, strmodel, program)
             else:
-                totmodels = c4solver.solve_all(strmodel, program, config.threads)
+                totmodels = c4solver.solve_all(config.models, strmodel, program, config.threads)
 
         if not config.debug:
             del_file(config.block_type)

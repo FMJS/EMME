@@ -15,17 +15,6 @@ from ecmasab.execution import Executions
 from ecmasab.execution import TYPE
 from ecmasab.parsing import T_DONE
 
-LICENSE = ""
-LICENSE += "// Copyright 2017 Cristian Mattarei\n"
-LICENSE += "//\n"
-LICENSE += "// Licensed under the modified BSD (3-clause BSD) License.\n"
-LICENSE += "//\n"
-LICENSE += "// Unless required by applicable law or agreed to in writing, software\n"
-LICENSE += "// distributed under the License is distributed on an \"AS IS\" BASIS,\n"
-LICENSE += "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"
-LICENSE += "// See the License for the specific language governing permissions and\n"
-LICENSE += "// limitations under the License.\n\n"
-
 class CVC4Encoder(object):
     def __init__(self):
         pass

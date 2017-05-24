@@ -327,7 +327,7 @@ class Relation(object):
         if len(self.tuples[0]) > 2:
             return ["((%s), %s)"%(", ".join(x[:-1]), x[-1]) for x in self.tuples]
 
-        return ["(%s)"%(", ".join(x)) for x in self.tuples]
+        return ["(%s)"%(", ".join([str(y) for y in x])) for x in self.tuples]
         
     def __eq__(self, other):
         if len(self.tuples) != len(other.tuples):
