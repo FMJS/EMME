@@ -10,17 +10,15 @@
 
 import os
 import re
+import random
 from ecmasab.solvers import CVC4Solver, BDDSolver, ModelsManager
 from ecmasab.logger import Logger
 from ecmasab.encoders import CVC4Encoder
 from ecmasab.parsing import BeParser
-from ecmasab.execution import Memory_Event, Relation, Executions, Execution, RELATIONS, AO, RF
+from ecmasab.execution import Memory_Event, Relation, Executions, Execution, RELATIONS, AO, RF, RBF
 from ecmasab.preprocess import QuantPreprocessor
 
-from CVC4 import BOOLEAN_TYPE, EQUAL, AND, NOT
-
-from dd.autoref import BDD, Function
-
+from CVC4 import EQUAL, AND, NOT
 from litmus import Config, litmus
 
 LABELLING_VARS = []
@@ -197,7 +195,6 @@ class SynthProgsModelsManager(ValidExecsModelsManager):
                 with open(self.models_file, "r") as f:
                     shared_objs = (parser.executions_from_string(f.read())).executions
         return shared_objs
-
     
     def write_models(self, shared_objs, done):
         pass
@@ -302,7 +299,7 @@ class EquivalentExecutionSynthetizer(object):
         self.vexecsmanager.preload = False        
 
         encoder = CVC4Encoder()
-        assertions = encoder.print_ex_assertions(executions, self.vexecsmanager.blocking_relations)
+        assertions = encoder.print_ex_assertions(executions, [RF, RBF])
         vmodel = model+"\n"+assertions+"\n"
         vmodel += encoder.print_general_AO(program)
 
@@ -359,8 +356,6 @@ class ConstraintAnalyzerManager(ModelsManager):
         Logger.log("Blocking: %s"%(blocking.toString()), 1)
         
         return ([blocking], "(%s)"%" & ".join(model))
-        
-        pass
 
     def compute_from_sharedobjs(self, shared_objs):
         if shared_objs == []:
@@ -374,7 +369,7 @@ class ConstraintAnalyzerManager(ModelsManager):
     def load_models(self):
         return []
     
-    def solutions_separators(self, program):
+    def solutions_separators(self):
         pass
 
     

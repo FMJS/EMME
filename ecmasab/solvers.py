@@ -11,8 +11,6 @@
 import CVC4
 import re
 from six.moves import range
-import os
-import random
 from multiprocessing import Process, Manager
 from ecmasab.logger import Logger
 
@@ -24,7 +22,7 @@ from CVC4 import Options, \
     CheckSatCommand, \
     AssertCommand
 
-from dd.autoref import BDD, Function
+from dd.autoref import BDD
 
 class ModelsManager(object):
 
@@ -36,7 +34,6 @@ class ModelsManager(object):
         self.exprmgr = None
         self.symboltable = None
         self.models_file = None
-        pass
     
     def compute_from_smt(self, smt):
         pass
@@ -50,7 +47,7 @@ class ModelsManager(object):
     def load_models(self):
         pass
     
-    def solutions_separators(self, program):
+    def solutions_separators(self):
         pass
     
 class CVC4Solver(object):
@@ -93,15 +90,17 @@ class CVC4Solver(object):
 
         return ret
 
-    def compute_models(self, model, blocking_manager, shared_objects=[]):
+    def compute_models(self, model, blocking_manager, shared_objects=None):
         return self.__solve_nsat(model, -1, blocking_manager, shared_objects)
 
-    def compute_model(self, model, blocking_manager, shared_objects=[]):
+    def compute_model(self, model, blocking_manager, shared_objects=None):
         return self.__solve_nsat(model, 1, blocking_manager, shared_objects)
     
     def __solve_nsat(self, model, n, blocking_manager, shared_objs=None, id_thread=None, total=None, constraints=None):
         applying_cons = None
 
+        if shared_objs is None:
+            shared_objs = []
         is_multithread = id_thread is not None
         is_master = constraints is None
         
@@ -259,7 +258,8 @@ class BDDSolver(object):
         variables = variables.split(" ")
         
         bdd = BDD()
-        [bdd.add_var(var) for var in variables]
+        for var in variables:
+            bdd.add_var(var)
 
         u = bdd.add_expr(strformula)
         dnf = self.__get_dnf(bdd, u)
@@ -276,7 +276,9 @@ class BDDSolver(object):
                 
         return " | ".join(conj)
 
-    def __get_dnf(self, bdd, u, paths=[[]]):
+    def __get_dnf(self, bdd, u, paths=None):
+        if paths is None:
+            paths = [[]]
         if u.node == 1:
             return [[True]]
         if u.node == -1:
