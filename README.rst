@@ -1,8 +1,10 @@
+EMME: ECMAScript Memory Model Evaluator
 .. image:: https://landscape.io/github/FMJS/EMME/master/landscape.svg?style=flat
    :target: https://landscape.io/github/FMJS/EMME/master
    :alt: Code Health
-
-EMME: ECMAScript Memory Model Evaluator
+   
+.. image:: https://travis-ci.org/FMJS/EMME.svg?branch=master
+    :target: https://travis-ci.org/FMJS/EMME
 ========================
 
 This tools provides an SMT-based verification for JavaScript programs
