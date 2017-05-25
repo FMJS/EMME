@@ -15,7 +15,8 @@ from ecmasab.solvers import CVC4Solver, BDDSolver, ModelsManager
 from ecmasab.logger import Logger
 from ecmasab.encoders import CVC4Encoder
 from ecmasab.parsing import BeParser
-from ecmasab.execution import Memory_Event, Relation, Executions, Execution, RELATIONS, AO, RF, RBF
+from ecmasab.execution import Memory_Event, Relation, Executions, Execution, \
+    RELATIONS, AO, RF, RBF, MO, HB
 from ecmasab.preprocess import QuantPreprocessor
 
 from CVC4 import EQUAL, AND, NOT
@@ -181,14 +182,19 @@ class ValidExecsModelsManager(ModelsManager):
 class SynthProgsModelsManager(ValidExecsModelsManager):
 
     preload = True
-
+    prevmodels = None
+    
     def __init__(self):
         self.preload = True
+        self.prevmodels = None
     
     def load_models(self):
         shared_objs = []
+        if self.prevmodels is not None:
+            return self.prevmodels
         if not self.preload:
             return shared_objs
+        
         parser = BeParser()
         if self.models_file:
             if os.path.exists(self.models_file):
@@ -299,18 +305,23 @@ class EquivalentExecutionSynthetizer(object):
         self.vexecsmanager.preload = False        
 
         encoder = CVC4Encoder()
-        assertions = encoder.print_ex_assertions(executions, [RF, RBF])
-        vmodel = model+"\n"+assertions+"\n"
-        vmodel += encoder.print_general_AO(program)
 
+        vmodel = model+"\n"+encoder.print_general_AO(program)
         qupre = QuantPreprocessor()
         qupre.set_expand_sets(True)
         vmodel = qupre.preprocess_from_string(vmodel)
 
         self.vexecsmanager.blocking_relations = [AO]
-        ao_execs = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, -1, threads)
+        ao_execs = []
+        for models_blocking in [[RF, RBF, HB, MO], [RF, RBF]]:
+            assertions = encoder.print_ex_assertions(executions, models_blocking)
+            vmodel += "\n"+assertions+"\n"
+            execs = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, -1, threads if ao_execs == [] else 1)
+            ao_execs += [x for x in execs if x not in ao_execs]
+            self.vexecsmanager.prevmodels = ao_execs
+            Logger.msg(" ", 0)
+        self.vexecsmanager.prevmodels = None
 
-        Logger.msg(" ", 0)
         Logger.log(" -> Found %s possible candidates"%(len(ao_execs)), 1)
         Logger.msg("Checking correctness... ", 1)
 
@@ -323,7 +334,7 @@ class EquivalentExecutionSynthetizer(object):
             ok = self.__check_ao_correctness(model, str(exe.get_AO()), executions)
             if ok:
                 rel = Relation(AO)
-                rel.tuples = [(events_dic[x[0]], events_dic[x[1]]) for x in exe.get_AO().tuples]
+                rel.tuples = [(events_dic[str(x[0])], events_dic[str(x[1])]) for x in exe.get_AO().tuples]
                 exe.set_AO(rel)
                 exe.program = program
                 equivalent_AOs.append(exe)

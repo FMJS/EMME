@@ -58,7 +58,7 @@ class CVC4Solver(object):
     def __init__(self):
         self.verbosity = 1
         self.models_file = None
-        self.incremental = False
+        self.incremental = True
     
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
         pre_objs = blocking_manager.load_models()
@@ -266,7 +266,7 @@ class BDDSolver(object):
 
         conj = []
         for el in dnf:
-            if el[0] == True:
+            if el[0] is True:
                 el = el[1:]
                 el.reverse()
                 conj.append("(%s)"%" & ".join(el))
