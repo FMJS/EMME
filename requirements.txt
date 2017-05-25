@@ -3,3 +3,4 @@ six
 nose
 numpy
 prettytable
+dd
