@@ -29,13 +29,6 @@ class CVC4Encoder(object):
     def print_done(self):
         return T_DONE
     
-    def print_neg_assertions(self, interps):
-        return ["ASSERT NOT(%s);"%self.print_assert_execution(x) for x in interps.executions]
-
-    def print_ex_assertions(self, interps):
-        execs = [self.print_assert_execution(x) for x in interps.executions]
-        return "ASSERT (%s);"%(" OR ".join(execs))
-    
     def print_execution(self, interp):
         relations = []
         relations.append(interp.get_HB())
@@ -49,19 +42,22 @@ class CVC4Encoder(object):
             values += ["(%s=%s)"%x for x in interp.conditions]
         
         return " AND ".join(values)
-    
-    def print_assert_execution(self, interp):
-        relations = []
-        for relation in Executions.get_blocking_relations():
-            relations.append(interp.get_relation_by_name(relation))
 
-        relations = [self.__print_relation(x) for x in relations]
+    def print_neg_assertions(self, interps, relations):
+        return ["ASSERT NOT(%s);"%self.print_assert_execution(x, relations) for x in interps.executions]
 
+    def print_ex_assertions(self, interps, relations):
+        execs = [self.print_assert_execution(x, relations) for x in interps.executions]
+        return "ASSERT (%s);"%(" OR ".join(execs))
+        
+    def print_assert_execution(self, interp, relations):
+        outrelations = [interp.get_relation_by_name(x) for x in relations]
+        outrelations = [self.__print_relation(x) for x in outrelations]
         conds = []
         if interp.conditions:
             conds += ["(%s=%s)"%x for x in interp.conditions]
 
-        ret = " AND ".join(relations+conds)
+        ret = " AND ".join(outrelations+conds)
         ret = ret.replace("{}", "empty_rel_set")
         return ret
 

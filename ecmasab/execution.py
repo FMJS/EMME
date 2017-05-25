@@ -53,13 +53,6 @@ RELATIONS.append(MO)
 RELATIONS.append(AO)
 RELATIONS.append(SW)
 
-BLOCKING_RELATIONS = []
-# BLOCKING_RELATIONS.append(RBF)
-BLOCKING_RELATIONS.append(RF)
-# BLOCKING_RELATIONS.append(HB)
-# BLOCKING_RELATIONS.append(MO)
-# BLOCKING_RELATIONS.append(SW)
-
 def arit_eval(s):
     if sys.version_info[0] >= 3:
         return eval(s)
@@ -104,15 +97,11 @@ class Executions(object):
     executions = None
     allexecs = None
 
-    blocking_relations = BLOCKING_RELATIONS
-    
     def __init__(self):
         self.program = None
         self.executions = []
         self.allexecs = False
 
-        Executions.blocking_relations = BLOCKING_RELATIONS
-        
     def add_execution(self, exe):
         if (not exe.program) and (self.program):
             exe.program = self.program
@@ -130,14 +119,6 @@ class Executions(object):
         
     def get_size(self):
         return len(self.executions)
-
-    @staticmethod
-    def get_blocking_relations():
-        return Executions.blocking_relations
-
-    @staticmethod
-    def set_blocking_relations(blocking_relations):
-        Executions.blocking_relations = blocking_relations
     
 class Execution(object):
     agent_order = None
@@ -169,10 +150,12 @@ class Execution(object):
         relations.append(self.reads_bytes_from)
         relations.append(self.reads_from)
         relations.append(self.synchronizes_with)
+        if self.agent_order:
+            relations.append(self.agent_order)
         return " AND ".join([str(x) for x in relations])
 
     def __eq__(self, other):
-        for rel in Executions.get_blocking_relations():
+        for rel in [HB, MO, RBF, RF, SW, AO]: 
             if not(self.get_relation_by_name(rel) == other.get_relation_by_name(rel)):
                 return False
         return self.conditions == other.conditions

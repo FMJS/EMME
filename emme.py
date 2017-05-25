@@ -23,6 +23,7 @@ from ecmasab.printers import JST262_SR_Printer, DotPrinter, PrintersFactory, Pri
 from ecmasab.encoders import CVC4Encoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
+from ecmasab.analyzers import ValidExecutionAnalyzer, EquivalentExecutionSynthetizer, ConstraintsAnalyzer
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
@@ -48,6 +49,7 @@ ALL = "all"
 
 E_CONDITIONS = ",ENCODE_CONDITIONS=1"
 RELAX_AO = ",en_relaxed_AO=1"
+CONS_LABELLING = ",LABELLING=1"
 
 class Config(object):
     inputfile = None
@@ -80,6 +82,8 @@ class Config(object):
     execs = None
     mm = None
     eqprogs = None
+    jsengine = None
+    runs = None
     
     def __init__(self):
         self.inputfile = None
@@ -99,6 +103,9 @@ class Config(object):
         self.force_solving = False
         self.threads = 1
         self.synth = False
+        self.unmatched = False
+        self.jsengine = None
+        self.runs = 10
         
     def generate_filenames(self):
         if self.prefix:
@@ -194,22 +201,19 @@ def generate_model(config, program):
     return strmodel
 
 def solve(config, program, strmodel):
-    c4solver = CVC4Solver()
-    c4solver.verbosity = config.verbosity
-
+    analyzer = ValidExecutionAnalyzer()
+    analyzer.set_models_file(config.models)
+    
     if (not config.skip_solving) and (config.force_solving):
         del_file(config.models)
     
-    totmodels = c4solver.get_models_size()
+    totmodels = analyzer.get_models_size()
 
-    if ((not config.skip_solving) and (not c4solver.is_done())) or (config.synth):
+    if ((not config.skip_solving) and (not analyzer.is_done())):
         if config.sat:
-            totmodels = c4solver.solve_one(config.models, strmodel, program)
+            totmodels = analyzer.solve_one(strmodel, program)
         else:
-            if config.synth:
-                totmodels = c4solver.solve_all_synth(config.models, strmodel, program)
-            else:
-                totmodels = c4solver.solve_all(config.models, strmodel, program, config.threads)
+            totmodels = analyzer.solve_all(strmodel, program, config.threads)
 
         if not config.debug:
             del_file(config.block_type)
@@ -220,9 +224,42 @@ def solve(config, program, strmodel):
 
     return totmodels
 
+def unmatched_analysis(config):
+    analyze_program(config)
+
+    analyzer = ConstraintsAnalyzer()
+    analyzer.set_models_file(config.models)
+
+    Logger.log("\n** Unmatched Outputs Analysis **", 0)
+    
+    config.unmatched = True
+    
+    if not config.defines:
+        config.defines = ""
+    config.defines += CONS_LABELLING
+
+    program = parse_program(config)
+    
+    Logger.msg("Generating SMT model... ", 0)
+    strmodel = generate_model(config, program)
+    Logger.log("DONE", 0)
+
+    if config.only_model:
+        return 0
+
+    programs = analyzer.analyze_constraints(strmodel, program, \
+                                            config.jsengine, \
+                                            config.runs, \
+                                            config.threads, \
+                                            config.jsprogram)
+
+    
 def synth_program(config):
     analyze_program(config)
 
+    analyzer = EquivalentExecutionSynthetizer()
+    analyzer.set_models_file(config.models)
+    
     Logger.log("\n** Program Synthesis **", 0)
     
     config.synth = True
@@ -245,10 +282,10 @@ def synth_program(config):
 
     Logger.msg("Solving... ", 0)
 
-    programs = solve(config, program, strmodel)
+    programs = analyzer.solve_all_synth(strmodel, program, config.threads)
     totmodels = len(programs)
 
-    Logger.log("DONE", 0)
+    Logger.log(" DONE", 0)
     
     if totmodels > 0:
         Logger.log(" -> Found %s equivalent programs"%(totmodels), 0)
@@ -299,7 +336,7 @@ def analyze_program(config):
     totmodels = solve(config, program, strmodel)
 
     if (not config.skip_solving):
-        Logger.log("DONE", 0)
+        Logger.log(" DONE", 0)
             
     if totmodels > 0:
         Logger.log(" -> Found %s possible models"%(totmodels), 0)
@@ -379,7 +416,7 @@ def analyze_program(config):
         
 
 def main(args):
-    parser = argparse.ArgumentParser(description='EMME: ECMAScript Memory Model Evaluatior', formatter_class=RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(description='EMME: ECMAScript Memory Model Evaluator', formatter_class=RawTextHelpFormatter)
     
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
@@ -444,6 +481,18 @@ def main(args):
     parser.set_defaults(synth=False)
     parser.add_argument('--synth', dest='synth', action='store_true',
                         help="enables equivalent programs synthesis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(unmatched=False)
+    parser.add_argument('--unmatched', dest='unmatched', action='store_true',
+                        help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(jsengine="")
+    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
+                        help='the command used to call the JavaScript engine.')
+
+    parser.set_defaults(runs=10)
+    parser.add_argument('-n', '--runs', metavar='runs', type=str,
+                       help='number of runs for the unmatched outputs analysis. (Default is \"10\")')
     
     parser.set_defaults(no_expand_bounded_sets=False)
     parser.add_argument('--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
@@ -470,6 +519,10 @@ def main(args):
     if not os.path.exists(args.input_file):
         print("File not found: \"%s\""%args.input_file)
         return 1
+
+    if config.unmatched and not config.jsengine:
+        print("JavaScript engine not specified")
+        return 1
     
     config.inputfile = args.input_file
     config.prefix = prefix
@@ -490,6 +543,8 @@ def main(args):
     config.debug = args.debug
     config.force_solving = args.force_solving
     config.threads = args.threads
+    config.jsengine = args.jsengine
+    config.runs = args.runs
     
     if args.silent:
         config.verbosity = 0
@@ -502,6 +557,8 @@ def main(args):
         ret = 0
         if args.synth:
             ret = synth_program(config)
+        elif args.unmatched:
+            ret = unmatched_analysis(config)
         else:
             ret = analyze_program(config)
 

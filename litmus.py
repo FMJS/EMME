@@ -86,7 +86,7 @@ def run_command(command, number, silent):
 def litmus(config):
 
     command = config.command.split(" ")
-    number = config.number
+    number = config.number if type(config.number) == str else str(config.number)
 
     input_file_has_models = False
     
@@ -251,17 +251,21 @@ def litmus(config):
     if config.silent:
         if len(not_matched) > 0:
             print("FAIL")
-            return 1
+            if not config.models:
+                return 1
         else:
             print("ok")
-            return 0
+            if not config.models:
+                return 0
 
-    if not config.silent and config.models:
-        nmatched = [outputs_dic[x] for x in outputs_dic if tuple(x) not in mmatched]
+    if config.models:
+        mmatched = [str(x[2]) for x in mmatched]
+        amatched = [str(outputs_dic[x][2]) for x in outputs_dic]
+        nmatched = [x for x in amatched if x not in mmatched]
 
-        mmatched = [x[2] for x in mmatched]
-        nmatched = [x[2] for x in nmatched]
-
+        if config.silent:
+            return (mmatched, nmatched)
+        
         print("\n== Matched models ==")
         print("\n".join(mmatched))
         print("\n== Unmatched models ==")

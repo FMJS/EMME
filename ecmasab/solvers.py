@@ -14,17 +14,6 @@ from six.moves import range
 import os
 import random
 from multiprocessing import Process, Manager
-from ecmasab.preprocess import QuantPreprocessor
-
-from ecmasab.execution import Execution, \
-    Relation, \
-    Memory_Event, \
-    Executions, \
-    RELATIONS, \
-    AO, RF
-from ecmasab.parsing import BeParser
-from ecmasab.encoders import CVC4Encoder
-
 from ecmasab.logger import Logger
 
 from CVC4 import Options, \
@@ -34,6 +23,8 @@ from CVC4 import Options, \
     SExpr, \
     CheckSatCommand, \
     AssertCommand
+
+from dd.autoref import BDD, Function
 
 class ModelsManager(object):
 
@@ -56,321 +47,77 @@ class ModelsManager(object):
     def write_models(self, shared_objs, done):
         pass
 
+    def load_models(self):
+        pass
+    
     def solutions_separators(self, program):
         pass
     
-class ValidExecsModelsManager(ModelsManager):
-
-    relations = RELATIONS
-    variables = []
-    encoder = CVC4Encoder()
-    shuffle_constraints = False
-
-    def set_additional_variables(self, variables):
-        self.variables = variables
-        
-    def __gen_memory_event(self, expression):
-        TYPE = "_Type"
-        OCP = "\(|\)"
-        OCS = "{|}"
-        ES = ""
-        SP = " "
-
-        name = re.sub(TYPE+"|"+OCP, ES, expression.getChild(0).toString())
-        operation = re.sub(OCP, ES, expression.getChild(1).toString())
-        tear = re.sub(OCP, ES, expression.getChild(2).toString())
-        ordering = re.sub(OCP, ES, expression.getChild(3).toString())
-        block = re.sub(OCP, ES, expression.getChild(4).toString())
-        address = re.sub(SP+"|"+OCP+"|"+OCS, ES, expression.getChild(5).toString()).split("|")
-        values = None
-
-        me = Memory_Event()
-        me.name = name
-        me.operation = operation
-        me.tear = tear
-        me.ordering = ordering
-        me.address = address
-        me.block = block
-        me.values = values
-        
-        return me
-
-    def __get_all_tuples(self, expression, tuples):
-        if expression.isNull():
-            return
-
-        if expression.getType().isTuple():
-            tuples.append(expression)
-        else:
-            for child in expression.getChildren():
-                self.__get_all_tuples(child, tuples)
-
-        return tuples
-    
-    def __relation_from_formula(self, name, expression):
-        relation = Relation(name)
-
-        tuples = self.__get_all_tuples(expression, [])
-        for tup in tuples:
-            el = []
-            for i in range(len(tup.getChildren())):
-                if tup.getChild(i).getType().isTuple():
-                    el.append(self.__gen_memory_event(tup.getChild(i).getChild(0)).name)
-                    el.append(self.__gen_memory_event(tup.getChild(i).getChild(1)).name)
-                elif tup.getChild(i).getType().isInteger():
-                    el.append(int(tup.getChild(i).toString()))
-                else:
-                    el.append(self.__gen_memory_event(tup.getChild(i)).name)
-
-            relation.add_tuple(tuple(el))
-
-        return relation
-    
-    def compute_from_smt(self, smt):
-        assigns = self.exprmgr.mkBoolConst(True)
-        exe = Execution()
-
-        for relation in self.relations:
-            assign = self.symboltable.lookup(relation)
-            value = smt.getValue(assign)
-            rel = self.__relation_from_formula(relation, value)
-            assert(rel is not None)
-
-            exe.set_relation_by_name(relation, rel)
-
-            if relation in Executions.get_blocking_relations():
-                assign = self.exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
-                assigns = self.exprmgr.mkExpr(CVC4.AND, assigns, assign)
-
-        for variable in self.variables:
-            assign = self.symboltable.lookup(variable)
-            value = smt.getValue(assign).toString()
-            exe.add_condition(variable, value)
-
-            assign = self.exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
-            assigns = self.exprmgr.mkExpr(CVC4.AND, assigns, assign)
-
-        blocking = self.exprmgr.mkExpr(CVC4.NOT, assigns)
-
-        if Executions.get_blocking_relations() == ['AO']:
-            print exe.get_AO()
-        
-        Logger.log("Blocking: %s"%(blocking.toString()), 1)
-
-        return ([blocking], exe)
-
-    def compute_from_sharedobjs(self, shared_objs):
-        executions = Executions()
-        executions.executions = shared_objs
-        assertions = "\n"+("\n".join(self.encoder.print_neg_assertions(executions)))
-
-        return assertions
-
-    def write_models(self, shared_objs, done):
-        if self.models_file:
-            with open(self.models_file, "w") as f:
-                for exe in shared_objs:
-                    f.write("%s\n"%self.encoder.print_execution(exe))
-                if done:
-                    f.write("%s\n"%self.encoder.print_done())
-
-    def solutions_separators(self, program):
-        rb_set = self.encoder.get_compatible_reads(program)[0]
-        rb_cons = ["ASSERT (%s IS_IN RF)"%(x) for x in rb_set]
-
-        Logger.msg("(%s)"%len(rb_cons), 0)
-        
-        if self.shuffle_constraints:
-            random.shuffle(rb_cons)
-
-        return rb_cons
-                    
 class CVC4Solver(object):
     verbosity = None
     models_file = None
-
-    executions = None
     incremental = None
 
-    encoder = None
-
-    vexecsmanager = ValidExecsModelsManager()
-    
     def __init__(self):
         self.verbosity = 1
         self.models_file = None
-        self.executions = Executions()
-        self.incremental = True
-        self.encoder = CVC4Encoder()
-        
-    def solve_all(self, models_file, model, program=None, threads=1):
-        self.vexecsmanager.models_file = models_file
-        if program.has_conditions:
-            self.vexecsmanager.set_additional_variables(program.get_conditions())
-            
-        if threads > 1:
-            ret = self.__load_and_solve_mt(model, program, threads)
-            Logger.msg(" ", 0)
-            return len(ret)
-        ret = self.__load_and_solve_n(model, -1)
-        return len(ret)
-
-    def solve_one(self, models_file, model, program=None):
-        self.vexecsmanager.models_file = models_file
-        if program.has_conditions:
-            self.vexecsmanager.set_additional_variables(program.get_conditions())
-        
-        ret = self.__load_and_solve_n(model, 1)
-        return len(ret)
-
-    def __check_ao_correctness(self, model, exe):
-        exe = str(exe.get_AO())
-        ok = True
-
-        prev_blocking = Executions.get_blocking_relations()
-        Executions.set_blocking_relations([RF])
-        
-        assertions = self.encoder.print_neg_assertions(self.executions)
-        
-        # Checking if the candidate is not a superset
-        assertion = "\n"+("\n".join(assertions))
-        vmodel = model+assertion
-        vmodel += "\nASSERT (%s);\n"%(exe.replace("{}", "empty_rel_set"))
-        ret = self.__compute_models(vmodel, 1, self.vexecsmanager, None, None)[1]
-        if ret != 0:
-            ok = False
-
-        # Checking if the candidate mathces all executions
-        if ok and (len(assertions) > 1):
-            for assertion in assertions:
-                vmodel = model+"\n"+assertion+"\n"
-                vmodel += "\nASSERT (%s);\n"%(exe)
-                (sol, ret) = self.__compute_models(vmodel, 1, self.vexecsmanager, None, None)
-                if ret == 0:
-                    ok = False
-                    break
-
-        Executions.set_blocking_relations(prev_blocking)
-                
-        return ok
+        self.incremental = False
     
-    def solve_all_synth(self, models_file, model, program=None):
-        self.vexecsmanager.models_file = models_file
-        self.__load_models()
-        assertions = self.encoder.print_ex_assertions(self.executions)
-        vmodel = model+"\n"+assertions+"\n"
+    def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
+        pre_objs = blocking_manager.load_models()
+        ret = []
+        if num_t > 1:
+            rb_cons = blocking_manager.solutions_separators()
+            num_t = min(len(rb_cons), num_t)
 
-        vmodel += self.encoder.print_general_AO(program)
+            with Manager() as manager:
+                shared_objs = manager.list([])
+                for el in pre_objs:
+                    shared_objs.append(el)
+                rb_cons = manager.list(rb_cons)
 
-        qupre = QuantPreprocessor()
-        qupre.set_expand_sets(True)
-        vmodel = qupre.preprocess_from_string(vmodel)
+                threads = []
+                for i in range(num_t-1):
+                    process = Process(target=self.__solve_nsat, args=(model, -1, blocking_manager, shared_objs, i, num_t-1, rb_cons))
+                    threads.append(process)
+                    process.start()
 
-        prev_executions = self.executions
-        self.executions = Executions()
-        Executions.set_blocking_relations([AO])
-        self.__solve_n(vmodel, -1, self.vexecsmanager, self.executions.executions)
-        ao_execs = self.executions
-        self.executions = prev_executions
+                shared_objs = self.__solve_nsat(model, -1, blocking_manager, shared_objs, 0)    
 
-        Logger.msg(" ", 0)
-        Logger.log(" -> Found %s possible candidates"%(ao_execs.get_size()), 1)
-        
-        equivalent_AOs = []
+                for thread in threads:
+                    thread.terminate()
 
-        Logger.msg("Checking correctness... ", 1)
+                ret = list(shared_objs)
+        else:
+            ret = self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
 
-        beparser = BeParser()
+        return ret
 
-        eq_progs = []
-        events_dic = dict([(x.name, x) for x in program.get_events()])
-        
-        for exe in ao_execs.executions:
-            rel = Relation(AO)
-            rel.tuples = [(events_dic[x[0]], events_dic[x[1]]) for x in exe.get_AO().tuples]
-            exe.set_AO(rel)
-            exe.program = program
-            ok = self.__check_ao_correctness(model, exe)
-            if ok:
-                equivalent_AOs.append(exe)
-                program = beparser.program_from_execution(exe)
-                eq_progs.append(program)
+    def compute_models(self, model, blocking_manager, shared_objects=[]):
+        return self.__solve_nsat(model, -1, blocking_manager, shared_objects)
 
-        Logger.log("DONE", 1)
-        for el in equivalent_AOs:
-            Logger.log("OK: %s"%el.get_AO(), 1)
-
-        return eq_progs
+    def compute_model(self, model, blocking_manager, shared_objects=[]):
+        return self.__solve_nsat(model, 1, blocking_manager, shared_objects)
     
-    def __load_and_solve_n(self, model, n):
-
-        self.__load_models()
-        sol = self.__solve_n(model, n, self.vexecsmanager, self.executions.executions)
-                
-        return sol
-
-
-    def __load_and_solve_mt(self, model, program, num_t):
-        self.__load_models()
-
-        # rb_set = self.encoder.get_compatible_reads(program)[0]
-        # rb_cons = ["ASSERT (%s IS_IN RF)"%(x) for x in rb_set]
-
-        # Logger.msg("(%s)"%len(rb_cons), 0)
-        
-        # if self.shuffle_constraints:
-        #     random.shuffle(rb_cons)
-
-        rb_cons = self.vexecsmanager.solutions_separators(program)
-            
-        num_t = min(len(rb_cons), num_t)
-        
-        with Manager() as manager:
-            shared_objs = manager.list([])
-            rb_cons = manager.list(rb_cons)
-
-            threads = []
-            for i in range(num_t-1):
-                process = Process(target=self.__solve_n, args=(model, -1, self.vexecsmanager, shared_objs, i, num_t-1, rb_cons))
-                threads.append(process)
-                process.start()
-
-            shared_objs = self.__solve_n(model, -1, self.vexecsmanager, shared_objs, 0)    
-            # allexecs = Process(target=self.__solve_n, args=(model, -1, self.vexecsmanager, shared_execs, 0))
-            # allexecs.start()                            
-            # allexecs.join()
-
-            for thread in threads:
-                thread.terminate()
-
-            return list(shared_objs)
-
-    def compute_models(self, model, blocking_manager, shared_objects):
-        return self.__solve_n(model, -1, blocking_manager, shared_objects)
-
-    def __solve_n(self, model, n, blocking_manager, shared_objs=None, id_thread=None, total=None, constraints=None):
+    def __solve_nsat(self, model, n, blocking_manager, shared_objs=None, id_thread=None, total=None, constraints=None):
         applying_cons = None
 
         is_multithread = id_thread is not None
         is_master = constraints is None
-
-#        assertions = "\n"+("\n".join(self.encoder.print_neg_assertions(self.executions)))
         
         if constraints is not None:
             applying_cons = constraints[id_thread]
             
         if self.incremental and not is_multithread:
-#            assertions = "\n"+("\n".join(self.encoder.print_neg_assertions(self.executions)))
-
             assertions = blocking_manager.compute_from_sharedobjs(shared_objs)
-            
+
             vmodel = model + assertions
-            (sol, ret) = self.__compute_models(model, n, blocking_manager, applying_cons, shared_objs)
+            (sol, ret) = self.__compute_models(vmodel, n, blocking_manager, applying_cons, shared_objs)
 
             for el in sol:
                 if el not in shared_objs:
                     shared_objs.append(el)
-            
+
             blocking_manager.write_models(shared_objs, ret == 0)
             return sol
             
@@ -381,18 +128,14 @@ class CVC4Solver(object):
             prvsolsize = solsize
         
             assertions = blocking_manager.compute_from_sharedobjs(shared_objs)
-#            assertions = "\n"+("\n".join(self.encoder.print_neg_assertions(self.executions)))
             vmodel = model + assertions
-
+            
             (sol, ret) = self.__compute_models(vmodel, 1, blocking_manager, applying_cons, shared_objs)
 
             for el in sol:
                 if el not in shared_objs:
                     shared_objs.append(el)
-
-#            shared_objs = sol
-            
-            solsize = len(sol) #self.executions.get_size() if sol is not None else 0
+            solsize = len(sol)
             
             if is_master:
                 blocking_manager.write_models(shared_objs, ret == 0)
@@ -426,33 +169,7 @@ class CVC4Solver(object):
                 break
 
         return shared_objs
-    
-    def __write_models(self, done):
-        if self.models_file:
-            with open(self.models_file, "w") as f:
-                for exe in self.executions.executions:
-                    f.write("%s\n"%self.encoder.print_execution(exe))
-                if done:
-                    f.write("%s\n"%self.encoder.print_done())
-        
-    def __load_models(self):
-        parser = BeParser()
-        if self.models_file:
-            if os.path.exists(self.models_file):
-                with open(self.models_file, "r") as f:
-                    self.executions = parser.executions_from_string(f.read())
-        return self.executions
                     
-    def get_models_size(self):
-        self.__load_models()
-        return self.executions.get_size()
-
-    def is_done(self):
-        executions = self.__load_models()
-        if not executions:
-            return False
-        return executions.allexecs
-
     def __compute_models(self, model, num, blocking_manager, constraints=None, shared_objects=None):
         opts = Options()
         opts.setInputLanguage(CVC4.INPUT_LANG_CVC4)
@@ -484,7 +201,6 @@ class CVC4Solver(object):
         parser = parserbuilder.build()
 
         symboltable = parser.getSymbolTable()
-
 
         blocking_manager.exprmgr = exprmgr
         blocking_manager.symboltable = symboltable
@@ -531,35 +247,55 @@ class CVC4Solver(object):
             
         return (None, -1)
 
-    # def __compute_blocking_relation(self, exprmgr, symboltable, smt):
-    #     assigns = exprmgr.mkBoolConst(True)
-    #     exe = Execution()
+class BDDSolver(object):
 
-    #     for relation in self.relations:
-    #         assign = symboltable.lookup(relation)
-    #         value = smt.getValue(assign)
-    #         rel = self.__relation_from_formula(relation, value)
-    #         assert(rel is not None)
+    def __init__(self):
+        pass
+    
+    def simplify(self, strformula, lst=False):
 
-    #         exe.set_relation_by_name(relation, rel)
-
-    #         if relation in Executions.get_blocking_relations():
-    #             assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
-    #             assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
-
-    #     for variable in self.variables:
-    #         assign = symboltable.lookup(variable)
-    #         value = smt.getValue(assign).toString()
-    #         exe.add_condition(variable, value)
-
-    #         assign = exprmgr.mkExpr(CVC4.EQUAL, assign, smt.getValue(assign))
-    #         assigns = exprmgr.mkExpr(CVC4.AND, assigns, assign)
-
-    #     blocking = exprmgr.mkExpr(CVC4.NOT, assigns)
-
-    #     if Executions.get_blocking_relations() == ['AO']:
-    #         print exe.get_AO()
+        variables = re.sub('[~\&\|\(\)]',' ',strformula)
+        variables = re.sub(' +',' ',variables.strip())
+        variables = variables.split(" ")
         
-    #     Logger.log("Blocking: %s"%(blocking.toString()), 1)
+        bdd = BDD()
+        [bdd.add_var(var) for var in variables]
 
-    #     return ([blocking], exe)
+        u = bdd.add_expr(strformula)
+        dnf = self.__get_dnf(bdd, u)
+
+        conj = []
+        for el in dnf:
+            if el[0] == True:
+                el = el[1:]
+                el.reverse()
+                conj.append("(%s)"%" & ".join(el))
+
+        if lst:
+            return conj
+                
+        return " | ".join(conj)
+
+    def __get_dnf(self, bdd, u, paths=[[]]):
+        if u.node == 1:
+            return [[True]]
+        if u.node == -1:
+            return [[False]]
+
+        i, v, w = bdd.succ(u)
+
+        # invert node
+        if u.node < 0:
+            v.node,w.node = -v.node, -w.node
+
+        var = bdd.var_at_level(i)
+        lp = self.__get_dnf(bdd, v, paths)
+        rp = self.__get_dnf(bdd, w, paths)
+
+        for el in lp:
+            el.append("~%s"%var)
+        for el in rp:
+            el.append(var)
+
+        return lp+rp
+    
