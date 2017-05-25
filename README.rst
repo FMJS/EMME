@@ -4,14 +4,14 @@ EMME: ECMAScript Memory Model Evaluator
 This tools provides an SMT-based verification for JavaScript programs
 with shared array memory access (i.e., SharedArrayBuffer).
 
+`Learn more <https://github.com/FMJS/emme>`_.
+
 .. image:: https://landscape.io/github/FMJS/EMME/master/landscape.svg?style=flat
    :target: https://landscape.io/github/FMJS/EMME/master
    :alt: Code Health
 
 .. image:: https://travis-ci.org/FMJS/EMME.svg?branch=master
     :target: https://travis-ci.org/FMJS/EMME
-
-`Learn more <https://github.com/FMJS/emme>`_.
 
 Briefly, given a JavaScript-like SharedArrayBuffer bounded execution program (see .bex files in the examples folder), EMME computes all valid executions according with the ECMA specification (http://tc39.github.io/ecmascript_sharedmem/shmem.html). The valid executions are provided as: 1) a set of graphviz files represeting the memory model relations (i.e., mm*.dot), and 2) an assertion on the automatically generated JavaScript program (i.e., program.js).
 
