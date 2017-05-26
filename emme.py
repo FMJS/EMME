@@ -225,8 +225,6 @@ def solve(config, program, strmodel):
     return totmodels
 
 def unmatched_analysis(config):
-    analyze_program(config)
-
     analyzer = ConstraintsAnalyzer()
     analyzer.set_models_file(config.models)
 
@@ -253,10 +251,9 @@ def unmatched_analysis(config):
                                             config.threads, \
                                             config.jsprogram)
 
+    return 0
     
 def synth_program(config):
-    analyze_program(config)
-
     analyzer = EquivalentExecutionSynthetizer()
     analyzer.set_models_file(config.models)
     
@@ -312,7 +309,8 @@ def synth_program(config):
     for program in programs:
         Logger.log("** Equivalent Program %s: **\n"%(programs.index(program)+1), 1)
         Logger.log(printer.print_program(program), 1)
-        
+
+    return 0
 
 def analyze_program(config):
     config.generate_filenames()
@@ -554,13 +552,13 @@ def main(args):
     Logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)
     
     try:
-        ret = 0
-        if args.synth:
+        ret = -1
+        ret = analyze_program(config)
+        
+        if ret == 0 and args.synth:
             ret = synth_program(config)
-        elif args.unmatched:
+        if ret == 0 and args.unmatched:
             ret = unmatched_analysis(config)
-        else:
-            ret = analyze_program(config)
 
         Logger.log("\nExiting...", 0)
         return ret
