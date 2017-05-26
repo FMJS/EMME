@@ -43,6 +43,23 @@ class CVC4Encoder(object):
         
         return " AND ".join(values)
 
+    def big_or(self, formulas):
+        return " OR ".join(formulas)
+
+    def big_and(self, formulas):
+        return " AND ".join(formulas)
+    
+    def assert_formula_nl(self, formula):
+        return self.assert_formula("%s\n"%formula)
+    
+    def assert_formula(self, formula):
+        end = ""
+        formula = formula.replace("{}", "empty_rel_set")
+        if formula[-1] == "\n":
+            formula = formula[:-1]
+            end = ";\n"
+        return "ASSERT (%s)%s"%(formula, end)
+    
     def print_neg_assertions(self, interps, relations):
         return ["ASSERT NOT(%s);"%self.print_assert_execution(x, relations) for x in interps.executions]
 

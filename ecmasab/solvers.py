@@ -89,12 +89,9 @@ class CVC4Solver(object):
             ret = self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
 
         return ret
-
+    
     def compute_models(self, model, blocking_manager, shared_objects=None):
         return self.__solve_nsat(model, -1, blocking_manager, shared_objects)
-
-    def compute_model(self, model, blocking_manager, shared_objects=None):
-        return self.__solve_nsat(model, 1, blocking_manager, shared_objects)
     
     def __solve_nsat(self, model, n, blocking_manager, shared_objs=None, id_thread=None, total=None, constraints=None):
         applying_cons = None
@@ -252,7 +249,6 @@ class BDDSolver(object):
         pass
     
     def simplify(self, strformula, lst=False):
-
         variables = re.sub('[~\&\|\(\)]',' ',strformula)
         variables = re.sub(' +',' ',variables.strip())
         variables = variables.split(" ")
@@ -276,6 +272,34 @@ class BDDSolver(object):
                 
         return " | ".join(conj)
 
+    def support_exist(self, expr1, expr2, lst=False):
+        variables = re.sub('[~\&\|\(\)]',' ',expr1+expr2)
+        variables = re.sub(' +',' ',variables.strip())
+        variables = variables.split(" ")
+        
+        bdd = BDD()
+        for var in variables:
+            bdd.add_var(var)
+
+
+        expr1 = bdd.add_expr(expr1)
+        expr2 = bdd.add_expr(expr2)
+        u = bdd.exist(bdd.support(expr1), expr2)
+            
+        dnf = self.__get_dnf(bdd, u)
+
+        conj = []
+        for el in dnf:
+            if el[0] is True:
+                el = el[1:]
+                el.reverse()
+                conj.append("(%s)"%" & ".join(el))
+
+        if lst:
+            return conj
+                
+        return " | ".join(conj)
+    
     def __get_dnf(self, bdd, u, paths=None):
         if paths is None:
             paths = [[]]

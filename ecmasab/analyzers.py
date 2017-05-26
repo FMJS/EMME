@@ -11,6 +11,7 @@
 import os
 import re
 import random
+import math
 from ecmasab.solvers import CVC4Solver, BDDSolver, ModelsManager
 from ecmasab.logger import Logger
 from ecmasab.encoders import CVC4Encoder
@@ -18,6 +19,8 @@ from ecmasab.parsing import BeParser
 from ecmasab.execution import Memory_Event, Relation, Executions, Execution, \
     RELATIONS, AO, RF, RBF, MO, HB
 from ecmasab.preprocess import QuantPreprocessor
+
+from multiprocessing import Process, Manager
 
 from CVC4 import EQUAL, AND, NOT
 from litmus import Config, litmus
@@ -169,7 +172,7 @@ class ValidExecsModelsManager(ModelsManager):
         if not self.program:
             return []
         rb_set = self.encoder.get_compatible_reads(self.program)[0]
-        rb_cons = ["ASSERT (%s IS_IN RF)"%(x) for x in rb_set]
+        rb_cons = [self.encoder.assert_formula("(%s IS_IN RF)"%(x)) for x in rb_set]
 
         Logger.msg("(%s)"%len(rb_cons), 0)
         
@@ -178,15 +181,16 @@ class ValidExecsModelsManager(ModelsManager):
 
         return rb_cons
 
-
 class SynthProgsModelsManager(ValidExecsModelsManager):
 
     preload = True
     prevmodels = None
+    encoder = None
     
     def __init__(self):
         self.preload = True
         self.prevmodels = None
+        self.encoder = CVC4Encoder()
     
     def load_models(self):
         shared_objs = []
@@ -210,7 +214,7 @@ class SynthProgsModelsManager(ValidExecsModelsManager):
             return []
 
         ao_set = [(x.name,y.name) for x in self.program.get_events() for y in self.program.get_events() if x != y]
-        ao_cons = ["ASSERT ((%s, %s) IS_IN AO)"%(x) for x in ao_set]
+        ao_cons = [self.encoder.assert_formula("((%s, %s) IS_IN AO)"%(x)) for x in ao_set]
 
         Logger.msg("(%s)"%len(ao_cons), 0)
         
@@ -219,7 +223,6 @@ class SynthProgsModelsManager(ValidExecsModelsManager):
 
         return ao_cons
 
-    
 class ValidExecutionAnalyzer(object):
 
     vexecsmanager = None
@@ -255,7 +258,6 @@ class ValidExecutionAnalyzer(object):
         ret = self.c4solver.solve_allsmt(model, self.vexecsmanager, 1)
         return len(ret)
 
-
 class EquivalentExecutionSynthetizer(object):
 
     vexecsmanager = None
@@ -268,18 +270,51 @@ class EquivalentExecutionSynthetizer(object):
     def set_models_file(self, models_file):
         self.vexecsmanager.models_file = models_file
 
+    def __check_all_mt(self, model, ao_execs, executions, num_t):
+        num_t = min(len(ao_execs), num_t)
+        size = int(math.ceil(len(ao_execs)/float(num_t)))
+        ao_execs = [ao_execs[x:x+size] for x in xrange(0, len(ao_execs), size)]
+        num_t = len(ao_execs)
+        retlist = []
+        threads = []
+        
+        with Manager() as manager:
+            proclist = []
+            for i in range(num_t):
+                ret = manager.list([])
+                proclist.append(ret)
+                process = Process(target=self.__check_all, args=(model, ao_execs[i], executions, ret))
+                threads.append(process)
+                process.start()
+
+            for thread in threads:
+                thread.join()
+
+            for x in proclist:
+                retlist += list(x)
+
+        return list(retlist)
+        
+    def __check_all(self, model, ao_execs, executions, retlist=None):
+        if retlist is None: retlist = []
+        for exe in ao_execs:
+            ok = self.__check_ao_correctness(model, exe, executions)
+            if ok: retlist.append(exe)
+        return list(retlist)
+        
     def __check_ao_correctness(self, model, exe, executions):
         ok = True
-
+        exe = str(exe.get_AO())
         prev_blocking = self.vexecsmanager.blocking_relations
         self.vexecsmanager.blocking_relations = [RF]
         
         assertions = self.encoder.print_neg_assertions(executions, self.vexecsmanager.blocking_relations)
 
         # Checking if the candidate is not a superset
-        assertion = "\n"+("\n".join(assertions))
+        assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
-        vmodel += "\nASSERT (%s);\n"%(exe.replace("{}", "empty_rel_set"))
+        vmodel += self.encoder.assert_formula_nl("%s"%(exe))
+        
         ret = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, 1)
         if ret != []:
             ok = False
@@ -287,8 +322,8 @@ class EquivalentExecutionSynthetizer(object):
         # Checking if the candidate mathces all executions
         if ok and (len(assertions) > 1):
             for assertion in assertions:
-                vmodel = model+"\n"+assertion+"\n"
-                vmodel += "\nASSERT (%s);\n"%(exe)
+                vmodel = "%s\n%s\n"%(model, assertion)
+                vmodel += self.encoder.assert_formula_nl("%s"%(exe))
                 ret = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, 1)
                 if ret == []:
                     ok = False
@@ -313,9 +348,9 @@ class EquivalentExecutionSynthetizer(object):
 
         self.vexecsmanager.blocking_relations = [AO]
         ao_execs = []
-        for models_blocking in [[RF, RBF, HB, MO], [RF, RBF]]:
+        for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
             assertions = encoder.print_ex_assertions(executions, models_blocking)
-            vmodel += "\n"+assertions+"\n"
+            vmodel += "\n%s\n"%assertions
             execs = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
             self.vexecsmanager.prevmodels = ao_execs
@@ -329,17 +364,20 @@ class EquivalentExecutionSynthetizer(object):
         eq_progs = []
         equivalent_AOs = []
         events_dic = dict([(x.name, x) for x in program.get_events()])
+
+        if threads > 1:
+            valid_aos = self.__check_all_mt(model, ao_execs, executions, threads)
+        else:
+            valid_aos = self.__check_all(model, ao_execs, executions)
         
-        for exe in ao_execs:
-            ok = self.__check_ao_correctness(model, str(exe.get_AO()), executions)
-            if ok:
-                rel = Relation(AO)
-                rel.tuples = [(events_dic[str(x[0])], events_dic[str(x[1])]) for x in exe.get_AO().tuples]
-                exe.set_AO(rel)
-                exe.program = program
-                equivalent_AOs.append(exe)
-                program = beparser.program_from_execution(exe)
-                eq_progs.append(program)
+        for exe in valid_aos:
+            rel = Relation(AO)
+            rel.tuples = [(events_dic[str(x[0])], events_dic[str(x[1])]) for x in exe.get_AO().tuples]
+            exe.set_AO(rel)
+            exe.program = program
+            equivalent_AOs.append(exe)
+            program = beparser.program_from_execution(exe)
+            eq_progs.append(program)
 
         Logger.log(" DONE", 1)
         for el in equivalent_AOs:
@@ -349,11 +387,14 @@ class EquivalentExecutionSynthetizer(object):
     
 class ConstraintAnalyzerManager(ModelsManager):
 
+    encoder = None
+    
+    def __init(self):
+        self.encoder = CVC4Encoder()
+    
     def compute_from_smt(self, smt):
         assigns = self.exprmgr.mkBoolConst(True)
-        
         model = []
-
         for varstr in LABELLING_VARS:
             assign = self.symboltable.lookup(varstr)
             value = smt.getValue(assign)
@@ -363,16 +404,11 @@ class ConstraintAnalyzerManager(ModelsManager):
             assigns = self.exprmgr.mkExpr(AND, assigns, assign)
 
         blocking = self.exprmgr.mkExpr(NOT, assigns)
-        
         Logger.log("Blocking: %s"%(blocking.toString()), 1)
-        
         return ([blocking], "(%s)"%" & ".join(model))
 
     def compute_from_sharedobjs(self, shared_objs):
-        if shared_objs == []:
-            return ""
-        models = " OR ".join([x.replace("~","NOT ").replace("&","AND") for x in shared_objs])
-        return "ASSERT NOT(%s);"%(models)
+        return ""
 
     def write_models(self, shared_objs, done):
         pass
@@ -388,6 +424,7 @@ class ConstraintsAnalyzer(object):
 
     c4solver = None
     bsolver = None
+    encoder = None
 
     def set_models_file(self, models_file):
         self.vexecsmanager.models_file = models_file
@@ -396,6 +433,7 @@ class ConstraintsAnalyzer(object):
         self.c4solver = CVC4Solver()
         self.bsolver = BDDSolver()
         self.vexecsmanager = ConstraintAnalyzerManager()
+        self.encoder = CVC4Encoder()
 
     def analyze_constraints(self, model, program, jsengine, runs, threads, jsprogram):
         matched = []
@@ -417,13 +455,10 @@ class ConstraintsAnalyzer(object):
         if len(unmatched) == 0:
             return
         
-        matched = ["(%s)"%str(x.replace("{}", "empty_rel_set")) for x in matched]
-        unmatched = ["(%s)"%str(x.replace("{}", "empty_rel_set")) for x in unmatched]
-
-        matched = " OR ".join(matched)
-        unmatched = " OR ".join(unmatched)
+        matched = self.encoder.big_or(matched)
+        unmatched = self.encoder.big_or(unmatched)
         
-        vmodel = "%s\nASSERT %s;\n"%(model, matched)
+        vmodel = "%s\n%s"%(model, self.encoder.assert_formula_nl(matched))
         objs = []
         Logger.log("\nMatched models analysis", 0)
         Logger.msg("Solving... ", 0)
@@ -433,7 +468,7 @@ class ConstraintsAnalyzer(object):
         mmodels = self.bsolver.simplify(mmodels, True)
         Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(mmodels), " | \n".join(mmodels)), 0)
 
-        vmodel = "%s\nASSERT %s;\n"%(model, unmatched)
+        vmodel = "%s\n%s"%(model, self.encoder.assert_formula_nl(unmatched))
         objs = []
         Logger.log("Unmatched models analysis", 0)
         Logger.msg("Solving... ", 0)
@@ -443,9 +478,13 @@ class ConstraintsAnalyzer(object):
         nmodels = self.bsolver.simplify(nmodels, True)
         Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(nmodels), " | \n".join(nmodels)), 0)
 
-        Logger.log("Difference analysis (unmatched \\ matched)", 0)
-        diffmodels = "%s & ~(%s)"%(" | ".join(nmodels), " | ".join(mmodels))
-        diffmodels = self.bsolver.simplify(diffmodels, True)
-        Logger.log(" -> Found %s labelling solutions\n%s"%(len(diffmodels), " | \n".join(diffmodels)), 0)
+        # Logger.log("Difference analysis (mmatched \\ unmatched)", 0)
+        # diffmodels = "%s & ~(%s)"%(" | ".join(mmodels), " | ".join(nmodels))
+        # diffmodels = self.bsolver.simplify(diffmodels, True)
+        # Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(diffmodels), " | \n".join(diffmodels)), 0)
 
+        Logger.log("Difference analysis (exist support(matched) in unmatched)", 0)
+        diffmodels = self.bsolver.support_exist(" | ".join(mmodels), " | ".join(nmodels), True)
+        Logger.log(" -> Found %s labelling solutions\n%s"%(len(diffmodels), " | \n".join(diffmodels)), 0)
+        
         return (mmodels, nmodels, diffmodels)
