@@ -215,13 +215,6 @@ def solve(config, program, strmodel):
         else:
             totmodels = analyzer.solve_all(strmodel, program, config.threads)
 
-        if not config.debug:
-            del_file(config.block_type)
-            del_file(config.model)
-            del_file(config.model_ex)
-            del_file(config.id_type)
-            del_file(config.instance)
-
     return totmodels
 
 def unmatched_analysis(config):
@@ -257,7 +250,7 @@ def synth_program(config):
     analyzer = EquivalentExecutionSynthetizer()
     analyzer.set_models_file(config.models)
     
-    Logger.log("\n** Program Synthesis **", 0)
+    Logger.log("\n** Equivalent Programs Synthesis **", 0)
     
     config.synth = True
     
@@ -560,6 +553,14 @@ def main(args):
         if ret == 0 and args.unmatched:
             ret = unmatched_analysis(config)
 
+        #cleanup
+        if not config.debug:
+            del_file(config.block_type)
+            del_file(config.model)
+            del_file(config.model_ex)
+            del_file(config.id_type)
+            del_file(config.instance)
+            
         Logger.log("\nExiting...", 0)
         return ret
     except Exception as e:
