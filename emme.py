@@ -18,10 +18,12 @@ import subprocess
 
 from argparse import RawTextHelpFormatter
 
-from ecmasab.beparsing import BeParser
-from ecmasab.printers import JST262_SR_Printer, CVC4Printer, DotPrinter, PrintersFactory, PrinterType
+from ecmasab.parsing import BeParser
+from ecmasab.printers import JST262_SR_Printer, DotPrinter, PrintersFactory, PrinterType, BePrinter
+from ecmasab.encoders import CVC4Encoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
+from ecmasab.analyzers import ValidExecutionAnalyzer, EquivalentExecutionSynthetizer, ConstraintsAnalyzer
 
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.solvers import CVC4Solver
@@ -41,10 +43,13 @@ DOTS = "mm%s.dot"
 GRAP = "gmm%s.png"
 JSPROGRAM = "program.js"
 EXECS = "outputs.txt"
+EQPROGS = "%s_eq%s.bex"
 
 ALL = "all"
 
 E_CONDITIONS = ",ENCODE_CONDITIONS=1"
+RELAX_AO = ",en_relaxed_AO=1"
+CONS_LABELLING = ",LABELLING=1"
 
 class Config(object):
     inputfile = None
@@ -63,6 +68,7 @@ class Config(object):
     debug = None
     force_solving = None
     threads = None
+    synth = None
     
     model = None
     model_ex = None
@@ -75,6 +81,9 @@ class Config(object):
     jsprogram = None
     execs = None
     mm = None
+    eqprogs = None
+    jsengine = None
+    runs = None
     
     def __init__(self):
         self.inputfile = None
@@ -93,6 +102,10 @@ class Config(object):
         self.debug = False
         self.force_solving = False
         self.threads = 1
+        self.synth = False
+        self.unmatched = False
+        self.jsengine = None
+        self.runs = 10
         
     def generate_filenames(self):
         if self.prefix:
@@ -107,6 +120,7 @@ class Config(object):
             self.jsprogram = self.prefix+JSPROGRAM
             self.execs = self.prefix+EXECS
             self.mm = FORMAL_MODEL
+            self.eqprogs = self.prefix+EQPROGS
 
             if not os.path.exists(self.prefix):
                 os.makedirs(self.prefix)
@@ -144,7 +158,7 @@ def generate_model(config, program):
     abspath = os.path.abspath(__file__)
     mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
 
-    c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
+    c4printer = CVC4Encoder()
     
     # Copy of Memory Model (CVC4) into the directory #
     with open(mm, "r") as inmm:
@@ -153,7 +167,7 @@ def generate_model(config, program):
 
     # Generation of the CVC4 bounded execution #
     with open(config.instance, "w") as f:
-        f.write(c4printer.print_program(program))
+        f.write(c4printer.print_program(program, config.synth))
 
     # Generation of the CVC4 memory blocks #
     with open(config.block_type, "w") as f:
@@ -187,63 +201,138 @@ def generate_model(config, program):
     return strmodel
 
 def solve(config, program, strmodel):
-    c4solver = CVC4Solver()
-    c4solver.verbosity = config.verbosity
-    c4solver.models_file = config.models
-
+    analyzer = ValidExecutionAnalyzer()
+    analyzer.set_models_file(config.models)
+    
     if (not config.skip_solving) and (config.force_solving):
         del_file(config.models)
     
-    totmodels = c4solver.get_models_size()
+    totmodels = analyzer.get_models_size()
 
-    if (not config.skip_solving) and (not c4solver.is_done()):
-        if program.has_conditions:
-            c4solver.set_additional_variables(program.get_conditions())
-
+    if ((not config.skip_solving) and (not analyzer.is_done())):
         if config.sat:
-            totmodels = c4solver.solve_one(strmodel)
+            totmodels = analyzer.solve_one(strmodel, program)
         else:
-            totmodels = c4solver.solve_all(strmodel, program, config.threads)
-
-        if not config.debug:
-            del_file(config.block_type)
-            del_file(config.model)
-            del_file(config.model_ex)
-            del_file(config.id_type)
-            del_file(config.instance)
+            totmodels = analyzer.solve_all(strmodel, program, config.threads)
 
     return totmodels
+
+def unmatched_analysis(config):
+    analyzer = ConstraintsAnalyzer()
+    analyzer.set_models_file(config.models)
+
+    Logger.log("\n** Unmatched Outputs Analysis **", 0)
+    
+    config.unmatched = True
+    
+    if not config.defines:
+        config.defines = ""
+    config.defines += CONS_LABELLING
+
+    program = parse_program(config)
+    
+    Logger.msg("Generating SMT model... ", 0)
+    strmodel = generate_model(config, program)
+    Logger.log("DONE", 0)
+
+    if config.only_model:
+        return 0
+
+    programs = analyzer.analyze_constraints(strmodel, program, \
+                                            config.jsengine, \
+                                            config.runs, \
+                                            config.threads, \
+                                            config.jsprogram)
+
+    return 0
+    
+def synth_program(config):
+    analyzer = EquivalentExecutionSynthetizer()
+    analyzer.set_models_file(config.models)
+    
+    Logger.log("\n** Equivalent Programs Synthesis **", 0)
+    
+    config.synth = True
+    
+    if not config.defines:
+        config.defines = ""
+    config.defines += RELAX_AO
+
+    program = parse_program(config)
+    if program.has_conditions():
+        Logger.msg("Program synthesis does not support conditional programs", 0)
+        return 0
+    
+    Logger.msg("Generating relaxed SMT model... ", 0)
+    strmodel = generate_model(config, program)
+    Logger.log("DONE", 0)
+
+    if config.only_model:
+        return 0
+
+    Logger.msg("Solving... ", 0)
+
+    programs = analyzer.solve_all_synth(strmodel, program, config.threads)
+    totmodels = len(programs)
+
+    Logger.log(" DONE", 0)
+    
+    if totmodels > 0:
+        Logger.log(" -> Found %s equivalent programs"%(totmodels), 0)
+    else:
+        Logger.log(" -> No viable equivalent programs found", 0)
+
+    Logger.msg("Generating equivalent programs... ", 0)
+        
+    printer = PrintersFactory.printer_by_name(BePrinter.NAME)
+    filename = (config.inputfile.split("/")[-1]).split(".")[0]
+    
+    for i in range(len(programs)):
+        with open(config.eqprogs%(filename, str(i+1)), "w") as eqprog:
+            eqprog.write(printer.print_program(programs[i]))
+        
+
+    Logger.log("DONE", 0)
+            
+    Logger.log("", 1)
+
+    Logger.log("** Original Program: **\n", 1)
+    Logger.log(printer.print_program(program), 1)
+    
+    for program in programs:
+        Logger.log("** Equivalent Program %s: **\n"%(programs.index(program)+1), 1)
+        Logger.log(printer.print_program(program), 1)
+
+    return 0
 
 def analyze_program(config):
     config.generate_filenames()
     
-    logger = Logger(config.verbosity)
+    Logger.log("\n** Program Analysis **", 0)
 
-    logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)
-
-    logger.msg("Generating bounded execution... ", 0)
+    Logger.msg("Generating bounded execution... ", 0)
     program = parse_program(config)
-    logger.log("DONE", 0)
-
-    logger.msg("Generating SMT model... ", 0)
+    Logger.log("DONE", 0)
+    
+    Logger.msg("Generating SMT model... ", 0)
     strmodel = generate_model(config, program)
-    logger.log("DONE", 0)
+    Logger.log("DONE", 0)
 
     if config.only_model:
         return 0
 
     if (not config.skip_solving):
-        logger.msg("Solving... ", 0)
+        Logger.msg("Solving... ", 0)
 
     totmodels = solve(config, program, strmodel)
 
     if (not config.skip_solving):
-        logger.log("DONE", 0)
+        Logger.log(" DONE", 0)
             
     if totmodels > 0:
-        logger.log(" -> Found %s total models"%(totmodels), 0)
+        Logger.log(" -> Found %s possible models"%(totmodels), 0)
     else:
-        logger.log(" -> No viable executions found", 0)
+        Logger.log(" -> No viable executions found", 0)
         
     # Generation of the JS litmus test #
     jprinter = PrintersFactory.printer_by_name(config.jsprinter)
@@ -263,11 +352,11 @@ def analyze_program(config):
             if config.verbosity > 0:
                 conf = params[idparam]
                 pconf = ["%s=\"%s\""%(x[0], x[1]) for x in conf]
-                logger.log("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))), 0)
+                Logger.log("\nParameter configuration (%03d): %s"%(idparam+1, (", ".join(pconf))), 0)
 
         executions = None
         if (totmodels > 0):
-            logger.msg("Computing expected outputs... ", 0)
+            Logger.msg("Computing expected outputs... ", 0)
 
             parser = BeParser()
             parser.DEBUG = config.debug
@@ -275,9 +364,9 @@ def analyze_program(config):
             with open(models, "r") as modelfile:
                 executions = parser.executions_from_string(modelfile.read(), program)
                 
-            logger.log("DONE", 0)
+            Logger.log("DONE", 0)
                 
-        logger.msg("Generating JS program... ", 0)
+        Logger.msg("Generating JS program... ", 0)
 
         jsfiles = [config.jsprogram]
         if config.jsdir:
@@ -288,10 +377,10 @@ def analyze_program(config):
             with open(jsfile, "w") as f:
                 f.write(jprinter.print_program(program, executions))
 
-        logger.log("DONE", 0)
+        Logger.log("DONE", 0)
 
         if (totmodels > 0):
-            logger.msg("Generating expected outputs... ", 0)
+            Logger.msg("Generating expected outputs... ", 0)
 
             # Generation of all possible outputs for the JS litmus test #
             
@@ -310,17 +399,15 @@ def analyze_program(config):
                     with open(config.grap%(str(i+1)), "w") as dot:
                         graphviz_gen(config, config.dots%(str(i+1)), config.grap%(str(i+1)))
 
-            logger.log("DONE", 0)
+            Logger.log("DONE", 0)
 
-            logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
+            Logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
 
-    logger.log("\nExiting...", 0)
-    
     return 0
         
 
 def main(args):
-    parser = argparse.ArgumentParser(description='EMME: ECMAScript Memory Model Evaluatior', formatter_class=RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(description='EMME: ECMAScript Memory Model Evaluator', formatter_class=RawTextHelpFormatter)
     
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
@@ -376,11 +463,27 @@ def main(args):
 
     parser.set_defaults(threads=1)
     parser.add_argument('-j', '--threads', metavar='number', type=int,
-                       help='number of threads (Default is \"1\". Experimental)')
+                       help='number of threads - EXPERIMENTAL. (Default is \"1\")')
 
     parser.set_defaults(debug=False)
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
+
+    parser.set_defaults(synth=False)
+    parser.add_argument('--synth', dest='synth', action='store_true',
+                        help="enables equivalent programs synthesis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(unmatched=False)
+    parser.add_argument('--unmatched', dest='unmatched', action='store_true',
+                        help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(jsengine="")
+    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
+                        help='the command used to call the JavaScript engine.')
+
+    parser.set_defaults(runs=10)
+    parser.add_argument('-n', '--runs', metavar='runs', type=str,
+                       help='number of runs for the unmatched outputs analysis. (Default is \"10\")')
     
     parser.set_defaults(no_expand_bounded_sets=False)
     parser.add_argument('--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
@@ -407,6 +510,10 @@ def main(args):
     if not os.path.exists(args.input_file):
         print("File not found: \"%s\""%args.input_file)
         return 1
+
+    if config.unmatched and not config.jsengine:
+        print("JavaScript engine not specified")
+        return 1
     
     config.inputfile = args.input_file
     config.prefix = prefix
@@ -427,12 +534,35 @@ def main(args):
     config.debug = args.debug
     config.force_solving = args.force_solving
     config.threads = args.threads
+    config.jsengine = args.jsengine
+    config.runs = args.runs
     
     if args.silent:
         config.verbosity = 0
+
+    Logger.verbosity = config.verbosity
+
+    Logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)
     
     try:
-        return analyze_program(config)
+        ret = -1
+        ret = analyze_program(config)
+        
+        if ret == 0 and args.synth:
+            ret = synth_program(config)
+        if ret == 0 and args.unmatched:
+            ret = unmatched_analysis(config)
+
+        #cleanup
+        if not config.debug:
+            del_file(config.block_type)
+            del_file(config.model)
+            del_file(config.model_ex)
+            del_file(config.id_type)
+            del_file(config.instance)
+            
+        Logger.log("\nExiting...", 0)
+        return ret
     except Exception as e:
         if config.debug: raise
         print(e)

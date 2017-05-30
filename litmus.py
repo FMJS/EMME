@@ -19,7 +19,7 @@ import time
 from six.moves import range
 from prettytable import PrettyTable
 from ecmasab.printers import JSPrinter
-from ecmasab.beparsing import BeParser
+from ecmasab.parsing import BeParser
 from ecmasab.utils import decompress_string
 from ecmasab.models_evaluator import Evaluator, MatchType
 
@@ -86,7 +86,7 @@ def run_command(command, number, silent):
 def litmus(config):
 
     command = config.command.split(" ")
-    number = config.number
+    number = config.number if type(config.number) == str else str(config.number)
 
     input_file_has_models = False
     
@@ -251,18 +251,27 @@ def litmus(config):
     if config.silent:
         if len(not_matched) > 0:
             print("FAIL")
-            return 1
+            if not config.models:
+                return 1
         else:
             print("ok")
-            return 0
+            if not config.models:
+                return 0
 
-    if not config.silent and config.models:
-        nmatched = [outputs_dic[x] for x in outputs_dic if tuple(x) not in mmatched]
+    if config.models:
+        mmatched = [str(x[2]) for x in mmatched]
+        amatched = [str(outputs_dic[x][2]) for x in outputs_dic]
+        nmatched = [x for x in amatched if x not in mmatched]
 
-        mmatched = [x[2] for x in mmatched]
-        nmatched = [x[2] for x in nmatched]
-
-        beparser = BeParser()    
+        if config.silent:
+            return (mmatched, nmatched)
+        
+        print("\n== Matched models ==")
+        print("\n".join(mmatched))
+        print("\n== Unmatched models ==")
+        print("\n".join([x for x in nmatched if x not in mmatched]))
+        
+        beparser = BeParser()
         mmatched = beparser.executions_from_string("\n".join(mmatched))
         nmatched = beparser.executions_from_string("\n".join(nmatched))
 
@@ -275,7 +284,7 @@ def litmus(config):
         print("\n".join(out_str))
 
         print("\n== Difference Between Happens Before ==")
-        print(["(%s, %s)"%(x) for x in emod.get_u_HB(MatchType.UM)])
+        print(", ".join(["(%s, %s)"%(x) for x in emod.get_u_HB(MatchType.UM)]))
             
 if __name__ == "__main__":
 

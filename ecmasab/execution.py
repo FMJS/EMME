@@ -50,15 +50,8 @@ RELATIONS.append(HB)
 RELATIONS.append(RF)
 RELATIONS.append(RBF)
 RELATIONS.append(MO)
-# RELATIONS.append(AO)
+RELATIONS.append(AO)
 RELATIONS.append(SW)
-
-BLOCKING_RELATIONS = []
-# BLOCKING_RELATIONS.append(RBF)
-BLOCKING_RELATIONS.append(RF)
-# BLOCKING_RELATIONS.append(HB)
-# BLOCKING_RELATIONS.append(MO)
-# BLOCKING_RELATIONS.append(SW)
 
 def arit_eval(s):
     if sys.version_info[0] >= 3:
@@ -103,7 +96,7 @@ class Executions(object):
     program = None
     executions = None
     allexecs = None
-    
+
     def __init__(self):
         self.program = None
         self.executions = []
@@ -128,6 +121,7 @@ class Executions(object):
         return len(self.executions)
     
 class Execution(object):
+    agent_order = None
     happens_before = None
     memory_order = None
     reads_bytes_from = None
@@ -138,7 +132,7 @@ class Execution(object):
     reads_values = None
 
     program = None
-    
+
     def __init__(self):
         self.program = None
         self.happens_before = Relation(HB)
@@ -156,10 +150,12 @@ class Execution(object):
         relations.append(self.reads_bytes_from)
         relations.append(self.reads_from)
         relations.append(self.synchronizes_with)
+        if self.agent_order:
+            relations.append(self.agent_order)
         return " AND ".join([str(x) for x in relations])
 
     def __eq__(self, other):
-        for rel in BLOCKING_RELATIONS:
+        for rel in [HB, MO, RBF, RF, SW, AO]: 
             if not(self.get_relation_by_name(rel) == other.get_relation_by_name(rel)):
                 return False
         return self.conditions == other.conditions
@@ -203,6 +199,12 @@ class Execution(object):
                     actual_conds.append(actual_cond)
 
         return set(actual_conds) == set(self.conditions)
+
+    def get_AO(self):
+        return self.agent_order
+
+    def set_AO(self, rel):
+        self.agent_order = rel
     
     def get_HB(self):
         return self.happens_before
@@ -248,6 +250,8 @@ class Execution(object):
             self.set_SW(rel)
         elif name == HB:
             self.set_HB(rel)
+        elif name == AO:
+            self.set_AO(rel)
         else:
             raise UnreachableCodeException("Not found relation \"%s\""%(name))
 
@@ -284,6 +288,8 @@ class Execution(object):
             return self.get_SW()
         elif name == HB:
             return self.get_HB()
+        elif name == AO:
+            return self.get_AO()
         else:
             raise UnreachableCodeException("Not found relation \"%s\""%(name))
     
@@ -296,8 +302,16 @@ class Relation(object):
         self.tuples = []
 
     def __repr__(self):
-        return "%s = {%s}"%(self.name, ", ".join([str(x) for x in self.tuples]))
+        return "%s = {%s}"%(self.name, ", ".join(self.__print_tuples()))
 
+    def __print_tuples(self):
+        if self.tuples == []:
+            return []
+        if len(self.tuples[0]) > 2:
+            return ["((%s), %s)"%(", ".join(x[:-1]), x[-1]) for x in self.tuples]
+
+        return ["(%s)"%(", ".join([str(y) for y in x])) for x in self.tuples]
+        
     def __eq__(self, other):
         if len(self.tuples) != len(other.tuples):
             return False
@@ -326,7 +340,6 @@ class Relation(object):
         newrel.tuples = tuples
         return newrel
 
-        
 class Program(object):
     threads = []
     blocks = []
@@ -667,7 +680,8 @@ class ITE_Statement(object):
                     acthen = False
 
         if acthen: uevents += self.then_events
-        if acelse: uevents += self.else_events
+        if self.else_events is not None:
+            if acelse: uevents += self.else_events
         return uevents
     
 class Memory_Event(object):

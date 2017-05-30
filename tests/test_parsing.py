@@ -14,9 +14,10 @@ import sys
 import unittest
 import re
 
-from ecmasab.beparsing import BeParser, ParsingErrorException
+from ecmasab.parsing import BeParser, ParsingErrorException
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.printers import PrintersFactory, PrinterType, CVC4Printer, BePrinter
+from ecmasab.printers import PrintersFactory, PrinterType, BePrinter
+from ecmasab.encoders import CVC4Encoder
 from tests.input_tests import examples, invalids
 from emme import Config
 
@@ -58,10 +59,7 @@ def parse_and_generate(example):
     if program.params:
         program.apply_param(dict(program.get_params()[0]))
 
-    c4printer = PrintersFactory.printer_by_name(CVC4Printer().NAME)
-    cprinters = PrintersFactory.get_printers_by_type(PrinterType.SMT)
-    assert(c4printer in cprinters)
-
+    c4printer = CVC4Encoder()
     c4printer.print_program(program)
     c4printer.print_data_type(program)
     c4printer.print_block_type(program)

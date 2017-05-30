@@ -13,6 +13,7 @@ import itertools
 import ast
 import subprocess
 from six.moves import range
+from ecmasab.logger import Logger
 
 CPP = "cpp"
 
@@ -166,8 +167,7 @@ class QuantPreprocessor(object):
                 cond3 = (" IN " not in self.__print_formula(formula[2:]))
 
         if cond1 and cond2 and cond3:
-            if self.verbosity > 1:
-                print("%% Processing quantifier %s: %s" % (quantifier, self.__print_formula(formula)))
+            Logger.log("%% Processing quantifier %s: %s" % (quantifier, self.__print_formula(formula)), 2)
             if self.expand_sets or (quantifier == self.BIGUNION) or (quantifier == self.BIGSUM):
                 value = self.__sub_quantifier_expand(formula, quantifier, set_dict)
             else:

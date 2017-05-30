@@ -70,6 +70,28 @@
 % #define enc_HB 1 # 2
 % #define enc_CR 2 # 3
 
+%% Subconstraints Labelling
+%#define LABELLING 0
+
+#if LABELLING == 1
+#define LabelT(label, cons) (((label) <=> (cons)) AND (label))
+#define Label(label, cons) ((label) <=> (cons))
+
+L_SW4   : BOOLEAN;
+L_SW4c  : BOOLEAN;
+L_SW4di : BOOLEAN;
+L_SW4d  : BOOLEAN;
+
+L_HB4a : BOOLEAN;
+L_HB4b : BOOLEAN;
+L_HB4c : BOOLEAN;
+L_HB4d : BOOLEAN;
+
+#else
+#define LabelT(label, cons) (cons)
+#define Label(label, cons) (cons)
+#endif
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #ifdef BOUND_INTEGERS
@@ -128,7 +150,6 @@
 
 DATATYPE MOPERATION = R | W | M END;
 DATATYPE ORDER = I | SC | U END;
-
 %DATATYPE BINT = I0 | I1 | I2 | I3 | I4 END;
 DATATYPE BINT = I0 | I1 | I2 | I3 END;
 %DATATYPE BINT = I0 | I1 | I2 END;
@@ -338,10 +359,10 @@ en_SW4di : BOOLEAN;
 en_SW4d : BOOLEAN;
 en_SW5 : BOOLEAN;
 
-#define SW4(er,ew) (en_SW4 => (SeqCst(er) AND RF(er,ew)))
-#define SW4c(er,ew) (en_SW4c => (SeqCst(ew) AND RangeEQ(er,ew)))
-#define SW4di(er) (en_SW4di => (FORALL (ev IN ev_set) : (Active(ev) => (RF(er,ev) => Init(ev)))))
-#define SW4d(er,ew) (en_SW4d => (Init(ew) AND SW4di(er)))
+#define SW4(er,ew) (en_SW4 => LabelT(L_SW4, (SeqCst(er) AND RF(er,ew))))
+#define SW4c(er,ew) (en_SW4c => LabelT(L_SW4c, (SeqCst(ew) AND RangeEQ(er,ew))))
+#define SW4di(er) (en_SW4di => LabelT(L_SW4di, (FORALL (ev IN ev_set) : (Active(ev) => (RF(er,ev) => Init(ev))))))
+#define SW4d(er,ew) (en_SW4d => LabelT(L_SW4d, (Init(ew) AND SW4di(er))))
 
 #ifdef ENABLE_HSW
 #define SW5(er,ew) (en_SW5 => (HSW(er,ew)))
@@ -403,10 +424,10 @@ en_HB4c : BOOLEAN;
 en_HB4d : BOOLEAN;
 en_HB1 : BOOLEAN;
 
-#define HB4a(ee, ed) (en_HB4a => (AO(ee, ed)))
-#define HB4b(ee, ed) (en_HB4b => (SW(ee, ed)))
-#define HB4c(ee, ed) (en_HB4c => (Init(ee) AND RangeIN(ee,ed)))
-#define HB4d(ee, ed) (en_HB4d => (EXISTS (ef IN ev_set) : (Active(ef) AND HB(ee, ef) AND HB(ef, ed))))
+#define HB4a(ee, ed) (en_HB4a => LabelT(L_HB4a, (AO(ee, ed))))
+#define HB4b(ee, ed) (en_HB4b => LabelT(L_HB4b, (SW(ee, ed))))
+#define HB4c(ee, ed) (en_HB4c => LabelT(L_HB4c, (Init(ee) AND RangeIN(ee,ed))))
+#define HB4d(ee, ed) (en_HB4d => LabelT(L_HB4d, (EXISTS (ef IN ev_set) : (Active(ef) AND HB(ee, ef) AND HB(ef, ed)))))
 
 en_HB : BOOLEAN;
 spo_HB : BOOLEAN;
@@ -737,9 +758,15 @@ CHECKSAT;
 %% Additional Assertions %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+#if LABELLING == 1
+
+L_RF_implies_HB : BOOLEAN;
+ASSERT Label(L_RF_implies_HB, (FORALL (ew, er IN ev_set) : (Active2(ew, er) => (RF(er, ew) => HB(ew, er)))));
+
+#endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %#include "models.cvc"
 
-CHECKSAT;
+%CHECKSAT;
