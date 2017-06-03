@@ -16,7 +16,7 @@ import shutil
 import os
 
 from litmus import Config, litmus
-from tests.input_tests import jsprogs
+from tests.input_tests import jstests, jstests_fast
 
 def run(example):
     config = Config()
@@ -25,16 +25,16 @@ def run(example):
     config.command = "bash %s/ext_tools/run_v8.sh"%path
     config.input_file = "%s/tests/%s"%(path, example)
     config.threads = 1
-    config.number = "1"
+    config.number = "10"
     config.silent = True
-    
+
     assert litmus(config) == 0
     
 def test_correctness():
-    for example in jsprogs:
+    for example in jstests_fast:
         yield run, example
 
 if __name__ == "__main__":
-    for example in jsprogs:
+    for example in jstests:
         run(example)
         
