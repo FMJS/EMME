@@ -40,7 +40,7 @@ class ValidExecsModelsManager(ModelsManager):
     encoder = CVC4Encoder()
     shuffle_constraints = False
     program = None
-    blocking_relations = [RF]
+    blocking_relations = [RBF]
 
     def set_additional_variables(self, variables):
         self.variables = variables
