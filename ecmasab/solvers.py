@@ -10,9 +10,11 @@
 
 import CVC4
 import re
+import os
 from six.moves import range
 from multiprocessing import Process, Manager
 from ecmasab.logger import Logger
+import subprocess
 
 from CVC4 import Options, \
     ExprManager, \
@@ -324,3 +326,45 @@ class BDDSolver(object):
 
         return lp+rp
     
+class AlloySolver(object):
+    ALLOY_REL = "/ext_tools/Alloy_Interface.jar"
+    ALLOY_ABS = "/".join(os.path.abspath(__file__).split("/")[:-2])+ALLOY_REL
+    
+    verbosity = None
+    models_file = None
+
+    def __init__(self):
+        self.verbosity = 1
+        self.models_file = None
+
+    def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
+        shared_objects = []
+        sols = 0
+        while True:
+            ret = self.solve_one(model)
+            if ret is None:
+                break
+            sols += 1
+
+            (bclauses, shared_obj) = blocking_manager.compute_from_smt(ret)
+            
+            Logger.msg(".", 0)
+            
+            if shared_obj not in shared_objects:
+                shared_objects.append(shared_obj)
+            model += bclauses
+
+        blocking_manager.write_models(shared_objects, True)
+            
+        return shared_objects
+        
+    def solve_one(self, model):
+        command = "java -jar %s"%self.ALLOY_ABS
+        process = subprocess.Popen(command.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        out = process.communicate(input=model)[0]
+        out = out.split(b"\n")
+
+        if out[0] == "sat":
+            return out[2:]
+        else:
+            return None

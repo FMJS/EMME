@@ -12,12 +12,12 @@ import os
 import re
 import random
 import math
-from ecmasab.solvers import CVC4Solver, BDDSolver, ModelsManager
+from ecmasab.solvers import CVC4Solver, AlloySolver, BDDSolver, ModelsManager
 from ecmasab.logger import Logger
 from ecmasab.encoders import CVC4Encoder
 from ecmasab.parsing import BeParser
 from ecmasab.execution import Memory_Event, Relation, Executions, Execution, \
-    RELATIONS, AO, RF, RBF, MO, HB
+    RELATIONS, AO, RF, RBF, MO, HB, SW
 from ecmasab.preprocess import QuantPreprocessor
 
 from multiprocessing import Process, Manager
@@ -33,7 +33,7 @@ LABELLING_VARS.append("L_HB4d")
 
 LABELLING_VARS.append("L_RF_implies_HB")
 
-class ValidExecsModelsManager(ModelsManager):
+class CVC4ValidExecsModelsManager(ModelsManager):
 
     relations = RELATIONS
     variables = []
@@ -186,7 +186,57 @@ class ValidExecsModelsManager(ModelsManager):
 
         return rb_cons
 
-class SynthProgsModelsManager(ValidExecsModelsManager):
+
+class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
+    id_blocking = 0
+    
+    def compute_from_smt(self, smt):
+        AlloyValidExecsModelsManager.id_blocking += 1
+
+        exe = self.__generate_execution(smt)
+        blocking = []
+        for rbf in self.__extract_tuples("reads_bytes_from", smt):
+            blocking.append("RBF [%s, %s, %s]"%tuple(rbf))
+        blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
+
+        return (blocking, exe)
+    
+    def __generate_execution(self, model):
+        exe = Execution()
+        bytes_name = "byte_"
+        rel_map = dict([("reads_bytes_from", RBF),\
+                        ("reads_from", RF),\
+                        ("memory_order", MO),\
+                        ("synchronizes_with", SW),\
+                        ("happens_before", HB)])
+
+        for el in rel_map:
+            tuples = self.__extract_tuples(el, model)
+            tuples = [] if tuples == [[]] else tuples
+            if len(tuples):
+                if rel_map[el] == RBF:
+                    tuples = [(x[0], x[2], x[1][len(bytes_name):]) \
+                              for x in tuples]
+            rel = Relation(rel_map[el])
+            rel.tuples = tuples
+            exe.set_relation_by_name(rel_map[el], rel)
+            
+        return exe
+    
+    def __extract_tuples(self, relname, model):
+        rel = "this/%s<:rel="%relname
+        tuples = []
+        for el in model:
+            if rel in el:
+                el = el.replace(rel, "")
+                for tuple in el.split(", "):
+                    tuple = tuple[1:-1].split("->")
+                    tuple = [x[:x.find("$")] for x in tuple][1:]
+                    tuples.append(tuple)
+        return tuples
+    
+
+class SynthProgsModelsManager(CVC4ValidExecsModelsManager):
 
     preload = True
     prevmodels = None
@@ -230,39 +280,51 @@ class SynthProgsModelsManager(ValidExecsModelsManager):
 
 class ValidExecutionAnalyzer(object):
 
-    vexecsmanager = None
+    cvc4_vexecsmanager = None
+    alloy_vexecsmanager = None
     c4solver = CVC4Solver()
+    alloysolver = AlloySolver()
     encoder = CVC4Encoder()
 
     def __init__(self):
-        self.vexecsmanager = ValidExecsModelsManager()
+        self.cvc4_vexecsmanager = CVC4ValidExecsModelsManager()
+        self.alloy_vexecsmanager = AlloyValidExecsModelsManager()
 
     def set_models_file(self, models_file):
-        self.vexecsmanager.models_file = models_file
+        self.cvc4_vexecsmanager.models_file = models_file
+        self.alloy_vexecsmanager.models_file = models_file
         
     def get_models_size(self):
-        pre_objs = self.vexecsmanager.load_models()
+        pre_objs = self.cvc4_vexecsmanager.load_models()
         return len(pre_objs)
 
     def is_done(self):
-        return self.vexecsmanager.is_done()
+        return self.cvc4_vexecsmanager.is_done()
     
-    def solve_all(self, model, program=None, nexecs=-1, threads=1):
-        self.vexecsmanager.program = program
+    def solve_all_cvc4(self, model, program=None, nexecs=-1, threads=1):
+        self.cvc4_vexecsmanager.program = program
         if program.has_conditions:
-            self.vexecsmanager.set_additional_variables(program.get_conditions())
+            self.cvc4_vexecsmanager.set_additional_variables(program.get_conditions())
 
-        ret = self.c4solver.solve_allsmt(model, self.vexecsmanager, nexecs, threads)
+        ret = self.c4solver.solve_allsmt(model, self.cvc4_vexecsmanager, nexecs, threads)
         return len(ret)
 
-    def solve_one(self, model, program=None):
-        self.vexecsmanager.program = program
+    def solve_one_cvc4(self, model, program=None):
+        self.cvc4_vexecsmanager.program = program
         if program.has_conditions:
-            self.vexecsmanager.set_additional_variables(program.get_conditions())
+            self.cvc4_vexecsmanager.set_additional_variables(program.get_conditions())
         
-        ret = self.c4solver.solve_allsmt(model, self.vexecsmanager, 1)
+        ret = self.c4solver.solve_allsmt(model, self.cvc4_vexecsmanager, 1)
         return len(ret)
 
+    def solve_all_alloy(self, model, program=None, nexecs=-1, threads=1):
+        self.cvc4_vexecsmanager.program = program
+        if program.has_conditions:
+            self.cvc4_vexecsmanager.set_additional_variables(program.get_conditions())
+
+        ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, nexecs, threads)
+        return len(ret)
+    
 class EquivalentExecutionSynthetizer(object):
 
     vexecsmanager = None

@@ -20,7 +20,7 @@ from argparse import RawTextHelpFormatter
 
 from ecmasab.parsing import BeParser
 from ecmasab.printers import JST262_SR_Printer, DotPrinter, PrintersFactory, PrinterType, BePrinter
-from ecmasab.encoders import CVC4Encoder
+from ecmasab.encoders import CVC4Encoder, AlloyEncoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.analyzers import ValidExecutionAnalyzer, EquivalentExecutionSynthetizer, ConstraintsAnalyzer
@@ -31,10 +31,13 @@ from ecmasab.solvers import CVC4Solver
 from ecmasab.logger import Logger
 
 
-FORMAL_MODEL = "./model/memory_model.cvc"
+CVC_FORMAL_MODEL = "./model/memory_model.cvc"
+ALL_FORMAL_MODEL = "./model/memory_model.als"
 
-MEMORY_MODEL = "memory_model.cvc"
-MEMORY_MODEL_EX = "memory_model_expanded.cvc"
+CVC_MEMORY_MODEL = "memory_model.cvc"
+CVC_MEMORY_MODEL_EX = "memory_model_expanded.cvc"
+ALL_MEMORY_MODEL = "memory_model.als"
+ALL_MEMORY_MODEL_EX = "memory_model_expanded.als"
 INSTANCE = "instance.cvc"
 BLOCK_TYPE = "block_type.cvc"
 ID_TYPE = "id_type.cvc"
@@ -69,9 +72,12 @@ class Config(object):
     force_solving = None
     threads = None
     synth = None
+    use_alloy = None
     
-    model = None
-    model_ex = None
+    cvc_model = None
+    cvc_model_ex = None
+    alloy_model = None
+    alloy_model_ex = None
     instance = None
     block_type = None
     id_type = None
@@ -80,7 +86,8 @@ class Config(object):
     grap = None
     jsprogram = None
     execs = None
-    mm = None
+    cvc_mm = None
+    alloy_mm = None
     eqprogs = None
     jsengine = None
     runs = None
@@ -108,11 +115,14 @@ class Config(object):
         self.jsengine = None
         self.runs = 10
         self.nexecs = -1
+        self.use_alloy = False
         
     def generate_filenames(self):
         if self.prefix:
-            self.model = self.prefix+MEMORY_MODEL
-            self.model_ex = self.prefix+MEMORY_MODEL_EX
+            self.cvc_model = self.prefix+CVC_MEMORY_MODEL
+            self.cvc_model_ex = self.prefix+CVC_MEMORY_MODEL_EX
+            self.alloy_model = self.prefix+ALL_MEMORY_MODEL
+            self.alloy_model_ex = self.prefix+ALL_MEMORY_MODEL_EX
             self.instance = self.prefix+INSTANCE
             self.block_type = self.prefix+BLOCK_TYPE
             self.id_type = self.prefix+ID_TYPE
@@ -121,7 +131,8 @@ class Config(object):
             self.grap = self.prefix+GRAP
             self.jsprogram = self.prefix+JSPROGRAM
             self.execs = self.prefix+EXECS
-            self.mm = FORMAL_MODEL
+            self.cvc_mm = CVC_FORMAL_MODEL
+            self.alloy_mm = ALL_FORMAL_MODEL
             self.eqprogs = self.prefix+EQPROGS
 
             if not os.path.exists(self.prefix):
@@ -156,15 +167,15 @@ def parse_program(config):
 
     return program
     
-def generate_model(config, program):
+def generate_cvc_model(config, program):
     abspath = os.path.abspath(__file__)
-    mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.mm
+    cvc_mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.cvc_mm
 
     c4printer = CVC4Encoder()
     
     # Copy of Memory Model (CVC4) into the directory #
-    with open(mm, "r") as inmm:
-        with open(config.model, "w") as outmm:
+    with open(cvc_mm, "r") as inmm:
+        with open(config.cvc_model, "w") as outmm:
             outmm.write(inmm.read())
 
     # Generation of the CVC4 bounded execution #
@@ -186,9 +197,9 @@ def generate_model(config, program):
         
     # Preprocessing the model using cpp #
     cpppre = ExtPreprocessor(CPP)
-    cpppre.set_output_file(config.model_ex)
+    cpppre.set_output_file(config.cvc_model_ex)
     cpppre.set_defines(config.defines)
-    strmodel = cpppre.preprocess_from_file(config.model)
+    strmodel = cpppre.preprocess_from_file(config.cvc_model)
 
     # Preprocessing the quantifiers #
     qupre = QuantPreprocessor()
@@ -197,7 +208,24 @@ def generate_model(config, program):
     strmodel = qupre.preprocess_from_string(strmodel)
 
     # Generation of the expanded CVC4 model into the directory #
-    with open(config.model_ex, "w") as f:
+    with open(config.cvc_model_ex, "w") as f:
+        f.write(strmodel)
+
+    return strmodel
+
+def generate_alloy_model(config, program):
+    abspath = os.path.abspath(__file__)
+    alloy_mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.alloy_mm
+
+    aprinter = AlloyEncoder()
+    
+    with open(alloy_mm, "r") as f:
+        strmodel = f.read()
+
+    strmodel += aprinter.print_program(program, config.synth)
+    
+    # Generation of the expanded CVC4 model into the directory #
+    with open(config.alloy_model, "w") as f:
         f.write(strmodel)
 
     return strmodel
@@ -213,9 +241,12 @@ def solve(config, program, strmodel):
 
     if ((not config.skip_solving) and (not analyzer.is_done())):
         if config.sat:
-            totmodels = analyzer.solve_one(strmodel, program)
+            totmodels = analyzer.solve_one_cvc4(strmodel, program)
         else:
-            totmodels = analyzer.solve_all(strmodel, program, config.nexecs, config.threads)
+            if config.use_alloy:
+                totmodels = analyzer.solve_all_alloy(strmodel, program, config.nexecs, config.threads)
+            else:
+                totmodels = analyzer.solve_all_cvc4(strmodel, program, config.nexecs, config.threads)
 
     return totmodels
 
@@ -233,8 +264,8 @@ def unmatched_analysis(config):
 
     program = parse_program(config)
     
-    Logger.msg("Generating SMT model... ", 0)
-    strmodel = generate_model(config, program)
+    Logger.msg("Generating model... ", 0)
+    strmodel = generate_cvc_model(config, program)
     Logger.log("DONE", 0)
 
     if config.only_model:
@@ -266,7 +297,7 @@ def synth_program(config):
         return 0
     
     Logger.msg("Generating relaxed SMT model... ", 0)
-    strmodel = generate_model(config, program)
+    strmodel = generate_cvc_model(config, program)
     Logger.log("DONE", 0)
 
     if config.only_model:
@@ -316,8 +347,11 @@ def analyze_program(config):
     program = parse_program(config)
     Logger.log("DONE", 0)
     
-    Logger.msg("Generating SMT model... ", 0)
-    strmodel = generate_model(config, program)
+    Logger.msg("Generating model... ", 0)
+    if config.use_alloy:
+        strmodel = generate_alloy_model(config, program)
+    else:
+        strmodel = generate_cvc_model(config, program)
     Logger.log("DONE", 0)
 
     if config.only_model:
@@ -439,6 +473,10 @@ def main(args):
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
                         help="skips the solving part. (Default is \"%s\")"%False)
 
+    parser.set_defaults(use_alloy=False)
+    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
+                        help="relies on Alloy analyzer instead of CVC4. (Default is \"%s\")"%False)
+    
     parser.set_defaults(nexecs=-1)
     parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
                        help='maximum number of executions. (Default is \"unlimited\")')
@@ -543,6 +581,7 @@ def main(args):
     config.jsengine = args.jsengine
     config.runs = args.runs
     config.nexecs = args.nexecs
+    config.use_alloy = args.use_alloy
 
     if args.silent:
         config.verbosity = 0
@@ -563,8 +602,8 @@ def main(args):
         #cleanup
         if not config.debug:
             del_file(config.block_type)
-            del_file(config.model)
-            del_file(config.model_ex)
+            del_file(config.cvc_model)
+            del_file(config.cvc_model_ex)
             del_file(config.id_type)
             del_file(config.instance)
             
