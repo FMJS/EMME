@@ -281,7 +281,9 @@ class CVC4Encoder(object):
 
         return (compat_events, compat_bytes_events)
 
-class AlloyEncoder(object):
+class AlloyEncoder(CVC4Encoder):
+    id_contr = 0
+    
     def __init__(self):
         pass
     
@@ -404,6 +406,12 @@ class AlloyEncoder(object):
             ret = "fact AO_def {agent_order.rel = (%s)}" % (" + ".join(ao))
             
         return ret
+
+    def assert_formula(self, formula):
+        end = ""
+        formula = formula.replace("{}", "none")
+        AlloyEncoder.id_contr += 1
+        return "fact constr_%s {%s}"%(AlloyEncoder.id_contr, formula)
     
     def __get_locations(self, program):
         events = program.get_events()
@@ -418,3 +426,24 @@ class AlloyEncoder(object):
         max_size = max(sizes)
         ret = []
         return max_size+1
+
+    def get_compatible_reads(self, program):
+        compat_events = []
+        compat_bytes_events = []
+        for read in [x for x in program.get_events() if x.is_read_or_modify()]:
+            for write in [x for x in program.get_events() if x.is_write_or_modify()]:
+                inters = 0
+
+                rset = read.address
+                rset = set(rset) if type(rset[0]) == int else set([y for x in rset for y in x])
+                wset = write.address
+                wset = set(wset) if type(wset[0]) == int else set([y for x in wset for y in x])
+
+                inters = list(set(rset) & set(wset))
+                        
+                if (len(inters) > 0) and (read.block == write.block):
+                    compat_events.append("[%s, %s]"%(read.name, write.name))
+                for inter in inters:
+                    compat_bytes_events.append("[%s, byte_%s, %s]"%(read.name, inter, write.name))
+
+        return (compat_events, compat_bytes_events)

@@ -338,25 +338,63 @@ class AlloySolver(object):
         self.models_file = None
 
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
-        shared_objects = []
-        sols = 0
+        pre_objs = blocking_manager.load_models()
+        ret = []
+        if num_t > 1:
+            rb_cons = blocking_manager.solutions_separators()
+            num_t = min(len(rb_cons), num_t)
+            if num_t < 3:
+                # Multithread is not necessary
+                return self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
+
+            with Manager() as manager:
+                shared_objs = manager.list([])
+                for el in pre_objs:
+                    shared_objs.append(el)
+                rb_cons = manager.list(rb_cons)
+
+                threads = []
+                for i in range(num_t-1):
+                    process = Process(target=self.__solve_nsat, args=(model, -1, blocking_manager, shared_objs, i, num_t-1, rb_cons))
+                    threads.append(process)
+                    process.start()
+
+                shared_objs = self.__solve_nsat(model, num_sols, blocking_manager, shared_objs, 0)    
+
+                for thread in threads:
+                    thread.terminate()
+
+                return list(shared_objs)
+        else:
+            return self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
+        
+    def __compute_models(self, model, num, blocking_manager, constraints=None, shared_objects=None):
+        if constraints:
+            model += "\n"+constraints
+
+        assertions = blocking_manager.compute_from_sharedobjs(shared_objects)
+        model += "\n"+assertions
+
+        num_sols = 0
         while True:
+            if (num != -1) and (num_sols >= num):
+                break
             ret = self.solve_one(model)
             if ret is None:
-                break
-            sols += 1
-
+                return (shared_objects, 0)
+            num_sols += 1
             (bclauses, shared_obj) = blocking_manager.compute_from_smt(ret)
-            
             Logger.msg(".", 0)
-            
+
             if shared_obj not in shared_objects:
                 shared_objects.append(shared_obj)
+            else:
+                if constraints is not None:
+                    return (shared_objects, 2)
+                
             model += bclauses
 
-        blocking_manager.write_models(shared_objects, True)
-            
-        return shared_objects
+        return (shared_objects, 1)
         
     def solve_one(self, model):
         command = "java -jar %s"%self.ALLOY_ABS
@@ -368,3 +406,70 @@ class AlloySolver(object):
             return out[2:]
         else:
             return None
+
+    def __solve_nsat(self, model, n, blocking_manager, shared_objs=None, id_thread=None, total=None, constraints=None):
+        applying_cons = None
+
+        if shared_objs is None:
+            shared_objs = []
+        is_multithread = id_thread is not None
+        is_master = constraints is None
+        
+        if constraints is not None:
+            applying_cons = constraints[id_thread]
+            
+        if not is_multithread:
+            (sol, ret) = self.__compute_models(model, n, blocking_manager, applying_cons, shared_objs)
+
+            for el in sol:
+                if el not in shared_objs:
+                    shared_objs.append(el)
+
+            blocking_manager.write_models(shared_objs, ret == 0)
+            return sol
+            
+        sol = None
+        prvsolsize = 0
+        solsize = 0
+        while (solsize < n) or (n == -1):
+            prvsolsize = solsize
+            (sol, ret) = self.__compute_models(model, 1, blocking_manager, applying_cons, shared_objs)
+
+            for el in sol:
+                if el not in shared_objs:
+                    shared_objs.append(el)
+            solsize = len(sol)
+            
+            if is_master:
+                blocking_manager.write_models(shared_objs, ret == 0)
+            
+            if (self.verbosity > 0) and is_multithread and is_master:
+                if ((solsize - prvsolsize) > 1):
+                    gain = (solsize-prvsolsize)-1
+                    Logger.msg("+%s%s"%(gain, "."*(gain)), 0)
+
+            if not is_master:
+                if ret == 0: #UNSAT
+                    if id_thread >= len(constraints)-1:
+                        break
+                    Logger.msg("d", 0)
+                    constraints[id_thread] = constraints[-1]
+                    del(constraints[-1])
+                    applying_cons = constraints[id_thread]
+                    continue
+
+                if ret == 2: # Not interesting constraint
+                    Logger.msg("s", 0)
+
+                    if len(constraints) > total:
+                        tmp = constraints[id_thread]
+                        constraints[id_thread] = constraints[-1]
+                        constraints[-1] = tmp
+                        constraints[total:] = constraints[total+1:] + [constraints[total]]
+                        applying_cons = constraints[id_thread]
+            
+            if ret == 0:
+                break
+
+        return shared_objs
+        

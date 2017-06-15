@@ -14,7 +14,7 @@ import random
 import math
 from ecmasab.solvers import CVC4Solver, AlloySolver, BDDSolver, ModelsManager
 from ecmasab.logger import Logger
-from ecmasab.encoders import CVC4Encoder
+from ecmasab.encoders import CVC4Encoder, AlloyEncoder
 from ecmasab.parsing import BeParser
 from ecmasab.execution import Memory_Event, Relation, Executions, Execution, \
     RELATIONS, AO, RF, RBF, MO, HB, SW
@@ -189,6 +189,9 @@ class CVC4ValidExecsModelsManager(ModelsManager):
 
 class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
     id_blocking = 0
+
+    def __init__(self):
+        self.encoder = AlloyEncoder()
     
     def compute_from_smt(self, smt):
         AlloyValidExecsModelsManager.id_blocking += 1
@@ -200,6 +203,20 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
         blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
 
         return (blocking, exe)
+
+    def compute_from_sharedobjs(self, shared_objs):
+        constraints = []
+        
+        for exe in shared_objs:
+            blocking = []
+            for tup in exe.get_RBF().tuples:
+                blocking.append("RBF [%s, byte_%s, %s]"%(tup[0], tup[2], tup[1]))
+                
+            AlloyValidExecsModelsManager.id_blocking += 1
+            blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
+            constraints.append(blocking)
+            
+        return "\n".join(constraints)
     
     def __generate_execution(self, model):
         exe = Execution()
@@ -234,6 +251,25 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
                     tuple = [x[:x.find("$")] for x in tuple][1:]
                     tuples.append(tuple)
         return tuples
+
+    def solutions_separators(self):
+        if not self.program:
+            return []
+        
+        rf = True
+
+        cr = self.encoder.get_compatible_reads(self.program)
+        rb_cons = [self.encoder.assert_formula("(RBF %s)"%(x)) for x in cr[1]]
+        
+        if rf:
+            rb_cons += [self.encoder.assert_formula("(RF %s)"%(x)) for x in cr[0]]
+        
+        Logger.msg("(%s)"%len(rb_cons), 0)
+        
+        if self.shuffle_constraints:
+            random.shuffle(rb_cons)
+
+        return rb_cons
     
 
 class SynthProgsModelsManager(CVC4ValidExecsModelsManager):
@@ -318,10 +354,9 @@ class ValidExecutionAnalyzer(object):
         return len(ret)
 
     def solve_all_alloy(self, model, program=None, nexecs=-1, threads=1):
-        self.cvc4_vexecsmanager.program = program
+        self.alloy_vexecsmanager.program = program
         if program.has_conditions:
-            self.cvc4_vexecsmanager.set_additional_variables(program.get_conditions())
-
+            self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
         ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, nexecs, threads)
         return len(ret)
     
