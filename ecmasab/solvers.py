@@ -20,7 +20,8 @@ from CVC4 import Options, \
     SmtEngine, \
     SExpr, \
     CheckSatCommand, \
-    AssertCommand
+    AssertCommand, \
+    Input_newStreamInput
 
 from dd.autoref import BDD
 
@@ -67,6 +68,10 @@ class CVC4Solver(object):
             rb_cons = blocking_manager.solutions_separators()
             num_t = min(len(rb_cons), num_t)
 
+            if num_t < 3:
+                # Multithread is not necessary
+                return self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
+                
             with Manager() as manager:
                 shared_objs = manager.list([])
                 for el in pre_objs:
@@ -79,16 +84,14 @@ class CVC4Solver(object):
                     threads.append(process)
                     process.start()
 
-                shared_objs = self.__solve_nsat(model, -1, blocking_manager, shared_objs, 0)    
+                shared_objs = self.__solve_nsat(model, num_sols, blocking_manager, shared_objs, 0)    
 
                 for thread in threads:
                     thread.terminate()
 
-                ret = list(shared_objs)
+                return list(shared_objs)
         else:
-            ret = self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
-
-        return ret
+            return self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
     
     def compute_models(self, model, blocking_manager, shared_objects=None):
         return self.__solve_nsat(model, -1, blocking_manager, shared_objects)
@@ -105,10 +108,7 @@ class CVC4Solver(object):
             applying_cons = constraints[id_thread]
             
         if self.incremental and not is_multithread:
-            assertions = blocking_manager.compute_from_sharedobjs(shared_objs)
-
-            vmodel = model + assertions
-            (sol, ret) = self.__compute_models(vmodel, n, blocking_manager, applying_cons, shared_objs)
+            (sol, ret) = self.__compute_models(model, n, blocking_manager, applying_cons, shared_objs)
 
             for el in sol:
                 if el not in shared_objs:
@@ -122,11 +122,7 @@ class CVC4Solver(object):
         solsize = 0
         while (solsize < n) or (n == -1):
             prvsolsize = solsize
-        
-            assertions = blocking_manager.compute_from_sharedobjs(shared_objs)
-            vmodel = model + assertions
-            
-            (sol, ret) = self.__compute_models(vmodel, 1, blocking_manager, applying_cons, shared_objs)
+            (sol, ret) = self.__compute_models(model, 1, blocking_manager, applying_cons, shared_objs)
 
             for el in sol:
                 if el not in shared_objs:
@@ -181,7 +177,7 @@ class CVC4Solver(object):
         smt.setOption("produce-models", SExpr(True))
         smt.setOption("fmf-bound", SExpr(True))
         smt.setOption("macros-quant", SExpr(True))
-#        smt.setOption("finite-model-find", SExpr(True))
+        smt.setOption("finite-model-find", SExpr(True))
 #        smt.setOption("repeat-simp", SExpr(True))
 #        smt.setOption("check-models", SExpr(True))
 #        smt.setOption("full-saturate-quant", SExpr(True))
@@ -189,6 +185,9 @@ class CVC4Solver(object):
 
         ind = 0
 
+        assertions = blocking_manager.compute_from_sharedobjs(shared_objects)
+        model = model + assertions
+        
         if constraints:
             model += "\n%s;"%(constraints)
 
@@ -200,7 +199,7 @@ class CVC4Solver(object):
 
         blocking_manager.exprmgr = exprmgr
         blocking_manager.symboltable = symboltable
-
+        
         while True:
             cmd = parser.nextCommand()
             if not cmd: break
@@ -231,12 +230,12 @@ class CVC4Solver(object):
                 if constraints is not None:
                     return (shared_objects, 2)
 
-            Logger.msg(".", 0, constraints is None)
-
             for bclause in bclauses:
                 assertion = AssertCommand(bclause)
                 assertion.invoke(smt)
-                
+
+            Logger.msg(".", 0, constraints is None)
+
             ind +=1
             if (num != -1) and (ind >= num):
                 return (shared_objects, 1)

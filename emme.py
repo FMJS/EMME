@@ -84,6 +84,7 @@ class Config(object):
     eqprogs = None
     jsengine = None
     runs = None
+    nexecs = None
     
     def __init__(self):
         self.inputfile = None
@@ -106,6 +107,7 @@ class Config(object):
         self.unmatched = False
         self.jsengine = None
         self.runs = 10
+        self.nexecs = -1
         
     def generate_filenames(self):
         if self.prefix:
@@ -213,7 +215,7 @@ def solve(config, program, strmodel):
         if config.sat:
             totmodels = analyzer.solve_one(strmodel, program)
         else:
-            totmodels = analyzer.solve_all(strmodel, program, config.threads)
+            totmodels = analyzer.solve_all(strmodel, program, config.nexecs, config.threads)
 
     return totmodels
 
@@ -238,7 +240,7 @@ def unmatched_analysis(config):
     if config.only_model:
         return 0
 
-    programs = analyzer.analyze_constraints(strmodel, program, \
+    programs = analyzer.analyze_constraints(strmodel, \
                                             config.jsengine, \
                                             config.runs, \
                                             config.threads, \
@@ -437,6 +439,10 @@ def main(args):
     parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
                         help="skips the solving part. (Default is \"%s\")"%False)
 
+    parser.set_defaults(nexecs=-1)
+    parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
+                       help='maximum number of executions. (Default is \"unlimited\")')
+    
     parser.set_defaults(verbosity=1)
     parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
                         help="verbosity level. (Default is \"%s\")"%1)
@@ -536,7 +542,8 @@ def main(args):
     config.threads = args.threads
     config.jsengine = args.jsengine
     config.runs = args.runs
-    
+    config.nexecs = args.nexecs
+
     if args.silent:
         config.verbosity = 0
 

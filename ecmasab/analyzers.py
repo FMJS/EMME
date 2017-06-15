@@ -40,7 +40,7 @@ class ValidExecsModelsManager(ModelsManager):
     encoder = CVC4Encoder()
     shuffle_constraints = False
     program = None
-    blocking_relations = [RF]
+    blocking_relations = [RBF]
 
     def set_additional_variables(self, variables):
         self.variables = variables
@@ -104,6 +104,7 @@ class ValidExecsModelsManager(ModelsManager):
     
     def compute_from_smt(self, smt):
         assigns = self.exprmgr.mkBoolConst(True)
+        posassigns = self.exprmgr.mkBoolConst(True)
         exe = Execution()
 
         for relation in self.relations:
@@ -115,9 +116,9 @@ class ValidExecsModelsManager(ModelsManager):
             exe.set_relation_by_name(relation, rel)
 
             if relation in self.blocking_relations:
-                assign = self.exprmgr.mkExpr(EQUAL, assign, smt.getValue(assign))
+                assign = self.exprmgr.mkExpr(EQUAL, assign, value)
                 assigns = self.exprmgr.mkExpr(AND, assigns, assign)
-
+                
         for variable in self.variables:
             assign = self.symboltable.lookup(variable)
             value = smt.getValue(assign).toString()
@@ -135,10 +136,8 @@ class ValidExecsModelsManager(ModelsManager):
     def compute_from_sharedobjs(self, shared_objs):
         executions = Executions()
         executions.executions = shared_objs
-
-        assertions = "\n"+("\n".join(self.encoder.print_neg_assertions(executions, self.blocking_relations)))
-
-        return assertions
+        assertions = self.encoder.print_neg_assertions(executions, self.blocking_relations)
+        return "\n"+("\n".join(assertions))
 
     def write_models(self, shared_objs, done):
         if self.models_file:
@@ -171,9 +170,15 @@ class ValidExecsModelsManager(ModelsManager):
     def solutions_separators(self):
         if not self.program:
             return []
-        rb_set = self.encoder.get_compatible_reads(self.program)[0]
-        rb_cons = [self.encoder.assert_formula("(%s IS_IN RF)"%(x)) for x in rb_set]
+        
+        rf = True
 
+        cr = self.encoder.get_compatible_reads(self.program)
+        rb_cons = [self.encoder.assert_formula("(%s IS_IN RBF)"%(x)).replace("Int","") for x in cr[1]]
+        
+        if rf:
+            rb_cons += [self.encoder.assert_formula("(%s IS_IN RF)"%(x)).replace("Int","") for x in cr[0]]
+        
         Logger.msg("(%s)"%len(rb_cons), 0)
         
         if self.shuffle_constraints:
@@ -242,12 +247,12 @@ class ValidExecutionAnalyzer(object):
     def is_done(self):
         return self.vexecsmanager.is_done()
     
-    def solve_all(self, model, program=None, threads=1):
+    def solve_all(self, model, program=None, nexecs=-1, threads=1):
         self.vexecsmanager.program = program
         if program.has_conditions:
             self.vexecsmanager.set_additional_variables(program.get_conditions())
 
-        ret = self.c4solver.solve_allsmt(model, self.vexecsmanager, -1, threads)
+        ret = self.c4solver.solve_allsmt(model, self.vexecsmanager, nexecs, threads)
         return len(ret)
 
     def solve_one(self, model, program=None):
@@ -435,7 +440,7 @@ class ConstraintsAnalyzer(object):
         self.vexecsmanager = ConstraintAnalyzerManager()
         self.encoder = CVC4Encoder()
 
-    def analyze_constraints(self, model, program, jsengine, runs, threads, jsprogram):
+    def analyze_constraints(self, model, jsengine, runs, threads, jsprogram):
         matched = []
         unmatched = []
 
