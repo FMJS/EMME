@@ -1,2 +1,2 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-java -jar $DIR/Alloy_Interface.jar
+java -XX:ParallelGCThreads=1 -jar $DIR/Alloy_Interface.jar

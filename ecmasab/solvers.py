@@ -424,7 +424,7 @@ class AlloySolver(object):
                 break
         out = out.split(b"\n")
         if out[-2] == "sat":
-            return out[:-1]
+            return out
         else:
             return None
 
