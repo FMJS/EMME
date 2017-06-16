@@ -602,6 +602,7 @@ def main(args):
         #cleanup
         if not config.debug:
             del_file(config.block_type)
+            del_file(config.alloy_model)
             del_file(config.cvc_model)
             del_file(config.cvc_model_ex)
             del_file(config.id_type)

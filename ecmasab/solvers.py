@@ -327,48 +327,54 @@ class BDDSolver(object):
         return lp+rp
     
 class AlloySolver(object):
-    ALLOY_REL = "/ext_tools/Alloy_Interface.jar"
+    ALLOY_REL = "/ext_tools/run_alloy.sh"
     ALLOY_ABS = "/".join(os.path.abspath(__file__).split("/")[:-2])+ALLOY_REL
     
     verbosity = None
     models_file = None
+    alloy_processes = None
 
     def __init__(self):
         self.verbosity = 1
         self.models_file = None
+        self.alloy_processes = None
 
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
+        self.init_solvers(num_t)
         pre_objs = blocking_manager.load_models()
-        ret = []
+        ret = None
         if num_t > 1:
             rb_cons = blocking_manager.solutions_separators()
             num_t = min(len(rb_cons), num_t)
             if num_t < 3:
                 # Multithread is not necessary
-                return self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
+                ret = self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
+            else:
+                with Manager() as manager:
+                    shared_objs = manager.list([])
+                    for el in pre_objs:
+                        shared_objs.append(el)
+                    rb_cons = manager.list(rb_cons)
 
-            with Manager() as manager:
-                shared_objs = manager.list([])
-                for el in pre_objs:
-                    shared_objs.append(el)
-                rb_cons = manager.list(rb_cons)
+                    threads = []
+                    for i in range(num_t-1):
+                        process = Process(target=self.__solve_nsat, args=(model, -1, blocking_manager, shared_objs, i, num_t-1, rb_cons))
+                        threads.append(process)
+                        process.start()
 
-                threads = []
-                for i in range(num_t-1):
-                    process = Process(target=self.__solve_nsat, args=(model, -1, blocking_manager, shared_objs, i, num_t-1, rb_cons))
-                    threads.append(process)
-                    process.start()
+                    shared_objs = self.__solve_nsat(model, num_sols, blocking_manager, shared_objs, 0)    
 
-                shared_objs = self.__solve_nsat(model, num_sols, blocking_manager, shared_objs, 0)    
+                    for thread in threads:
+                        thread.terminate()
 
-                for thread in threads:
-                    thread.terminate()
-
-                return list(shared_objs)
+                    ret = list(shared_objs)
         else:
-            return self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
+            ret = self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
+
+        self.quit_solvers()
+        return ret
         
-    def __compute_models(self, model, num, blocking_manager, constraints=None, shared_objects=None):
+    def __compute_models(self, model, solver, num, blocking_manager, constraints=None, shared_objects=None):
         if constraints:
             model += "\n"+constraints
 
@@ -379,7 +385,7 @@ class AlloySolver(object):
         while True:
             if (num != -1) and (num_sols >= num):
                 break
-            ret = self.solve_one(model)
+            ret = self.solve_one(model, solver)
             if ret is None:
                 return (shared_objects, 0)
             num_sols += 1
@@ -395,15 +401,30 @@ class AlloySolver(object):
             model += bclauses
 
         return (shared_objects, 1)
-        
-    def solve_one(self, model):
-        command = "java -jar %s"%self.ALLOY_ABS
-        process = subprocess.Popen(command.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        out = process.communicate(input=model)[0]
-        out = out.split(b"\n")
 
-        if out[0] == "sat":
-            return out[2:]
+    def init_solvers(self, n):
+        self.alloy_processes = []
+        command = "%s"%self.ALLOY_ABS
+        for x in range(n):
+            self.alloy_processes.append(subprocess.Popen(command.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True))
+
+    def quit_solvers(self):
+        for solver in self.alloy_processes:
+            solver.stdin.write("quit\n")
+            solver.stdin.flush()
+        
+    def solve_one(self, model, solver):
+        solver.stdin.write(model+"\nreset\n")
+        solver.stdin.flush()
+        out = ""
+        while True:
+            line = solver.stdout.readline()
+            out += line
+            if line in ["sat\n", "unsat\n"]:
+                break
+        out = out.split(b"\n")
+        if out[-2] == "sat":
+            return out[:-1]
         else:
             return None
 
@@ -414,12 +435,20 @@ class AlloySolver(object):
             shared_objs = []
         is_multithread = id_thread is not None
         is_master = constraints is None
-        
+
+        if is_multithread:
+            if is_master:
+                process = self.alloy_processes[0]
+            else:
+                process = self.alloy_processes[id_thread+1]
+        else:
+            process = self.alloy_processes[0]
+            
         if constraints is not None:
             applying_cons = constraints[id_thread]
             
         if not is_multithread:
-            (sol, ret) = self.__compute_models(model, n, blocking_manager, applying_cons, shared_objs)
+            (sol, ret) = self.__compute_models(model, process, n, blocking_manager, applying_cons, shared_objs)
 
             for el in sol:
                 if el not in shared_objs:
@@ -433,7 +462,7 @@ class AlloySolver(object):
         solsize = 0
         while (solsize < n) or (n == -1):
             prvsolsize = solsize
-            (sol, ret) = self.__compute_models(model, 1, blocking_manager, applying_cons, shared_objs)
+            (sol, ret) = self.__compute_models(model, process, 1, blocking_manager, applying_cons, shared_objs)
 
             for el in sol:
                 if el not in shared_objs:
