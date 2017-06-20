@@ -322,6 +322,10 @@ class AlloyEncoder(CVC4Encoder):
         ret.append("3 order_type")
         ret.append("2 tear_type")
         ret.append("3 operation_type")
+        ret.append("2 active_type")
+
+        if program.has_conditions():
+            ret.append("2 boolean")
         
         ret.append("%s mem_events"%(len(program.get_events())))
         ret.append("%s threads"%(len(program.threads)))
@@ -332,13 +336,15 @@ class AlloyEncoder(CVC4Encoder):
         return "run {} for %s"%(", ".join(ret))
     
     def __print_conditions(self, program):
-        return ""
-    
         if not program.get_conditions():
             return ""
         ret = []
+        ret.append("abstract sig boolean {}")
+        ret.append("one sig TRUE extends boolean{}")
+        ret.append("one sig FALSE extends boolean{}")
         for condition in program.conditions:
-            ret.append("%s: BOOLEAN;"%condition)
+            ret.append("one sig %s {value: boolean}"%condition)
+            ret.append("fact def_%s {(%s.value = TRUE) or (%s.value = FALSE)}"%(condition, condition, condition))
 
         return "\n".join(ret)
     
@@ -360,18 +366,17 @@ class AlloyEncoder(CVC4Encoder):
             address = "%s" % (" + ".join(["{byte_%s}" % el for el in event.address]))
             ret += "(%s.M = %s) and " % (event.name, address)
             
-        # if conditional:
-        #     if event.en_conditions:
-        #         condition = []
-        #         for el in event.en_conditions:
-        #             if el[1]:
-        #                 condition.append("(%s)"%el[0])
-        #             else:
-        #                 condition.append("(NOT (%s))"%el[0])
+        if conditional and event.en_conditions:
+            condition = []
+            for el in event.en_conditions:
+                if el[1]:
+                    condition.append("(%s.value = TRUE)"%el[0])
+                else:
+                    condition.append("(%s.value = FALSE)"%el[0])
 
-        #         ret +=  "%s((%s.A = ENABLED) <=> (%s)) AND\n" % (indent, event.name, " AND ".join(condition))
-        #     else:
-        #         ret +=  "%s(%s.A = ENABLED) AND\n" % (indent, event.name)
+            ret +=  "((%s.A = ENABLED) <=> (%s)) and " % (event.name, " and ".join(condition))
+        else:
+            ret +=  "(%s.A = ENABLED) and " % (event.name)
 
         ret += "(%s.B = %s)"    % (event.name, str(event.block))
         ret += "}\n"

@@ -197,11 +197,21 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
         AlloyValidExecsModelsManager.id_blocking += 1
 
         exe = self.__generate_execution(smt)
+#        print smt
         blocking = []
         for rbf in self.__extract_tuples("reads_bytes_from", smt):
             blocking.append("RBF [%s, %s, %s]"%tuple(rbf))
+
+        for var in self.variables:
+            value = self.__get_condition(smt, var)
+            if value is not None:
+                blocking.append("(%s.value = %s)"%(var, value))
+                exe.add_condition(var, value)
+            
         blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
 
+#        print blocking
+        
         return (blocking, exe)
 
     def compute_from_sharedobjs(self, shared_objs):
@@ -217,6 +227,12 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
             constraints.append(blocking)
             
         return "\n".join(constraints)
+
+    def __get_condition(self, model, condition):
+        for el in model:
+            if ("this/%s<:value="%condition in el):
+                return str("TRUE" in el).upper()
+        return None
     
     def __generate_execution(self, model):
         exe = Execution()

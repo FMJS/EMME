@@ -71,7 +71,7 @@
 % #define enc_CR 2 # 3
 
 %% Additional constraints bounding the VE
-#define en_SINGLE_WRITES 1
+#define en_SINGLE_WRITES 0
 
 %% Subconstraints Labelling
 %#define LABELLING 0

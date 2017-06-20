@@ -1,8 +1,12 @@
-sig mem_events {T: tear_type, R: order_type, O: operation_type, B : blocks, M: set bytes}
+sig mem_events {T: tear_type, R: order_type, O: operation_type, B : blocks, M: set bytes, A: active_type}
 
 abstract sig tear_type {}
 one sig WT extends tear_type{}
 one sig NT extends tear_type{}
+
+abstract sig active_type {}
+one sig ENABLED extends active_type{}
+one sig DISABLED extends active_type{}
 
 abstract sig order_type {}
 one sig I extends order_type{}
@@ -57,6 +61,9 @@ pred RangeEQ(e1:mem_events, e2:mem_events) {BlockEQ [e1,e2] and AddrEQ [e1,e2]}
 pred NoTear(e: mem_events) { e.T in NT }
 pred Block(e:mem_events, b:blocks) {e.B = b}
 
+pred Active(e:mem_events) {e.A = ENABLED}
+pred Active2(e1, e2 :mem_events) {(e1.A = ENABLED) and (e2.A = ENABLED)}
+pred Active3(e1, e2, e3 :mem_events) {(e1.A = ENABLED) and (e2.A = ENABLED) and (e3.A = ENABLED)}
 
 -- Preconditions
 //fact init_events {some e: mem_events | all b: blocks | Write [e] and (e.B = b) and (e.M = bytes) and Init [e]}
@@ -76,10 +83,10 @@ pred RF(e1: mem_events, e2: mem_events) {(e1 -> e2)  in reads_from.rel}
 // pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(b in e2.M) and (b in e1.M) and ((e1 -> e2) in reads_from.rel)}
 pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(e1 -> b -> e2)  in reads_bytes_from.rel}
 
-fact rbf_def {all er : mem_events | RoM [er] => (all b : bytes | (b in er.M) => (one ew : mem_events | (b in ew.M) and BlockEQ [er,ew] and WoM [ew] and RBF [er,b,ew])) }
-fact rbf_def_2 {all er,ew : mem_events | (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew]))}
-fact rbf_rf_def {all e1,e2 : mem_events | (RF [e1,e2] <=> (some b:bytes | RBF [e1,b,e2]))}
-fact rbf_corr {all er,ew: mem_events | all b: bytes | RBF [er,b,ew] => not (some ev: mem_events | RBF [er,b,ev] and (ew != ev))}
+fact rbf_def {all er : mem_events | Active [er] => (RoM [er] => (all b : bytes | (b in er.M) => (one ew : mem_events | Active [ew] and (b in ew.M) and BlockEQ [er,ew] and WoM [ew] and RBF [er,b,ew]))) }
+fact rbf_def_2 {all er,ew : mem_events | Active2 [er,ew] => (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew]))}
+fact rbf_rf_def {all e1,e2 : mem_events | Active2 [e1,e2] => (RF [e1,e2] <=> (some b:bytes | RBF [e1,b,e2]))}
+fact rbf_corr {all er,ew: mem_events | Active2 [er,ew] => (all b: bytes | RBF [er,b,ew] => not (some ev: mem_events | Active [ev] and (RBF [er,b,ev] and (ew != ev))))}
 
 -- Synchronizes with relation
 one sig synchronizes_with {rel:  mem_events -> mem_events}
@@ -90,7 +97,7 @@ pred SW4c(er:mem_events, ew:mem_events) {SeqCst [ew] and RangeEQ [er,ew]}
 pred SW4di(er:mem_events) {all ev: mem_events | RF [er,ev] => Init [ev]}
 pred SW4d(er,ew: mem_events) {Init [ew] and SW4di [er]}
 
-fact sw_def {all er,ew : mem_events | SW [ew,er] <=> ((SW4 [er,ew] and (SW4c [er,ew] or SW4d [er,ew])))}
+fact sw_def {all er,ew : mem_events | Active2 [ew,er] => (SW [ew,er] <=> ((SW4 [er,ew] and (SW4c [er,ew] or SW4d [er,ew]))))}
 
 -- Happens Before relation
 one sig happens_before {rel:  mem_events -> mem_events}
@@ -101,11 +108,11 @@ pred HB4b(ee, ed: mem_events) {SW [ee, ed]}
 pred HB4c(ee, ed: mem_events) {Init [ee] and RangeIN [ee,ed]}
 pred HB4d(ee, ed: mem_events) {some ef : mem_events | HB [ee, ef] and HB [ef, ed]}
 
-fact hb_def {all ee,ed : mem_events | HB [ee,ed] <=> ((ee != ed) and (HB4a [ee,ed] or HB4b [ee,ed] or HB4c [ee,ed] or HB4d [ee,ed]))}
-fact hb_closure {all e1,e2,e3 : mem_events | HB [e1,e2] and HB [e2,e3] => HB [e1,e3]}
+fact hb_def {all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee != ed) and (HB4a [ee,ed] or HB4b [ee,ed] or HB4c [ee,ed] or HB4d [ee,ed])))}
+fact hb_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (HB [e1,e2] and HB [e2,e3] => HB [e1,e3])}
 
 -- Coherent Reads
-fact cr_def {all er,ew : mem_events | (RoM [er] and WoM[ew]) => (all b: bytes | (RBF [er,b,ew] => ((not HB [er,ew]) and (not (some ev: mem_events | WoM [ev] and (HB [ew,ev] and HB [ev,er] and BlockEQ [ev,ew] and (b in ev.M)))))))}
+fact cr_def {all er,ew : mem_events | Active2 [er,ew] => ((RoM [er] and WoM[ew]) => (all b: bytes | (RBF [er,b,ew] => ((not HB [er,ew]) and (not (some ev: mem_events | Active [ev] and (WoM [ev] and (HB [ew,ev] and HB [ev,er] and BlockEQ [ev,ew] and (b in ev.M)))))))))}
 
 -- Tear Free Reads
 pred TFR2aiiA1(er,ew: mem_events) {not (some ev: mem_events | RangeEQ [ev,ew] and NoTear [ev] and (not (ev = ew)) and RF [er,ev])}
@@ -123,9 +130,9 @@ pred MO3bii(ee,ed: mem_events) {not (some ew: mem_events | WoM [ew] and RangeEQ 
 pred MO3b(ee,ed: mem_events) {SW [ee,ed] => MO3bii [ee,ed]}
 pred MO3a(ee,ed: mem_events) {HB [ee,ed] => MO [ee,ed]}
 
-fact mo_def {all ee,ed: mem_events | MO3a [ee,ed] and MO3b [ee,ed]}
-fact mo_closure {all e1,e2,e3 : mem_events | MO [e1,e2] and MO [e2,e3] => MO [e1,e3]}
-fact mo_tot {all e1,e2 : mem_events | ((e1 != e2) => MO [e1,e2] <=> not (MO [e2,e1]))}
+fact mo_def {all ee,ed: mem_events | Active2 [ee,ed] => (MO3a [ee,ed] and MO3b [ee,ed])}
+fact mo_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (MO [e1,e2] and MO [e2,e3] => MO [e1,e3])}
+fact mo_tot {all e1,e2 : mem_events | Active2 [e1,e2] => ((e1 != e2) => MO [e1,e2] <=> not (MO [e2,e1]))}
 
 
 -- Checks
