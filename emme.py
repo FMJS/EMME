@@ -241,7 +241,10 @@ def solve(config, program, strmodel):
 
     if ((not config.skip_solving) and (not analyzer.is_done())):
         if config.sat:
-            totmodels = analyzer.solve_one_cvc4(strmodel, program)
+            if config.use_alloy:
+                totmodels = analyzer.solve_one_alloy(strmodel, program)
+            else:
+                totmodels = analyzer.solve_one_cvc4(strmodel, program)
         else:
             if config.use_alloy:
                 totmodels = analyzer.solve_all_alloy(strmodel, program, config.nexecs, config.threads)

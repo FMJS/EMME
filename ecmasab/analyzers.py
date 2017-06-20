@@ -375,6 +375,14 @@ class ValidExecutionAnalyzer(object):
             self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
         ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, nexecs, threads)
         return len(ret)
+
+    def solve_one_alloy(self, model, program=None):
+        self.alloy_vexecsmanager.program = program
+        if program.has_conditions:
+            self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
+        
+        ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, 1)
+        return len(ret)
     
 class EquivalentExecutionSynthetizer(object):
 
