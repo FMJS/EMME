@@ -410,11 +410,11 @@ class AlloySolver(object):
 
     def quit_solvers(self):
         for solver in self.alloy_processes:
-            solver.stdin.write("quit\n")
+            solver.stdin.write(b"quit\n")
             solver.stdin.flush()
         
     def solve_one(self, model, solver):
-        solver.stdin.write(model+"\nreset\n")
+        solver.stdin.write(b'%s\nreset\n'%(model))
         solver.stdin.flush()
         out = ""
         while True:
