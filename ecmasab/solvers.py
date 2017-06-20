@@ -410,15 +410,15 @@ class AlloySolver(object):
 
     def quit_solvers(self):
         for solver in self.alloy_processes:
-            solver.stdin.write(b"quit\n")
+            solver.stdin.write(("quit\n").encode())
             solver.stdin.flush()
         
     def solve_one(self, model, solver):
-        solver.stdin.write(b'%s\nreset\n'%(model))
+        solver.stdin.write(('%s\nreset\n'%(model)).encode())
         solver.stdin.flush()
         out = ""
         while True:
-            line = solver.stdout.readline()
+            line = solver.stdout.readline().decode()
             out += line
             if line in ["sat\n", "unsat\n"]:
                 break
