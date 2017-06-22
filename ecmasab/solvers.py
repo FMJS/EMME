@@ -22,8 +22,7 @@ from CVC4 import Options, \
     SmtEngine, \
     SExpr, \
     CheckSatCommand, \
-    AssertCommand, \
-    Input_newStreamInput
+    AssertCommand
 
 from dd.autoref import BDD
 
@@ -65,7 +64,6 @@ class CVC4Solver(object):
     
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
         pre_objs = blocking_manager.load_models()
-        ret = []
         if num_t > 1:
             rb_cons = blocking_manager.solutions_separators()
             num_t = min(len(rb_cons), num_t)

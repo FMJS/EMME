@@ -11,7 +11,6 @@
 import itertools
 from six.moves import range
 
-from ecmasab.execution import Executions
 from ecmasab.execution import TYPE
 from ecmasab.parsing import T_DONE
 
@@ -267,7 +266,6 @@ class CVC4Encoder(object):
                 sizes.append(event.address[-1][-1])
 
         max_size = max(sizes)
-        ret = []
         return max_size+1
     
     def __print_compatible_reads(self, program):
@@ -431,7 +429,6 @@ class AlloyEncoder(CVC4Encoder):
         return ret
 
     def assert_formula(self, formula):
-        end = ""
         formula = formula.replace("{}", "none")
         AlloyEncoder.id_contr += 1
         return "fact constr_%s {%s}"%(AlloyEncoder.id_contr, formula)
@@ -447,7 +444,6 @@ class AlloyEncoder(CVC4Encoder):
                 sizes.append(event.address[-1][-1])
 
         max_size = max(sizes)
-        ret = []
         return max_size+1
 
     def get_compatible_reads(self, program):
