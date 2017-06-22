@@ -321,7 +321,7 @@ def synth_program(config):
     Logger.log(" DONE", 0)
     
     if totmodels > 0:
-        Logger.log(" -> Found %s equivalent programs"%(totmodels), 0)
+        Logger.log(" -> Found %s equivalent program%s"%(totmodels, "" if totmodels == 1 else "s"), 0)
     else:
         Logger.log(" -> No viable equivalent programs found", 0)
 
@@ -376,7 +376,7 @@ def analyze_program(config):
         Logger.log(" DONE", 0)
             
     if totmodels > 0:
-        Logger.log(" -> Found %s possible models"%(totmodels), 0)
+        Logger.log(" -> Found %s possible model%s"%(totmodels, "" if totmodels == 1 else "s"), 0)
     else:
         Logger.log(" -> No viable executions found", 0)
         
@@ -447,7 +447,7 @@ def analyze_program(config):
 
             Logger.log("DONE", 0)
 
-            Logger.log(" -> Found %s total possible outputs"%(len(jsexecs)), 0)
+            Logger.log(" -> Found %s possible output%s"%(len(jsexecs), "" if len(jsexecs) == 1 else "s"), 0)
 
     return 0
         
