@@ -13,10 +13,10 @@
 $262.agent.start(
    `$262.agent.receiveBroadcast(function (data) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 1;
-      var x = new Int8Array(data.x_sab); x[1] = 2;
-      var x = new Int8Array(data.x_sab); x[2] = 3;
-      var x = new Int8Array(data.x_sab); x[3] = 4;
+      var x = new Int8Array(data.x_sab); x[0] = 0;
+      var x = new Int8Array(data.x_sab); x[1] = 1;
+      var x = new Int8Array(data.x_sab); x[2] = 2;
+      var x = new Int8Array(data.x_sab); x[3] = 3;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -60,30 +60,23 @@ report.sort();
 report = report.join(";");
 var outputs = [];
 outputs[0] = "id6_R_t2: 0;id7_R_t2: 0";
-outputs[1] = "id6_R_t2: 1;id7_R_t2: 0";
-outputs[2] = "id6_R_t2: 512;id7_R_t2: 0";
-outputs[3] = "id6_R_t2: 513;id7_R_t2: 0";
-outputs[4] = "id6_R_t2: 0;id7_R_t2: 3";
-outputs[5] = "id6_R_t2: 1;id7_R_t2: 3";
-outputs[6] = "id6_R_t2: 512;id7_R_t2: 3";
-outputs[7] = "id6_R_t2: 513;id7_R_t2: 3";
-outputs[8] = "id6_R_t2: 0;id7_R_t2: 1024";
-outputs[9] = "id6_R_t2: 1;id7_R_t2: 1024";
-outputs[10] = "id6_R_t2: 512;id7_R_t2: 1024";
-outputs[11] = "id6_R_t2: 513;id7_R_t2: 1024";
-outputs[12] = "id6_R_t2: 0;id7_R_t2: 1027";
-outputs[13] = "id6_R_t2: 1;id7_R_t2: 1027";
-outputs[14] = "id6_R_t2: 512;id7_R_t2: 1027";
-outputs[15] = "id6_R_t2: 513;id7_R_t2: 1027";
+outputs[1] = "id6_R_t2: 256;id7_R_t2: 0";
+outputs[2] = "id6_R_t2: 0;id7_R_t2: 2";
+outputs[3] = "id6_R_t2: 256;id7_R_t2: 2";
+outputs[4] = "id6_R_t2: 0;id7_R_t2: 768";
+outputs[5] = "id6_R_t2: 256;id7_R_t2: 768";
+outputs[6] = "id6_R_t2: 0;id7_R_t2: 770";
+outputs[7] = "id6_R_t2: 256;id7_R_t2: 770";
 assert(-1 != outputs.indexOf(report));
 
 // Expected Output (Compressed Data) //
-//eNrt2rtqwzAUBuC9T+GxhYAsHSuBlg4NJXRpC+mQ0RTcwdA0HZyp5N1rxxeU+Lh1ZPky/Js5OvJFNh/m
-//R0Ls9sn3PhHCi6N5uA4Tdev5d3G0KI+F2O6ij8+04Wnp3Xs/13Gkwk2YyFk6g45HNzPvpBqwVW1Uie0l
-//tjdgq/m9ZtX8TvOqTDu27/FXVldGt1mnhnrQUNcN9XnDdYv7OXgPL4/e8yvWrP2anT39nK2avcT2Etsb
-//sL0B26vZXn3em7/j9XJ1fMknK1w+XTrTz2Y3DcpicMENqr8Gqbz8qvjE2PPzs/OZb5ts5uFKcAhIIAAE
-//gIArBGQNgWqZ/f4JYK5qDYOWCjSABtDQ3/9BtZxySBrIAQ0EGkADaOhEQ+3HYCgYFPvCu7Ng5gkEFIAC
-//UBgnT6DaYLXgqkOacFYvznlhxgAYAANgGCVjcMFC64TBGovT3AFcgAtwMUru4JYL6o0LAhfgAlyMm0XY
-//YWGVRFhTYeYT0lcBrIAVsGIqWx6qhSV3EYW2iihgA2yADdPZCXG5DLYphbZMKSAGxIAY09kg0UUM6k0M
-//ghgQA2JMcN9EGy9cZBXaNqtYwApYASsGzCqM+NJlUhGwXljnFHABLsCF4XIKpyr8l1J0taKWUUALaAEt
-//hssoetKCetKCoAW0gBbj5BMdrbgknWgvxS9hgmOI
+//eJztmjtPwzAUhXd+hUeQKpnaeSAQAxWqWACpDB0jpDBEopQhnVD/O0nzIElvWtd2qiScLTq+jp2b5NO9
+//R+Z8vYm/NzHnLAq9YBHE4pZd30WhX1xzvlqHH59JwNOM3bOfyygUwTKIp5NkhtxdXU1YTXVI1a2okoyV
+//ZKxDqtleUzXbaaZOk4jVe/SV6qISXdVli+606G6L7rWsm+9nyx5eHtnzK3KmnrPG03ukWo2VZKwkYx0y
+//1iFjXTLWbcZm73gxm+9eci3DxdMlM6/T2W2D03zQpwbFoUFZLD/PPzHy/vTsbObbMp25veCAACDQm5yN
+//EwLFf/43WKa54EOHCCBW1QaDcD2gAWgAGrqrD8p0nqE6IFYFGoCGoeVsRGjYKwzOBQZBvnBzLFRbCQEo
+//AAqAgt16QdVPkHuDZcKFgZvQ0PN7AgwAQ19zNk4w6HoMNrCg7DBow6LeXAAXwAVwYbmOUGsv7OLiSHsB
+//XAAXQ8vZiHBh7EXowULLibDShvjeDVABVAAVdisLVYdi37osE2ty3qGhu0AD0ND3nI0TDboehQ0w6HoU
+//6rioNx0ABoABYPTmdIQJME5rPQAMAGMAORsRMDo4M6GCCxs+hWYz4uN4FVABVFiuLQ76FBXn0ry2IG4L
+//LAALw8rZOLFwkkdhFQrHHApTVDTaDcACsAAszuhPdAQLuuEALHry4QMW/xoWet6EISpOcSbUQfELgI5i
+//bA==

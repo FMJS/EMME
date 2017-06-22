@@ -61,16 +61,30 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id2_R_t1: 0;id5_R_t2: 0";
 outputs[1] = "id2_R_t1: 2;id5_R_t2: 0";
-outputs[2] = "id2_R_t1: 514;id5_R_t2: 0";
-outputs[3] = "id2_R_t1: 0;id5_R_t2: 1";
-outputs[4] = "id2_R_t1: 0;id5_R_t2: 257";
+outputs[2] = "id2_R_t1: 512;id5_R_t2: 0";
+outputs[3] = "id2_R_t1: 514;id5_R_t2: 0";
+outputs[4] = "id2_R_t1: 0;id5_R_t2: 1";
+outputs[5] = "id2_R_t1: 2;id5_R_t2: 1";
+outputs[6] = "id2_R_t1: 512;id5_R_t2: 1";
+outputs[7] = "id2_R_t1: 514;id5_R_t2: 1";
+outputs[8] = "id2_R_t1: 0;id5_R_t2: 256";
+outputs[9] = "id2_R_t1: 2;id5_R_t2: 256";
+outputs[10] = "id2_R_t1: 512;id5_R_t2: 256";
+outputs[11] = "id2_R_t1: 514;id5_R_t2: 256";
+outputs[12] = "id2_R_t1: 0;id5_R_t2: 257";
+outputs[13] = "id2_R_t1: 2;id5_R_t2: 257";
+outputs[14] = "id2_R_t1: 512;id5_R_t2: 257";
+outputs[15] = "id2_R_t1: 514;id5_R_t2: 257";
 assert(-1 != outputs.indexOf(report));
 
 // Expected Output (Compressed Data) //
-//eNrtmLFqwzAQhvc+hcYWDLJs2YKWDgkldGkL6ZDRFNzB0CQdnKnk3StHtnWWzg1yCDTkNvHr7vdJJ39Y
-//5ny7q793NeesKpNiWdTinsUPVZk140SPOV9vy88vHfA8Z4/s57aLi3RGWqz06C5iA1UC1US4qnFv1LxR
-//E1dVQDURrir0eP1RbaK+bl+H1UFdjujm+b6ejzy3rWfPZq9P7OWNdgfbHWf10MWqORoLHexOQQer5mgs
-//dJCog0QdpOtgerycLw5NHlTZrVlnxk322KRoJ20fkUx0UnSPX3hHDETh2SbzfdVk7m849ron9LoHH2hb
-//O6zGqim6eliJXSd0sGqKxrYOhJwA5KgANPy7Hh9DjvCQ029OfH7g4ASfhqFMSALRpYHooCrUQaEOilB2
-//rT1GUebRCuH2Wb6cjn9yTsMYvDwJgtglXA8IQXSBO/UC50/27YlPuL7hpA/EUJIpAtE1HXNCGaEsEGWA
-//Vu5U34QJ/6H+/DQdYOwXUwuaNw==
+//eJztmjtPwzAUhXd+hUeQIrkxbiqBGKhQxQJIZegYIbVDJUoZ2gn1v5OQl+PcUj8znc069r1x7N4v9ZE5
+//3x8P38cD52y7FvkyP6R3bHK/XU/LtijanO/2681nMeB5zh7Yz3UzLikibvNV0bpJWE+VilqN0NUqe6lm
+//pSp0daao1QhdTYv27mP7lbTzHurq7FRdntGr5w/17Mxz6/mc2OPrE3t5w+pQq6O9vZqlUzNyrJqhWyk1
+//Q6dm5Fg1gyQzSDKD1DNUe7ycL/42uTfL5p2LyEkZfa4zrTu7fSQiyc60efxi8BNTRtHRVeT7qow8XXGq
+//3AXKHeWOcrcv96aiiRf7t57DFDu9nG4ImKaAACAACAT55rcTGOGLTy+cKwQkIAAIAAKGEBh87MdCwOVF
+//cwOAeu5PUf4of5R/7HP/sLPdnonHqV/T65yWXgAQAAQAAZG9gBAAMHYCnLHQ9wcABoABYIjsD4QFw4XD
+//gQcYJMAAMAAMY3kGblhwcgycoaD6CGKaAQqAAqAw/g2Cdht87g9oujSGgAAEAAFAwAUC4e4V2CPA1Usw
+//B0PfSwAagAagIbqbEBYNdgcHGzRIoAFoABqM0RDhDoIJGEL4CeZY6PsJM0ABUAAUovgJipfo/3+BSOsI
+//AAEAAAAAgAsArLyEoOV/yUnwhYLuIwALwAKwEMNHiIQF+rjgjwUJLAALwIIxFtw8BE8o2DgI5kj4BV21
+//+t0=

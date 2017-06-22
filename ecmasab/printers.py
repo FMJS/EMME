@@ -63,9 +63,8 @@ class PrintersFactory(object):
     
     @staticmethod
     def register_printer(printer):
-        value = (printer.NAME, printer)
-        if value not in PrintersFactory.printers:
-            PrintersFactory.printers.append(value)
+        if printer.NAME not in dict(PrintersFactory.printers):
+            PrintersFactory.printers.append((printer.NAME, printer))
 
     @staticmethod    
     def printer_by_name(name):
@@ -607,7 +606,7 @@ class JST262_G_Printer(JST262Printer):
     DESC = "\tTEST262 format"
     str_report = True
     exp_outputs = False
-
+    
 class JST262_NP_Printer(JST262Printer):
     NAME = "JS-TEST262-NP"
     DESC = "\tTEST262 format (NO $262 prefix)"

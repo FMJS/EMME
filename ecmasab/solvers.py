@@ -332,13 +332,15 @@ class AlloySolver(object):
     models_file = None
     alloy_processes = None
 
+    file_limit = 30
+    
     def __init__(self):
         self.verbosity = 1
         self.models_file = None
         self.alloy_processes = None
 
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
-        self.init_solvers(num_t)
+        self.__init_solvers(num_t)
         pre_objs = blocking_manager.load_models()
         ret = None
         if num_t > 1:
@@ -369,7 +371,7 @@ class AlloySolver(object):
         else:
             ret = self.__solve_nsat(model, num_sols, blocking_manager, pre_objs)
 
-        self.quit_solvers()
+        self.__quit_solvers()
         return ret
         
     def __compute_models(self, model, solver, num, blocking_manager, constraints=None, shared_objects=None):
@@ -400,22 +402,25 @@ class AlloySolver(object):
 
         return (shared_objects, 1)
 
-    def init_solvers(self, n):
+    def __init_solvers(self, n):
         self.alloy_processes = []
         command = "%s"%self.ALLOY_ABS
         self.alloy_processes = [subprocess.Popen(command.split(), \
                                                  stdin=subprocess.PIPE, \
                                                  stdout=subprocess.PIPE, shell=True) for x in range(n)]
 
-    def quit_solvers(self):
+    def __quit_solvers(self):
         for solver in self.alloy_processes:
             solver.stdin.write(("quit\n").encode())
             solver.stdin.flush()
 
+        self.__clean_files()
+
+    def __clean_files(self):
         filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod") ]
         for f in filelist:
             os.remove("/tmp/%s"%f)
-        
+            
     def solve_one(self, model, solver):
         solver.stdin.write(('%s\nreset\n'%(model)).encode())
         solver.stdin.flush()
@@ -447,6 +452,10 @@ class AlloySolver(object):
                 process = self.alloy_processes[id_thread+1]
         else:
             process = self.alloy_processes[0]
+
+        if not is_multithread or is_master:
+            if (len(shared_objs) > self.file_limit):
+                self.__clean_files()
             
         if constraints is not None:
             applying_cons = constraints[id_thread]
