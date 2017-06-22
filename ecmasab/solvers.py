@@ -417,7 +417,7 @@ class AlloySolver(object):
         self.__clean_files()
 
     def __clean_files(self):
-        filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod") ]
+        filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod") or f.startswith("alloy_heredoc")]
         for f in filelist:
             os.remove("/tmp/%s"%f)
             
