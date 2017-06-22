@@ -252,6 +252,24 @@ class CVC4Encoder(object):
         blocks = program.get_blocks()
         return "DATATYPE BLOCK_TYPE = %s END;" % (" | ".join([str(x) for x in blocks]))
 
+    def print_bound_integers(self, program):
+        locs = self.__get_locations(program)
+        return "DATATYPE BINT = %s END;" % (" | ".join(["I%s"%str(x) for x in range(locs)]))
+
+    def __get_locations(self, program):
+        events = program.get_events()
+        max_size = 0
+        sizes = []
+        for event in events:
+            if type(event.address[0]) == int:
+                sizes.append(event.address[-1])
+            else:
+                sizes.append(event.address[-1][-1])
+
+        max_size = max(sizes)
+        ret = []
+        return max_size+1
+    
     def __print_compatible_reads(self, program):
         (compat_events, compat_bytes_events) = self.get_compatible_reads(program)
         ret = ""

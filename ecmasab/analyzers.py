@@ -95,6 +95,8 @@ class CVC4ValidExecsModelsManager(ModelsManager):
                     el.append(self.__gen_memory_event(tup.getChild(i).getChild(1)).name)
                 elif tup.getChild(i).getType().isInteger():
                     el.append(int(tup.getChild(i).toString()))
+                elif str(tup.getChild(i).getType().toString()) == "BINT":
+                    el.append(int(re.sub("I|\(|\)", "", str(tup.getChild(i).toString()))))
                 else:
                     el.append(self.__gen_memory_event(tup.getChild(i)).name)
 

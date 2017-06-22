@@ -423,6 +423,7 @@ class AlloySolver(object):
             if line in ["sat\n", "unsat\n"]:
                 break
         out = out.split("\n")
+        Logger.log("Solver: %s"%out[0], 1)
         if out[-2] == "sat":
             return out
         else:

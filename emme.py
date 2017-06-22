@@ -40,6 +40,7 @@ ALL_MEMORY_MODEL = "memory_model.als"
 ALL_MEMORY_MODEL_EX = "memory_model_expanded.als"
 INSTANCE = "instance.cvc"
 BLOCK_TYPE = "block_type.cvc"
+BOUND_INT = "bound_int.cvc"
 ID_TYPE = "id_type.cvc"
 MODELS = "models.txt"
 DOTS = "mm%s.dot"
@@ -80,6 +81,7 @@ class Config(object):
     alloy_model_ex = None
     instance = None
     block_type = None
+    bound_int = None
     id_type = None
     models = None
     dots = None
@@ -125,6 +127,7 @@ class Config(object):
             self.alloy_model_ex = self.prefix+ALL_MEMORY_MODEL_EX
             self.instance = self.prefix+INSTANCE
             self.block_type = self.prefix+BLOCK_TYPE
+            self.bound_int = self.prefix+BOUND_INT
             self.id_type = self.prefix+ID_TYPE
             self.models = self.prefix+MODELS
             self.dots = self.prefix+DOTS
@@ -186,6 +189,10 @@ def generate_cvc_model(config, program):
     with open(config.block_type, "w") as f:
         f.write(c4printer.print_block_type(program))
 
+    # Generation of the CVC4 bounded integers #
+    with open(config.bound_int, "w") as f:
+        f.write(c4printer.print_bound_integers(program))
+        
     # Generation of the CVC4 memory events #
     with open(config.id_type, "w") as f:
         f.write(c4printer.print_data_type(program))
@@ -605,6 +612,7 @@ def main(args):
         #cleanup
         if not config.debug:
             del_file(config.block_type)
+            del_file(config.bound_int)
             del_file(config.alloy_model)
             del_file(config.cvc_model)
             del_file(config.cvc_model_ex)
