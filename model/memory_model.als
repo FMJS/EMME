@@ -135,4 +135,8 @@ fact mo_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (MO [e1,e2] a
 fact mo_tot {all e1,e2 : mem_events | Active2 [e1,e2] => ((e1 != e2) => MO [e1,e2] <=> not (MO [e2,e1]))}
 
 
+-- RBF(er,x,ew) and RBF(er,y,ev) => (x not in ev) or (y not in ew)
+
+fact rbf_sw {all er,ev,ew: mem_events, x,y: bytes | (RBF [er,x,ew] and RBF [er,y,ev] and (ew != ev) and (x != y)) => (not (x in ev.M) or not(y in ew.M)) }
+
 -- Checks
