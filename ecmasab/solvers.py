@@ -403,13 +403,18 @@ class AlloySolver(object):
     def init_solvers(self, n):
         self.alloy_processes = []
         command = "%s"%self.ALLOY_ABS
-        for x in range(n):
-            self.alloy_processes.append(subprocess.Popen(command.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True))
+        self.alloy_processes = [subprocess.Popen(command.split(), \
+                                                 stdin=subprocess.PIPE, \
+                                                 stdout=subprocess.PIPE, shell=True) for x in range(n)]
 
     def quit_solvers(self):
         for solver in self.alloy_processes:
             solver.stdin.write(("quit\n").encode())
             solver.stdin.flush()
+
+        filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod") ]
+        for f in filelist:
+            os.remove("/tmp/%s"%f)
         
     def solve_one(self, model, solver):
         solver.stdin.write(('%s\nreset\n'%(model)).encode())
