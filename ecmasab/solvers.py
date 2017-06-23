@@ -332,7 +332,7 @@ class AlloySolver(object):
     models_file = None
     alloy_processes = None
 
-    file_limit = 30
+    file_limit = 100
     
     def __init__(self):
         self.verbosity = 1
@@ -417,7 +417,7 @@ class AlloySolver(object):
         self.__clean_files()
 
     def __clean_files(self):
-        filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod") or f.startswith("alloy_heredoc")]
+        filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod")]
         for f in filelist:
             os.remove("/tmp/%s"%f)
             
@@ -454,7 +454,7 @@ class AlloySolver(object):
             process = self.alloy_processes[0]
 
         if not is_multithread or is_master:
-            if (len(shared_objs) > self.file_limit):
+            if ((len(shared_objs)%self.file_limit) > (self.file_limit-2)):
                 self.__clean_files()
             
         if constraints is not None:

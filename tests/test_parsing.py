@@ -91,8 +91,8 @@ def parse_and_generate(example):
             
             if a != b:
                 print(example)
-                print(a)
-                print(b)
+                print("\"%s\""%a)
+                print("\"%s\""b)
             assert a == b
 
         with open("%s/outputs.txt"%example,"r") as f:
@@ -102,8 +102,8 @@ def parse_and_generate(example):
             b.sort()
             if a != b:
                 print(example)
-                print(a)
-                print(b)
+                print("\"%s\""a)
+                print("\"%s\""b)
             assert a == b
         
     assert True
