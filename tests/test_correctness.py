@@ -17,7 +17,6 @@ import os
 import litmus
 
 from tests.input_tests import jsprogs
-from ecmasab.printers import PrintersFactory, JST262_DEB_Printer
 
 def run(example):
     config = litmus.Config()

@@ -16,7 +16,7 @@ import re
 
 from ecmasab.parsing import BeParser, ParsingErrorException
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.printers import PrintersFactory, PrinterType, BePrinter, JST262_DEB_Printer
+from ecmasab.printers import PrintersFactory, PrinterType, BePrinter
 from ecmasab.encoders import CVC4Encoder
 from tests.input_tests import examples, invalids
 from emme import Config
@@ -67,7 +67,7 @@ def parse_and_generate(example):
     config = Config()
     
     jprinters = PrintersFactory.get_printers_by_type(PrinterType.JS)
-    jprinter = PrintersFactory.printer_by_name(JST262_DEB_Printer.NAME)
+    jprinter = PrintersFactory.printer_by_name(config.jsprinter)
 
     assert(jprinter in jprinters)
 
