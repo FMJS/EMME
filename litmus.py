@@ -83,7 +83,7 @@ def run_command(command, number, silent):
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
     
-def litmus(config):
+def run_litmus(config):
 
     command = config.command.split(" ")
     number = config.number if type(config.number) == str else str(config.number)
@@ -337,4 +337,4 @@ if __name__ == "__main__":
     config.silent = args.silent
     config.models = args.models
 
-    sys.exit(litmus(config))
+    sys.exit(run_litmus(config))

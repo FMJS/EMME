@@ -11,11 +11,11 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 1;
+      var x = new Int8Array(x_sab); x[0] = 1;
       for(i = 0; i <= 2; i++){
-         var x = new Int8Array(data.x_sab); Atomics.store(x, i+1, i+0);
+         var x = new Int8Array(x_sab); Atomics.store(x, i+1, i+0);
       }
       $262.agent.report(report);
       $262.agent.leaving();
@@ -24,20 +24,17 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
       for(i = 0; i <= 1; i++){
-         var x = new Int16Array(data.x_sab); id4_R_t2 = Atomics.load(x, i); report.push("id4_R_t2_"+i+": "+id4_R_t2);
+         var x = new Int16Array(x_sab); id4_R_t2 = Atomics.load(x, i); report.push("id4_R_t2_"+i+": "+id4_R_t2);
       }
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -48,7 +45,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -69,14 +68,3 @@ outputs[5] = "id4_R_t2_0: 1;id4_R_t2_1: 512";
 outputs[6] = "id4_R_t2_0: 0;id4_R_t2_1: 513";
 outputs[7] = "id4_R_t2_0: 1;id4_R_t2_1: 513";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrt2j9Pg0AYBvDdT3GjTUiO99BF42BjGhc1qUNHYoIDibUOdDJ+d5F/cnBHgLtDC89meftSOPCXlydw
-//fjgmH8eEcxZHF+E2TEToXzH/uvpE6SfO94fo9S390v2a3bDP8zgS4S5MyEu7guyv0F95TLWdNNtFvr3s
-//bncoKnKPYm/lGXi/Z1PsjdLv7V/i959Kfizt7fKZKCr6HtGulMeirdDqi90+3rGHJ6ypvTVtrIzc0dqu
-//WBe5Q1Gh9oope/S/I7Q9QnF/bNeb7AZpXIvy7NP+bB/6MsllapRFdzkoD2NT3KaaX9HtIe9+3hXdQ/9F
-//zriaKAJRIApEnQpRpCCquiD+xED5zdthJFwdPGGCAk/g6aQnqNrC018AJV94+0RhggJRIOp/E6UbkSYE
-//SjEnTcKTPEEReAJP4GmuGVSgKNcujjDMoFqVat990qmeExSIAlEgaqYZlHWg+mVQ/eDCDAWgANTSUyg3
-//RPV4zDNEClMUkAJSi8ihTIgyyKGsTlGXJEAUiAJRS3ofqnYJAkdZlLCZRQEpIAWkFvVGlBFRZmmUwBwF
-//okAU8qgJkDJ43BNj8igwBabA1KLejOqLlINEauQkFYAoEAWiZpVISbm4i0RKvrzuEykgBaSA1JwSKZdE
-//dSZSA+nCHAWiQNRCEynnSOkf92wxhUkKTIGpOSdSlpAankgNJeobmSyjrg==

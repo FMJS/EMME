@@ -11,12 +11,12 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 1;
-      var x = new Int8Array(data.x_sab); x[1] = 3;
-      var x = new Int8Array(data.x_sab); x[2] = 0;
-      var x = new Int8Array(data.x_sab); x[3] = 3;
+      var x = new Int8Array(x_sab); x[0] = 1;
+      var x = new Int8Array(x_sab); x[1] = 3;
+      var x = new Int8Array(x_sab); x[2] = 0;
+      var x = new Int8Array(x_sab); x[3] = 3;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,19 +24,16 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
-      var x = new Int16Array(data.x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
+      var x = new Int16Array(x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
+      var x = new Int16Array(x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -47,7 +44,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -68,14 +67,3 @@ outputs[5] = "id6_R_t2: 1;id7_R_t2: 768";
 outputs[6] = "id6_R_t2: 768;id7_R_t2: 768";
 outputs[7] = "id6_R_t2: 769;id7_R_t2: 768";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrt2stqg0AUBuB9n2KWLQQmehzTtHTRUEI3bSFdZCkBuxCapguzKnn3arxgzLE14xgn8O/kzBkvo3zI
-//z0i52cbf21hKEYV+sAhi906M76NwUhxLud6EH59Jw/NMPIif6yh0g2UQO6NkBu2PbkbioOqxVVWpEttL
-//bK/HVrN7TavZnWZVJ+lYr6KvtO5Wuqt1aqh7DXXVUPcbrpvfz048vj6JlzesWfs1qz29z1arvcT2Etvr
-//sb0e26vYXlXvzd7xYjbfv+SDFS6eLpk5Tmc3DTr54IQbdP8apOLy8/wTY8/Pz85mvi/TmbsrySHgAAEg
-//AARMIeAcIVAu87h/ApirasMw8W9BA2gADf39H5TL6ZyTBjJAwxQ0gAbQ0ImGox+Dc8Hgsi+8OwvIE4AC
-//ULAgT6CjwXLB3Q5pQq2enxMZA2AADJeQMZhgoXXCoI0FcgdwAS4syB3MckG9cYEsAlyAi4GzCD0stJII
-//bSqq+UTylwEqQAWosGXHQ7mwZC6hUFoJBWgADaDBmn0Qp8Ogm1EozYwCYAAMgGHN7oguYFBvYEwBBsAA
-//GPbtmWjDhYmcQiGnABWg4gJyikpyaTKl8FgukFGABbBgf0ZhFIX/EoquVCCfABbAYrh8oicsqCcskE0A
-//C2AxTDbRkYpTkon2UPwCEbViyA==

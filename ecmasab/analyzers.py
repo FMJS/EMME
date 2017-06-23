@@ -23,7 +23,7 @@ from ecmasab.preprocess import QuantPreprocessor
 from multiprocessing import Process, Manager
 
 from CVC4 import EQUAL, AND, NOT
-from litmus import Config, litmus
+from litmus import Config, run_litmus
 
 LABELLING_VARS = []
 LABELLING_VARS.append("L_HB4a")

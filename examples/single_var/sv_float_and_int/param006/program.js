@@ -11,12 +11,12 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
       for(i = 0; i <= 3; i++){
-         var x = new Int8Array(data.x_sab); x[3] = 55.0+i;
+         var x = new Int8Array(x_sab); x[3] = 55.0+i;
       }
-      var x = new Int32Array(data.x_sab); id3_R_t1 = x[0]; report.push("id3_R_t1: "+id3_R_t1);
+      var x = new Int32Array(x_sab); id3_R_t1 = x[0]; report.push("id3_R_t1: "+id3_R_t1);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,18 +24,15 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
+      var x = new Float32Array(x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -46,7 +43,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -62,11 +61,3 @@ outputs[0] = "id3_R_t1: 973078528;id4_R_t2: 0.0000";
 outputs[1] = "id3_R_t1: 973078528;id4_R_t2: 0.0001";
 outputs[2] = "id3_R_t1: 973078528;id4_R_t2: 0.0005";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrtlDFPwzAQhXd+xY1EqrDvjqoliIEKVSyAVIaOEVIYIlHKkEyI/46p0yqJfVmqRqG6TNF7vvPFz/mM
-//2VblV1UaA0XO2SorMYWbGdvZfErz2yK//tMoBXtl3WPMZpu/f7jVjwu4g+/LIqds7YoyO4HDOyYTiDsk
-//Ohw6fpyWjmIvFHuh0IvEChIquKuj0zdvxWejkxUduYZEh0NH2t8HlfzA/fMDPL1oOmNMJzjFiI6CToLO
-//Xd3PENyJ1WK5uxStFfsZXeXubCQT+0wKzMYBcW36WYQ9oyb2mdRn8v6Tl/VvEB1bmjje1Xd8XdcdY7/e
-//hVGaKk01HaXp/6dpI+JT0LSjH3ZrUlZ5qjzVdJSn58RTHJSneBRPUXmqPNV0lKcj5ikNylM6iqdT5any
-//VNNRno6YpzwoT7nN01+XLrM4

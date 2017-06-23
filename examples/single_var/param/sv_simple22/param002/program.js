@@ -11,11 +11,11 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id2_R_t1 = Atomics.load(x, 0); report.push("id2_R_t1: "+id2_R_t1);
-      var x = new Int8Array(data.x_sab); Atomics.store(x, 0, 1);
-      var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 1);
+      var x = new Int16Array(x_sab); id2_R_t1 = Atomics.load(x, 0); report.push("id2_R_t1: "+id2_R_t1);
+      var x = new Int8Array(x_sab); Atomics.store(x, 0, 1);
+      var x = new Int8Array(x_sab); Atomics.store(x, 1, 1);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -23,20 +23,17 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id5_R_t2 = Atomics.load(x, 0); report.push("id5_R_t2: "+id5_R_t2);
-      var x = new Int8Array(data.x_sab); Atomics.store(x, 0, 0);
-      var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 0);
+      var x = new Int16Array(x_sab); id5_R_t2 = Atomics.load(x, 0); report.push("id5_R_t2: "+id5_R_t2);
+      var x = new Int8Array(x_sab); Atomics.store(x, 0, 0);
+      var x = new Int8Array(x_sab); Atomics.store(x, 1, 0);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -47,7 +44,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -64,14 +63,3 @@ outputs[1] = "id2_R_t1: 0;id5_R_t2: 1";
 outputs[2] = "id2_R_t1: 0;id5_R_t2: 256";
 outputs[3] = "id2_R_t1: 0;id5_R_t2: 257";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrt2k1rgzAYB/D7PkWOGwgxNjWwscPKKLtsg+7QowzcQVjXHexp9LtPF19SjfiWKI7/TR6Txxjlh/yR
-//0uMp/j7FlJIo9IJdELNb4t5F4To99pJjSg/H8OMzGfC0Iffk5zof5yQzVsE+ObpxyEWVK1U5olqV3dOq
-//n1a9alUoVTmiWmXJ8eE9+nKKddfr6urUOm+oy+vX637DdbP1nMnDyyN5fsXu6Hancvdql7Lqa8eqHcqd
-//UjuUVV87Vu3AtR24tgOvdpDPeLfZ/j3ki1Xm95zMdNPZTSdZdrJ8jpqZ2pMsv/y29oopo/Sz5cy3fTaz
-//y4uRbc/5igIH4AAcDOHAajgUTV37NOi3sx8YgAEwAIYJvhqKBbApYRCAATAAhplhqH0UTMVC+6bZQoEB
-//BaAAFGxnDPWTxeNxRyQMlXrWsz13AAyAATDMny+YYKFzutCOBVgAC2Bh/nTBLAsCLIAFsLD0bGEYCoOS
-//BSMkeGsfKAAFoDD9/wvFY2DmsgVuMFsADaABNMzw90J/GIamCxzfDIABMCzl74UxMAjAABgAw3/8e6EL
-//CyYShqEoCKAAFICClYRBSRdN5gsr7atkNl0AC2ABLNhIF4yi0JYtdKYCKAAFoDBbsmAJBQEUgAJQWGSq
-//MJKEPplCdxB+ARWBMEA=

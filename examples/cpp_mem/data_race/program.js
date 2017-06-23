@@ -11,9 +11,9 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 3;
+      var x = new Int8Array(x_sab); x[0] = 3;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -21,22 +21,19 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2);
+      var x = new Int8Array(x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
-var x = new Int8Array(data.x_sab); x[0] = 2;
+var x = new Int8Array(x_sab); x[0] = 2;
 
 var thread_report;
 var reports = 0;
@@ -44,7 +41,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -60,8 +59,3 @@ outputs[0] = "id4_R_t2: 0";
 outputs[1] = "id4_R_t2: 2";
 outputs[2] = "id4_R_t2: 3";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrT188vLSkoLdHXV8hMMYkPii8xslIw0NfPzU9JzQEKejgp2CpUa2SmGMaHx+cmZubpANUZQdmaOgpo
-//MsZAdokhpjjEZM1aBUc/FwVff2qaCRY3wqHeCId6iBoMlwU5uYGdpgETB6kwRLjMAKbODeoDLKogKoLD
-//QSpqufSxha/RaPgihZwRUeFrREL4Go+GL1LIwc3DE7pQNShhCwAUEzxH

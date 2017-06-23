@@ -11,11 +11,11 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 2;
+      var x = new Int8Array(x_sab); x[0] = 2;
       for(i = 0; i <= 2; i++){
-         var x = new Int8Array(data.x_sab); x[i+1] = i+1;
+         var x = new Int8Array(x_sab); x[i+1] = i+1;
       }
       $262.agent.report(report);
       $262.agent.leaving();
@@ -24,20 +24,17 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
       for(i = 0; i <= 1; i++){
-         var x = new Int16Array(data.x_sab); id4_R_t2 = x[i]; report.push("id4_R_t2_"+i+": "+id4_R_t2);
+         var x = new Int16Array(x_sab); id4_R_t2 = x[i]; report.push("id4_R_t2_"+i+": "+id4_R_t2);
       }
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -48,7 +45,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -77,14 +76,3 @@ outputs[13] = "id4_R_t2_0: 2;id4_R_t2_1: 770";
 outputs[14] = "id4_R_t2_0: 256;id4_R_t2_1: 770";
 outputs[15] = "id4_R_t2_0: 258;id4_R_t2_1: 770";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrt2kFPgzAYBuC7v6JHl5CUfuhGNB5czOJFTeZhR2KCBxLnPLCT2X+XwUAK7bLRMl15bxvfvg5a8gTe
-//lPPVOv1ap5yzJL6K5lFKkX/D/Nvqm8i+cb5cxe8f2Y8ep+yOfV8mMUWLKBVe1hXknyJ/5DHVcaE5TsXx
-//srvdoajIPYrRyivwfq9mN5rIfrd8Sz63leJc2sflK1FU9D3UrpTnoq2I0YbdPz+wpxfMqb05bcyM3NE6
-//rpgXuUNREe0ZU/bo/4e0PaS4P+bTWX6DNNaivPqsPx9DXxZyWTTKtL8clKcx292mmn/RjVB0vy623ZsL
-//rgaHAA7AATjnAo5QgFMtiH9ibvzm7WDA0PUYEAEiQHTOTz61iRd/QZG88CYYhcAIGAGjf42R7rHnhBQp
-//nn2sQiSnQQSGwBAYcjUNChTl2uKQYRrUqlRjd8iJQBEoAkWO5kTWITosJzIFqpEggSgQBaKcTZD6QeqA
-//FzdjpkIwBabA1BCyJROkDLIlQ6Lk1GkyDkEUiAJRQ9qFVFuCoKfcibrkTsAIGAGjQe1QMqLILHmibskT
-//kAJSQGpgu5fMmTJ4saNu2ROgAlSAalA7mw5lqof0iTqlTxNsvgRRIMqt9EnKwPtIn+TltZY+ASNgBIyc
-//Sp/6pGhv+mSNqGb6BKSAFJByLH3qnSn9i509qEJABagAlcPpkyWmjk+fjkXqB0LIakI=

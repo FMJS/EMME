@@ -11,9 +11,9 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 1.6000;
+      var x = new Float32Array(x_sab); x[0] = 1.6000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -21,18 +21,15 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id3_R_t2 = x[0]; report.push("id3_R_t2: "+id3_R_t2.toFixed(4));
+      var x = new Float32Array(x_sab); id3_R_t2 = x[0]; report.push("id3_R_t2: "+id3_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -43,7 +40,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -58,8 +57,3 @@ var outputs = [];
 outputs[0] = "id3_R_t2: 0.0000";
 outputs[1] = "id3_R_t2: 1.6000";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrT188vLSkoLdHXV8hMMY4Pii8xslIw0DMAAn393PyU1BygjIeTgq1CtUZmimF8eHxuYmaeDlCxEZBd
-//Yqipo4AmDjFEs1bB0c9FwdefdJ1gcQgbSTXEvCAnN7CBKCpgZgB1GoB045I0xCdphE/SGGa9G9Q7WFRB
-//VASHY/EwLEi49LGFtqGeGcWhDRaHqKFeHOAwD2scwM3DjAG4lCFuKSPcUnjCHiVpwEMe09kA3uvWcg==

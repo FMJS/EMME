@@ -11,9 +11,9 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 1.1000;
+      var x = new Float32Array(x_sab); x[0] = 1.1000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -21,9 +21,9 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 2.2000;
+      var x = new Float32Array(x_sab); x[0] = 2.2000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -31,18 +31,15 @@ $262.agent.start(
 
 // Thread t3
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id4_R_t3 = x[0]; report.push("id4_R_t3: "+id4_R_t3.toFixed(4));
+      var x = new Float32Array(x_sab); id4_R_t3 = x[0]; report.push("id4_R_t3: "+id4_R_t3.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -53,7 +50,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -69,9 +68,3 @@ outputs[0] = "id4_R_t3: 0.0000";
 outputs[1] = "id4_R_t3: 1.1000";
 outputs[2] = "id4_R_t3: 2.2000";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrFk0sLgkAUhff9ilkmiHdmbBW0SELaVGALl0NgCyGzxbiK/nujo2POC4IkV3LPuQ/OpwB1wx8NB0Bl
-//sWIZ4/Ea4QiLB6Cqi+tNKPsEbdBzWRaE5ay6lPdQmKl45yQIkVaP2zo163J48ELb4w4dTr+b2NVlr+6W
-//Dn32WO298qYsSbujJo5hn+jEbbdLJD6R+sQhkiztI7G4pOOcW0IbYl2AjSSJyGwktdz/wdfY/jVfdZNJ
-//V0nELVG35OHaezSqZpR2pjSi8zKVnvmZjns+pxjb7X+yh6nabTJVEnFL1C15mE4+NcXUjPINjBGUig==

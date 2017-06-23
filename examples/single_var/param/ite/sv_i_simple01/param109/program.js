@@ -11,9 +11,9 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 0;
+      var x = new Int8Array(x_sab); x[0] = 0;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -21,13 +21,13 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); id3_R_t2 = x[0]; report.push("id3_R_t2: "+id3_R_t2);
+      var x = new Int8Array(x_sab); id3_R_t2 = x[0]; report.push("id3_R_t2: "+id3_R_t2);
       if(id3_R_t2 <= 1) {
-         var x = new Int8Array(data.x_sab); x[0] = 2;
+         var x = new Int8Array(x_sab); x[0] = 2;
       } else {
-         var x = new Int8Array(data.x_sab); x[1] = 2;
+         var x = new Int8Array(x_sab); x[1] = 2;
       }
       $262.agent.report(report);
       $262.agent.leaving();
@@ -36,18 +36,15 @@ $262.agent.start(
 
 // Thread t3
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id6_R_t3 = x[0]; report.push("id6_R_t3: "+id6_R_t3);
+      var x = new Int16Array(x_sab); id6_R_t3 = x[0]; report.push("id6_R_t3: "+id6_R_t3);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -58,7 +55,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -73,10 +72,3 @@ var outputs = [];
 outputs[0] = "id3_R_t2: 0;id6_R_t3: 0";
 outputs[1] = "id3_R_t2: 0;id6_R_t3: 2";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrT188vLSkoLdHXV8hMMY4Pii8xslIwsM5MMQOxjYFsff3c/JTUHKACDycFW4VqjcwUw/jw+NzEzDwd
-//oB4jILvEUFNHAU0cYhamOMRciDhEDUjUBGQKFtVQ8VoFRz8XBV9/KtsP0YuuGiGK3a1k+QDNZGRRCBvJ
-//ZIhvg5zcwN5FsQVmMlCnAUi3BkwTKZKGMBvcoOGJ1XzsuiE6g8NBOiFssH+T8/NSbEOCQl01ufRHU9RQ
-//SlFw39IkPSGH5WhqGi2fEEkGXRIpHZJfOqGJQ80cTWUjsswiL40RKLFolsKMRlPYsCjH4DZSsRxDiZ3R
-//VDbiyzFi0hhp5RixKQwAt6crWw==

@@ -11,12 +11,12 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
       for(i = 0; i <= 3; i++){
-         var x = new Int8Array(data.x_sab); x[3] = 60.0+i;
+         var x = new Int8Array(x_sab); x[3] = 60.0+i;
       }
-      var x = new Int32Array(data.x_sab); id3_R_t1 = x[0]; report.push("id3_R_t1: "+id3_R_t1);
+      var x = new Int32Array(x_sab); id3_R_t1 = x[0]; report.push("id3_R_t1: "+id3_R_t1);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,18 +24,15 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
+      var x = new Float32Array(x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -46,7 +43,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -64,11 +63,3 @@ outputs[2] = "id3_R_t1: 1056964608;id4_R_t2: 0.0313";
 outputs[3] = "id3_R_t1: 1056964608;id4_R_t2: 0.1250";
 outputs[4] = "id3_R_t1: 1056964608;id4_R_t2: 0.5000";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrtmEFrwkAQhe/9FXusIN2dGZNapQelSC9twR48hkJ6CFTtIZ7E/+7WjZJkdwIiDXuYnMJ7mdnJvuSD
-//ROvtrvzdlVqrIqdsmZUwUWCS9CkdpWY8LfLRn4gTZR6MPbReb/PvH3v561w9q/19kWO2slWZGarLOQyG
-//Kuwg65DvuHkaOrC9gO0FTC9kK5CpoLYOVl9/FZtaJ8M6fA2yDvkOt74LanBQs/cX9fYh6cSYjreLAR0Y
-//HRmd2rqbwXsmlvPF6aFoXHGe0Vae9oYzoctEz6xtEFWmm4VZM2hCl4ldJp1veVG9BsGxuYnDXV3Hz1XV
-//MfTq3emrcPo4FpwKTiUdwWmMOK1F/B84bemX1eqYvRKoBCRAFaBKOgLUiIEKvQIVbgAqYCIf/AJUSUeA
-//GjNQsVeg4g1ATeQPqgBV0hGgxg1U6hWo1ATqEbZHtDE=
