@@ -52,11 +52,12 @@ class PrintersFactory(object):
     # Additional printers should be registered here #
     @staticmethod
     def init_printers():
-        PrintersFactory.register_printer(JST262_G_Printer())
-        PrintersFactory.register_printer(JST262_NP_Printer())
-        PrintersFactory.register_printer(JST262_NS_Printer())
+        PrintersFactory.register_printer(JST262_Printer())
         
-        PrintersFactory.register_printer(JST262_DEB_Printer())
+        PrintersFactory.register_printer(JST262_V8_Printer())
+        PrintersFactory.register_printer(JST262_SM_Printer())
+        PrintersFactory.register_printer(JST262_JSC_Printer())
+        
         PrintersFactory.register_printer(JSV8Printer())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
@@ -314,18 +315,17 @@ class JSV8Printer(JSPrinter):
             return "%s;\n"%("; ".join([var_def,mop]))
 
 
-class JST262Printer(JSPrinter):
+class JST262_Printer(JSPrinter):
     NAME = "JS-TEST262"
-    DESC = "\tTEST262 format"
+    DESC = "\tTEST262 format (Standard)"
+    str_report = True
+    exp_outputs = False
 
     waiting_time = 0
     agent_prefix = "$262"
 
     asserts = True
     indent = "   "
-
-    str_report = False
-    exp_outputs = True
 
     def print_execution(self, program, interp, models=False):
         reads = []
@@ -601,28 +601,22 @@ class JST262Printer(JSPrinter):
             return "%s;\n"%("; ".join([var_def,mop]))
     
 
-class JST262_G_Printer(JST262Printer):
-    NAME = "JS-TEST262"
-    DESC = "\tTEST262 format"
+class JST262_JSC_Printer(JST262_Printer):
+    NAME = "JS-TEST262-JSC"
+    DESC = "\tTEST262 format (Accepted by JSC)"
     str_report = True
-    exp_outputs = False
-    
-class JST262_NP_Printer(JST262Printer):
-    NAME = "JS-TEST262-NP"
-    DESC = "\tTEST262 format (NO $262 prefix)"
-    str_report = True
-    exp_outputs = False
+    exp_outputs = True
     agent_prefix = "$"
 
-class JST262_NS_Printer(JST262Printer):
-    NAME = "JS-TEST262-NS"
-    DESC = "\tTEST262 format (NO string based report)"
+class JST262_SM_Printer(JST262_Printer):
+    NAME = "JS-TEST262-SM"
+    DESC = "\tTEST262 format (Accepted by SM)"
     str_report = False
-    exp_outputs = False
+    exp_outputs = True
 
-class JST262_DEB_Printer(JST262Printer):
-    NAME = "JS-TEST262-DEB"
-    DESC = "\tTEST262 format (Debugging)"
+class JST262_V8_Printer(JST262_Printer):
+    NAME = "JS-TEST262-V8"
+    DESC = "\tTEST262 format (Accepted by V8)"
     str_report = False
     exp_outputs = True
     
