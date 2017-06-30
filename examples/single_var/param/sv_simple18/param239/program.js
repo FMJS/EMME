@@ -11,12 +11,12 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 3;
-      var x = new Int8Array(data.x_sab); x[1] = 2;
-      var x = new Int8Array(data.x_sab); x[2] = 3;
-      var x = new Int8Array(data.x_sab); x[3] = 2;
+      var x = new Int8Array(x_sab); x[0] = 3;
+      var x = new Int8Array(x_sab); x[1] = 2;
+      var x = new Int8Array(x_sab); x[2] = 3;
+      var x = new Int8Array(x_sab); x[3] = 2;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,19 +24,16 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
-      var x = new Int16Array(data.x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
+      var x = new Int16Array(x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
+      var x = new Int16Array(x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -47,7 +44,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -76,14 +75,3 @@ outputs[13] = "id6_R_t2: 3;id7_R_t2: 515";
 outputs[14] = "id6_R_t2: 512;id7_R_t2: 515";
 outputs[15] = "id6_R_t2: 515;id7_R_t2: 515";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrt2stqg0AUBuB9n2KWLQQmznEMtHTRUEI3bSFdZCkFuxCapguzKnn3ajQy0WNrxvGy+Hdy5oyXUT7k
-//Z6Tc7ZPvfSKliKMgXIeJuhXzuzhanI6l3O6ij8+04Wkp7sXPdRypcBMm3iydQcejm5k4q/psVRtVYnuJ
-//7fXZan6vWTW/07zqpR3b9/grqyuj26xTQ91vqOuGetBw3eJ+DuLh5VE8v2LN2q9Z5ekDtmr2EttLbK/P
-//9vpsr2Z7dbU3f8fr5er4ks9W+PR06cx5Nrtp0CsGF9yg+muQTpdfFZ8Ye35+dj7zbZPNPFxJDgECAkAA
-//CLhCwKshUC7zvH8CmKtaw6A9BRpAA2jo7/+gXE5vSBrIAQ0aNIAG0NCJhtqPwVAwKPaFd2fBzBMIKAAF
-//oDBOnkC1wXLBVYc0oVIvznlhxgAYAANgGCVjcMFC64TBGovz3AFcgAtwMUru4JYL6o0LDS7ABbgYN4uw
-//w8IqibCmwswn0r8MUAEqQMVUdjyUC0vuEgptlVCABtAAGiazD+JyGGwzCm2ZUQAMgAEwJrM7ogsY1BsY
-//GmAADIAxvT0TbbhwkVNoy5xCgwpQASoGzCmM5NJlSuGzXNhmFGABLICF4TIKpyj8l1B0paKaTwALYAEs
-//hssnesKCesJCAwtgASxGySY6UnFJMtEeil99yWIg

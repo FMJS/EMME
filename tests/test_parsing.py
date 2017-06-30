@@ -91,8 +91,8 @@ def parse_and_generate(example):
             
             if a != b:
                 print(example)
-                print(a)
-                print(b)
+                print("\"%s\""%a)
+                print("\"%s\""%b)
             assert a == b
 
         with open("%s/outputs.txt"%example,"r") as f:
@@ -100,6 +100,10 @@ def parse_and_generate(example):
             b = jprinter.print_executions(program, execs).split("\n")
             a.sort()
             b.sort()
+            if a != b:
+                print(example)
+                print("\"%s\""%a)
+                print("\"%s\""%b)
             assert a == b
         
     assert True

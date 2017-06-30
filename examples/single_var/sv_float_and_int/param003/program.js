@@ -11,12 +11,12 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
       for(i = 0; i <= 3; i++){
-         var x = new Int8Array(data.x_sab); x[3] = 40.0+i;
+         var x = new Int8Array(x_sab); x[3] = 40.0+i;
       }
-      var x = new Int32Array(data.x_sab); id3_R_t1 = x[0]; report.push("id3_R_t1: "+id3_R_t1);
+      var x = new Int32Array(x_sab); id3_R_t1 = x[0]; report.push("id3_R_t1: "+id3_R_t1);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,18 +24,15 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
+      var x = new Float32Array(x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -46,7 +43,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -60,11 +59,3 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id3_R_t1: 721420288;id4_R_t2: 0.0000";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrtlEFrwkAQhe/+ijkqSHdnRqhYeqgU6UUFPXgMQjwEau0hnor/3a0bJcnu5GbQMDmF93ZmJ/s2nzGH
-//Y/57zI2BLOVkleQ4gVfCEVkaj9+ydPSv0QTsi3WPMftDuvt2q7+m8A5//SylZOOKEjuE2zsOhhB3SHQ4
-//dPw4FR3FXij2QqEXiRUkVHBdR6fvt9lPqZMVHbmGRIdDR9rfBzU4wcfiE+ZLTecR0wlOMaKjoJOgc133
-//MwR3YjWdXS5FZcV1Rld5ORvJxCaTArN0QFyYfhZhz6iJTSY1mXz95FnxG0THliaOd/Ud15uiY+zX6xml
-//qdJU01GaPj9NSxHfg6Y1/bZbmbLKU+WppqM87RJPsVWeovJUearpKE87y1NqlaekPFWeajrK087ylFvl
-//KVd5egbOsrLn

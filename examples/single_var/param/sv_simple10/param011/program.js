@@ -11,10 +11,10 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float32Array(data.x_sab); x[0] = 0.0000;
-      var x = new Float32Array(data.x_sab); x[1] = 1.0000;
+      var x = new Float32Array(x_sab); x[0] = 0.0000;
+      var x = new Float32Array(x_sab); x[1] = 1.0000;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -22,18 +22,15 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Float64Array(data.x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
+      var x = new Float64Array(x_sab); id4_R_t2 = x[0]; report.push("id4_R_t2: "+id4_R_t2.toFixed(4));
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -44,7 +41,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -59,10 +58,3 @@ var outputs = [];
 outputs[0] = "id4_R_t2: 0.0000";
 outputs[1] = "id4_R_t2: 0.0078";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrT188vLSkoLdHXV8hMMYkPii8xslIw0DMAAn393PyU1BygjIeTgq1CtUZmilF8eHyJoQ5QqTGYpamj
-//ABQ1BLJzEzPzQOJGOMRxqYdYqVmr4OjnouDrT2t7wOII05FFjdFFIW4KcnIDO0oDJg5SATMZqNMApBuX
-//pCE+SSN8ksb4JE3wSZrikzTDJ2kO87IbNBqwqIKoCA6HqsAWlVz6o2lqUKYpmiUbdEl4QBoTkaLAAYWh
-//FzmdjaaoIVlKYSYauLdNcEuZ4pYyJz01GZOUmswtRlMTztQEt90Ad343xC1lhK+UoHJCMSMrDSEHL7kp
-//aLQ8GtDyyIyOicyc7LqNiBQGAInyVoE=

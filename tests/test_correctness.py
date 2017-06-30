@@ -14,21 +14,22 @@ import sys
 import unittest
 import shutil
 import os
+import litmus
 
-from litmus import Config, litmus
 from tests.input_tests import jsprogs
 
 def run(example):
-    config = Config()
+    config = litmus.Config()
     abspath = os.path.abspath(__file__)
     path = ("/".join(abspath.split("/")[:-2]))
     config.command = "bash %s/ext_tools/run_v8.sh"%path
-    config.input_file = "%s/tests/%s"%(path, example)
+    js_program = "%s/tests/%s"%(path, example)
+    config.input_file = js_program
     config.threads = 1
     config.number = "1"
     config.silent = True
     
-    assert litmus(config) == 0
+    assert litmus.run_litmus(config) == 0
     
 def test_correctness():
     for example in jsprogs:

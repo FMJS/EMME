@@ -703,8 +703,8 @@ class Memory_Event(object):
     
     info = None
     
-    def __init__(self):
-        self.name = None
+    def __init__(self, name=None):
+        self.name = name
         self.operation = None
         self.tear = None
         self.ordering = None

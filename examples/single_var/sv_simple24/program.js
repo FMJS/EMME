@@ -11,10 +11,10 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); Atomics.store(x, 1, 2);
-      var x = new Int8Array(data.x_sab); id3_M_t1 = Atomics.exchange(x, 1, 3); report.push("id3_M_t1: "+id3_M_t1);
+      var x = new Int8Array(x_sab); Atomics.store(x, 1, 2);
+      var x = new Int8Array(x_sab); id3_M_t1 = Atomics.exchange(x, 1, 3); report.push("id3_M_t1: "+id3_M_t1);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -22,18 +22,15 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id4_R_t2 = Atomics.load(x, 0); report.push("id4_R_t2: "+id4_R_t2);
+      var x = new Int16Array(x_sab); id4_R_t2 = Atomics.load(x, 0); report.push("id4_R_t2: "+id4_R_t2);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -44,7 +41,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -60,9 +59,3 @@ outputs[0] = "id3_M_t1: 2;id4_R_t2: 0";
 outputs[1] = "id3_M_t1: 2;id4_R_t2: 512";
 outputs[2] = "id3_M_t1: 2;id4_R_t2: 768";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrT188vLSkoLdHXV8hMMY73jS8xtFIwss5MMYkPii8xslIw0NfPzU9JzQEq8HBSsFWo1shMMYoPB6rT
-//gevQ1FEAihoCRXMTM/NA4hAVmOK41ENs06xVcPRzUfD1p7U9YHGE6ciiEJ0YbgpycgM7CkUF3HawTRow
-//LSApmKVACQN8koYw892gfsZiOna9EH3B4USHFcw/XPqE4tzU0Gg01qke60j6yI1zNHGoakIpgYgYNzez
-//GI1xqsc43HVUi3FYjBKKcQC9/LTQ

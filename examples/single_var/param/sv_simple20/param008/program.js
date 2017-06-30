@@ -11,11 +11,11 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 1;
-      var x = new Int8Array(data.x_sab); x[1] = 1;
-      var x = new Int8Array(data.x_sab); x[2] = 1;
+      var x = new Int8Array(x_sab); x[0] = 1;
+      var x = new Int8Array(x_sab); x[1] = 1;
+      var x = new Int8Array(x_sab); x[2] = 1;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -23,11 +23,11 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[1] = 2;
-      var x = new Int8Array(data.x_sab); x[2] = 2;
-      var x = new Int8Array(data.x_sab); x[3] = 2;
+      var x = new Int8Array(x_sab); x[1] = 2;
+      var x = new Int8Array(x_sab); x[2] = 2;
+      var x = new Int8Array(x_sab); x[3] = 2;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -35,19 +35,16 @@ $262.agent.start(
 
 // Thread t3
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int32Array(data.x_sab); id8_R_t3 = x[0]; report.push("id8_R_t3: "+id8_R_t3);
-      var x = new Int16Array(data.x_sab); id9_R_t3 = x[1]; report.push("id9_R_t3: "+id9_R_t3);
+      var x = new Int32Array(x_sab); id8_R_t3 = x[0]; report.push("id8_R_t3: "+id8_R_t3);
+      var x = new Int16Array(x_sab); id9_R_t3 = x[1]; report.push("id9_R_t3: "+id9_R_t3);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -58,7 +55,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -287,84 +286,3 @@ outputs[213] = "id8_R_t3: 33685761;id9_R_t3: 514";
 outputs[214] = "id8_R_t3: 33686016;id9_R_t3: 514";
 outputs[215] = "id8_R_t3: 33686017;id9_R_t3: 514";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrt3U2P3VgRgOE9vyJLIiHF9rGPr0EsQAixASRYsBwhDYuRGGAxrBD/nWQSMj1p57rt6/MRn2fX8u3O
-//bXW637eqTtWpN2/++e/v/vXv7968efXN17ev/vTVd+Hnr7pffPP18v+P37z59p9f/+3vbz/hd79+9ctX
-////npN18PX/3lq+/6n739ivD9R69/9upHT8cnT8Pq0+ndx8O7p/H7jz59Oj95Glefvv9e3z19/52+f9q/
-///Yxv//rNP949H56839Pn4TPPx888n56869Pn8TPP5888v33m+/zw/f/31a/+8JtXv/+jn3G6n/EnP8On
-//7/rD07j6dF59elv9d5++W1h9t7D6bmH13cLqu4XVdxtX321cfbdx9d3G1XcbV9/th9+l2+rTp58bVz83
-//rn7uvPq586ef+/4v5k+//u33fzI/+n39///926/s3n31517s77043HsxfHhxufeVy/pXfvjGf/vhT331
-//31//6vdf+ee/vPvK//7kzRq8e/AGb/AG7yvA+3E+//Dix1/3Lj26V971MNCHKUI6pEM6pF8+Ht+J9I+/
-//1n1OpIcTkD5DOqRDOqRfAemPBuKlgf70T+xMzMdpCmJ3oAd6oG+8lv7cAh9/fYecqB9PgbroHdRBHdSv
-//X2PfFb2XQfp69H4G6OdlAHqgB3qgv3z0/oLiemnQh4SgD0AP9EAP9FcA/WMl9zrj+VTwn3oxPvRDP/Tr
-//rvnkxY8/1KyHsU//K48iXTQP6ZAO6bprKgD6ejz/OOZj7MYb0AM90AN9g/X5Z9WZ0qAfE4J+AXqgB3qg
-//b64+Xx3mt/ttzoR/H/puVqJHf/RHf030n7z48ceX9YQ2nkN1VXpUR3VU10VfAdPXo/pTSB8GZXqkR3qk
-//10ZfAelDStKr0yM90iO9PvpKI/qE9J9uI/qjP/qjf4Nx/rPD2NL8n1b/IE8i/YT0SI/0SN9cnF8d57f7
-//68+kfwjTNI5BRw7+4z/+WxH1yYsff1AhpwPms7iuJwfXcR3XW9wedSfoL0P19cj+JNbHm64crMd6rG/x
-//4ps7p7VlWB/Ssl5fDtZjPdZf9EacY305NUX16fgf+2WJYn38x3/8b7Fef+cGhTIGGNOyXqyP9ViP9Ret
-//4R+7K6emWD8h/4duGHTh4z/+4/9FY/09C0vqrOon5r/efPzHf/z/cvl/0rqqXPQ/urHq9HPeZRT7Yz/2
-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

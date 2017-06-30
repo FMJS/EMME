@@ -11,7 +11,6 @@
 import itertools
 from six.moves import range
 
-from ecmasab.execution import Executions
 from ecmasab.execution import TYPE
 from ecmasab.parsing import T_DONE
 
@@ -252,6 +251,23 @@ class CVC4Encoder(object):
         blocks = program.get_blocks()
         return "DATATYPE BLOCK_TYPE = %s END;" % (" | ".join([str(x) for x in blocks]))
 
+    def print_bound_integers(self, program):
+        locs = self.__get_locations(program)
+        return "DATATYPE BINT = %s END;" % (" | ".join(["I%s"%str(x) for x in range(locs)]))
+
+    def __get_locations(self, program):
+        events = program.get_events()
+        max_size = 0
+        sizes = []
+        for event in events:
+            if type(event.address[0]) == int:
+                sizes.append(event.address[-1])
+            else:
+                sizes.append(event.address[-1][-1])
+
+        max_size = max(sizes)
+        return max_size+1
+    
     def __print_compatible_reads(self, program):
         (compat_events, compat_bytes_events) = self.get_compatible_reads(program)
         ret = ""
@@ -278,5 +294,175 @@ class CVC4Encoder(object):
                     compat_events.append("(%s, %s)"%(read.name, write.name))
                 for inter in inters:
                     compat_bytes_events.append("((%s, %s), Int(%s))"%(read.name, write.name, inter))
+
+        return (compat_events, compat_bytes_events)
+
+class AlloyEncoder(CVC4Encoder):
+    id_contr = 0
+    
+    def __init__(self):
+        pass
+    
+    def print_program(self, program, relaxed_order=False):
+        program.sort_threads()
+
+        ret = ""
+        ret += self.__print_conditions(program) + "\n"
+        conditional = program.has_conditions()
+
+        locs = self.__get_locations(program)
+        ret += "\n".join(["one sig byte_%s extends bytes{}"%x for x in range(locs)]) + "\n"
+        
+        for block in program.get_blocks():
+            ret += self.print_block(block) + "\n"
+        
+        for thread in program.threads:
+            ret += self.print_thread(thread) + "\n"
+
+        for thread in program.threads:
+            for event in thread.get_events(True):
+                ret += self.print_event(event, conditional) + "\n"
+
+        for thread in program.threads:
+            if not relaxed_order:
+                ret += self.__print_thread_program_order(thread) + "\n"
+
+        ret += self.__print_agent_order(program, relaxed_order) + "\n"
+        ret += self.__print_run_condition(program, locs) + "\n"
+        
+        return ret
+
+    def __print_run_condition(self, program, locs):
+        ret = []
+
+        ret.append("3 order_type")
+        ret.append("2 tear_type")
+        ret.append("3 operation_type")
+        ret.append("2 active_type")
+
+        if program.has_conditions():
+            ret.append("2 boolean")
+        
+        ret.append("%s mem_events"%(len(program.get_events())))
+        ret.append("%s threads"%(len(program.threads)))
+        ret.append("%s blocks"%(len(program.blocks)))
+        ret.append("%s bytes"%locs)
+
+        ret = ["exactly %s"%x for x in ret]
+        return "run {} for %s"%(", ".join(ret))
+    
+    def __print_conditions(self, program):
+        if not program.get_conditions():
+            return ""
+        ret = []
+        ret.append("abstract sig boolean {}")
+        ret.append("one sig TRUE extends boolean{}")
+        ret.append("one sig FALSE extends boolean{}")
+        for condition in program.conditions:
+            ret.append("one sig %s {value: boolean}"%condition)
+            ret.append("fact def_%s {(%s.value = TRUE) or (%s.value = FALSE)}"%(condition, condition, condition))
+
+        return "\n".join(ret)
+    
+    def print_thread(self, thread):
+        return "one sig %s extends threads{}" % thread.name
+
+    def print_block(self, block):
+        return "one sig %s extends blocks{}" % block.name
+
+    def print_event(self, event, conditional):
+        return "one sig %s extends mem_events{}\n%s" % (event.name, self.print_event_formula(event, conditional))
+    
+    def print_event_formula(self, event, conditional):
+        ret = "fact %s_def {"%event.name
+        ret += "(%s.O = %s) and " % (event.name, str(event.operation))
+        ret += "(%s.T = %s) and " % (event.name, str(event.tear))
+        ret += "(%s.R = %s) and " % (event.name, str(event.ordering))
+        if type(event.address[0]) == int:
+            address = "%s" % (" + ".join(["{byte_%s}" % el for el in event.address]))
+            ret += "(%s.M = %s) and " % (event.name, address)
+            
+        if conditional and event.en_conditions:
+            condition = []
+            for el in event.en_conditions:
+                if el[1]:
+                    condition.append("(%s.value = TRUE)"%el[0])
+                else:
+                    condition.append("(%s.value = FALSE)"%el[0])
+
+            ret +=  "((%s.A = ENABLED) <=> (%s)) and " % (event.name, " and ".join(condition))
+        else:
+            ret +=  "(%s.A = ENABLED) and " % (event.name)
+
+        ret += "(%s.B = %s)"    % (event.name, str(event.block))
+        ret += "}\n"
+
+        ret += "fact %s_in_mem_events {%s in mem_events}"%(event.name, event.name)
+        
+        return ret
+
+    def __print_thread_events_set(self, thread):
+        return "ASSERT %s.E = {%s};" % (str(thread.name), str(", ".join([x.name for x in thread.get_events(True)])))
+    
+    def __print_thread_program_order(self, thread):
+        ret = "fact %s_PO_def {"%thread.name
+        
+        if len(thread.get_events(True)) < 2:
+            ret += "no %s.PO}"%(thread.name)
+            return ret
+        thread_events = thread.get_events(True)
+        pairs = []
+        for i in range(len(thread_events)):
+            for j in range(len(thread_events[i+1:])):
+                pairs.append((thread_events[i].name, thread_events[i+j+1].name))
+        
+        pairs = [("{(%s -> %s)}" % (x,y)) for x,y in pairs]
+        return "fact %s_PO_def {%s.PO = %s}" % (thread.name, thread.name, " + ".join(pairs))
+
+    def __print_agent_order(self, program, inverted):
+        ao = [x.name+".PO" for x in program.threads]
+        if inverted:
+            ret = "fact AO_def {not(agent_order.rel = (%s))}" % (" + ".join(ao))
+        else:
+            ret = "fact AO_def {agent_order.rel = (%s)}" % (" + ".join(ao))
+            
+        return ret
+
+    def assert_formula(self, formula):
+        formula = formula.replace("{}", "none")
+        AlloyEncoder.id_contr += 1
+        return "fact constr_%s {%s}"%(AlloyEncoder.id_contr, formula)
+    
+    def __get_locations(self, program):
+        events = program.get_events()
+        max_size = 0
+        sizes = []
+        for event in events:
+            if type(event.address[0]) == int:
+                sizes.append(event.address[-1])
+            else:
+                sizes.append(event.address[-1][-1])
+
+        max_size = max(sizes)
+        return max_size+1
+
+    def get_compatible_reads(self, program):
+        compat_events = []
+        compat_bytes_events = []
+        for read in [x for x in program.get_events() if x.is_read_or_modify()]:
+            for write in [x for x in program.get_events() if x.is_write_or_modify()]:
+                inters = 0
+
+                rset = read.address
+                rset = set(rset) if type(rset[0]) == int else set([y for x in rset for y in x])
+                wset = write.address
+                wset = set(wset) if type(wset[0]) == int else set([y for x in wset for y in x])
+
+                inters = list(set(rset) & set(wset))
+                        
+                if (len(inters) > 0) and (read.block == write.block):
+                    compat_events.append("[%s, %s]"%(read.name, write.name))
+                for inter in inters:
+                    compat_bytes_events.append("[%s, byte_%s, %s]"%(read.name, inter, write.name))
 
         return (compat_events, compat_bytes_events)

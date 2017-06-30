@@ -70,6 +70,9 @@
 % #define enc_HB 1 # 2
 % #define enc_CR 2 # 3
 
+%% Additional constraints bounding the VE
+#define en_SINGLE_WRITES 1
+
 %% Subconstraints Labelling
 %#define LABELLING 0
 
@@ -132,6 +135,10 @@ L_HB4d : BOOLEAN;
 #define DO(e1,e2) ((e1,e2) IS_IN DO)
 #define MO(e1,e2) ((e1,e2) IS_IN MO)
 
+#define TT_R(ttup) ((ttup.0).0)
+#define TT_W(ttup) ((ttup.0).1)
+#define TT_A(ttup) (ttup.1)
+
 #if ENCODE_CONDITIONS == 1
 #define Active(ev) (ev.A = ENABLED)
 #define Active2(e1,e2) (Active(e1) AND Active(e2))
@@ -150,10 +157,14 @@ L_HB4d : BOOLEAN;
 
 DATATYPE MOPERATION = R | W | M END;
 DATATYPE ORDER = I | SC | U END;
+
+#include "bound_int.cvc"
+
 %DATATYPE BINT = I0 | I1 | I2 | I3 | I4 END;
-DATATYPE BINT = I0 | I1 | I2 | I3 END;
+%DATATYPE BINT = I0 | I1 | I2 | I3 END;
 %DATATYPE BINT = I0 | I1 | I2 END;
 %DATATYPE BINT = I0 | I1  END;
+%DATATYPE BINT = I0 END;
 %DATATYPE BINT = I0 END;
 
 DATATYPE TEAR_TYPE = WT | NT END;
@@ -762,6 +773,18 @@ CHECKSAT;
 
 L_RF_implies_HB : BOOLEAN;
 ASSERT Label(L_RF_implies_HB, (FORALL (ew, er IN ev_set) : (Active2(ew, er) => (RF(er, ew) => HB(ew, er)))));
+
+#endif
+
+#if en_SINGLE_WRITES == 1
+
+%% It is not possible to have 3 RBF in the form RBF(er,x,ew) RBF(er,y,ev) RBF(er,z,ew) where ev and ew are different and x < y < z
+
+%ASSERT FORALL (ttup1, ttup2, ttup3: TRTUP) : ((ttup1 IS_IN RBF) AND (ttup2 IS_IN RBF) AND (ttup3 IS_IN RBF) => ( (TT_A(ttup1) < TT_A(ttup2)) AND (TT_A(ttup2) < TT_A(ttup3)) AND ((TT_A(ttup1) IS_IN Range(TT_W(ttup2))) OR (TT_A(ttup3) IS_IN Range(TT_W(ttup2)))) AND (TT_R(ttup1) = TT_R(ttup2)) AND (TT_R(ttup2) = TT_R(ttup3)) AND (TT_W(ttup1) = TT_W(ttup3))) => (TT_W(ttup1) = TT_W(ttup2)));
+
+%% RBF(er,x,ew) and RBF(er,y,ev) => (x not in ev) or (y not in ew)
+
+ASSERT FORALL (ttup1, ttup2: TRTUP) : (((ttup1 IS_IN RBF) AND (ttup2 IS_IN RBF) AND NOT(TT_W(ttup1) = TT_W(ttup2)) AND NOT(TT_A(ttup1) = TT_A(ttup2))) => (NOT(TT_A(ttup1) IS_IN Range(TT_W(ttup2))) OR NOT(TT_A(ttup2) IS_IN Range(TT_W(ttup1)))));
 
 #endif
 

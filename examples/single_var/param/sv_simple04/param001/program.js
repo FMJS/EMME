@@ -11,9 +11,9 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); Atomics.store(x, 0, 0);
+      var x = new Int16Array(x_sab); Atomics.store(x, 0, 0);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -21,9 +21,9 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); Atomics.store(x, 0, 0);
+      var x = new Int16Array(x_sab); Atomics.store(x, 0, 0);
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -31,18 +31,15 @@ $262.agent.start(
 
 // Thread t3
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id4_R_t3 = Atomics.load(x, 0); report.push("id4_R_t3: "+id4_R_t3);
+      var x = new Int16Array(x_sab); id4_R_t3 = Atomics.load(x, 0); report.push("id4_R_t3: "+id4_R_t3);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -53,7 +50,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -67,9 +66,3 @@ report = report.join(";");
 var outputs = [];
 outputs[0] = "id4_R_t3: 0";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrT188vLSkoLdHXV8hMMYkPii8xtlIw0NfPzU9JzQEKejgp2CpUa2SmGMaHx+cmZubpANUZAdklhpo6
-//CmjixiBxI0xxiLmatQqOfi4Kvv7UMxEsDtGLrhqiAt1shChULcRNQU5uYEehqIDZB9RpANKNS9IQZogb
-//1GNYVEFUBIdj8ToscLj06RgVaAE3EBGEYTvJEQR3E2b0wKXwRA5UDVrUYAYK/SMGoob2EYOwB9kUDNux
-//5yc8EQO3GzNi4FJ4IgYl5uERgxkoAKhUZL8=

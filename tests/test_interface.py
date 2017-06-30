@@ -28,7 +28,7 @@ def run(config):
     
     analyze_program(config)
     
-def run_fresh(example, skip_solving, expand):
+def run_fresh(example, skip_solving, expand, alloy):
     config = Config()
     config.inputfile = example+".bex"
     
@@ -40,6 +40,9 @@ def run_fresh(example, skip_solving, expand):
     config.skip_solving = skip_solving
     config.expand_bounded_sets = expand
 
+    if alloy:
+        config.use_alloy = True
+    
     #solving one instance
     run(config)
 
@@ -64,6 +67,7 @@ def run_existing(example, skip_solving, print_all):
     
     config.prefix = example+"/"
     config.sat = False
+    config.nexecs = 20
     config.skip_solving = skip_solving
     config.expand_bounded_sets = True
     if print_all:
@@ -84,15 +88,24 @@ def test_generation():
         
 def test_verification():
     for example in ex_fast:
-        yield run_fresh, example, False, True
+        yield run_fresh, example, False, True, False
 
     for example in ex_fast:
-        yield run_fresh, example, False, False
-        
+        yield run_fresh, example, False, False, False
+
+    for example in ex_fast:
+        yield run_fresh, example, False, True, True
 
 if __name__ == "__main__":
     for example in ex_fast:
         run_existing(example, True, True)
+        
     for example in ex_fast:
-        run_fresh(example, False, True)
+        run_fresh(example, False, True, False)
+
+    for example in ex_fast:
+        run_fresh(example, False, False, False)
+
+    for example in ex_fast:
+        run_fresh(example, False, True, True)
         

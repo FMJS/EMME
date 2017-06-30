@@ -11,12 +11,12 @@
 
 // Thread t1
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int8Array(data.x_sab); x[0] = 2;
-      var x = new Int8Array(data.x_sab); x[1] = 0;
-      var x = new Int8Array(data.x_sab); x[2] = 1;
-      var x = new Int8Array(data.x_sab); x[3] = 1;
+      var x = new Int8Array(x_sab); x[0] = 2;
+      var x = new Int8Array(x_sab); x[1] = 0;
+      var x = new Int8Array(x_sab); x[2] = 1;
+      var x = new Int8Array(x_sab); x[3] = 1;
       $262.agent.report(report);
       $262.agent.leaving();
    })
@@ -24,19 +24,16 @@ $262.agent.start(
 
 // Thread t2
 $262.agent.start(
-   `$262.agent.receiveBroadcast(function (data) {
+   `$262.agent.receiveBroadcast(function (x_sab) {
       var report = [];
-      var x = new Int16Array(data.x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
-      var x = new Int16Array(data.x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
+      var x = new Int16Array(x_sab); id6_R_t2 = x[0]; report.push("id6_R_t2: "+id6_R_t2);
+      var x = new Int16Array(x_sab); id7_R_t2 = x[1]; report.push("id7_R_t2: "+id7_R_t2);
       $262.agent.report(report);
       $262.agent.leaving();
    })
    `);
-
-var data = {
-   x_sab : new SharedArrayBuffer(8),
-}
-$262.agent.broadcast(data);
+var x_sab = new SharedArrayBuffer(8);
+$262.agent.broadcast(x_sab);
 var report = [];
 
 // MAIN Thread
@@ -47,7 +44,9 @@ var i = 0;
 while (true) {
    thread_report = $262.agent.getReport();
    if (thread_report != null) {
+      thread_report = thread_report.split(",");
       for(i=0; i < thread_report.length; i++){
+         if(thread_report[i] == "") continue;
          report.push(thread_report[i]);
          print(thread_report[i]);
       }
@@ -68,14 +67,3 @@ outputs[5] = "id6_R_t2: 2;id7_R_t2: 256";
 outputs[6] = "id6_R_t2: 0;id7_R_t2: 257";
 outputs[7] = "id6_R_t2: 2;id7_R_t2: 257";
 assert(-1 != outputs.indexOf(report));
-
-// Expected Output (Compressed Data) //
-//eNrt2k1Lw0AQBuC7v2KPCoXt7mRTUDxYpHhRoR56DEJ6CFjrIT1J/7tJ80HaTjTdbD6E91ZmZ5t0Ux6G
-//l0i53cVfu1hKEYV+sAxifSumd1E4Kz5LudmG64+k4Wku7sX3dRTqYBXEapLsoMOnm4k4qnps1VSqxPYS
-//2+ux1exe02p2p1lVJR2b9+gzretKd7VONXWvpm5q6n7NdfP72YuHl0fx/Ioza35mJ7/eZ6vVXmJ7ie31
-//2F6P7TVsrzntzZ7xcr44POSjEy5+XbJzmu6uW1T54oxb1L8tUnH5Rf4XY7+f353tfFulO/dXkkNAAwEg
-//AARcIaDOECiPedo9AcxVrWHAdAAYAEOH00F5nKpPGKg1DJgYAANgaAfD2VDQFwuafeDkdFpQQAEoAIVh
-//sgQ6WywPXLdIEk7q+XdeOC0ABsAAGAbJF1yw0DhdsMYCUwSwABaDZw5usaCOsMBkASyAxcA5hB0VVimE
-//k6lCGx9UgApQMZY3HcqDJXfphLGaIUADaAANo3n/4XIYbPMJg0kCXICL//1WRBsuqCMuMF2AC3Axwncl
-//mmDhIqOwnSxmoAJUgIoeM4pKaukyofBYLmwnCLAAFsBCf/mEUxT+SifaUoEJAlSAiqGyiY6ooE6owFQB
-//KkDFMLlESyguSSWaM/EDBYhe8A==

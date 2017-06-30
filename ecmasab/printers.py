@@ -47,41 +47,42 @@ class PrinterType(object):
     BEXEC = 3
 
 class PrintersFactory(object):
-    printers = {}
+    printers = []
 
     # Additional printers should be registered here #
     @staticmethod
     def init_printers():
-        PrintersFactory.register_printer(JSV8Printer())
-        PrintersFactory.register_printer(JST262Printer())
+        PrintersFactory.register_printer(JST262_G_Printer())
         PrintersFactory.register_printer(JST262_NP_Printer())
-        PrintersFactory.register_printer(JST262_NA_Printer())
-        PrintersFactory.register_printer(JST262_SR_Printer())
-        PrintersFactory.register_printer(JST262_SR_NP_Printer())
+        PrintersFactory.register_printer(JST262_NS_Printer())
+        
+        PrintersFactory.register_printer(JST262_DEB_Printer())
+        PrintersFactory.register_printer(JSV8Printer())
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
     @staticmethod
     def register_printer(printer):
-        if printer.NAME not in PrintersFactory.printers:
-            PrintersFactory.printers[printer.NAME] = printer
+        if printer.NAME not in dict(PrintersFactory.printers):
+            PrintersFactory.printers.append((printer.NAME, printer))
 
     @staticmethod    
     def printer_by_name(name):
         PrintersFactory.init_printers()
-        if name not in PrintersFactory.printers:
+        dprint = dict(PrintersFactory.printers)
+        if name not in dprint:
             raise NotRegisteredPrinterException
-        return PrintersFactory.printers[name]
+        return dprint[name]
 
     @staticmethod    
     def get_printers():
         PrintersFactory.init_printers()
-        return PrintersFactory.printers.keys()
+        return [x[0] for x in PrintersFactory.printers]
 
     @staticmethod    
     def get_printers_by_type(printertype):
         PrintersFactory.init_printers()
-        return [v for v in PrintersFactory.printers.values() if v.TYPE == printertype]
+        return [x[1] for x in PrintersFactory.printers if x[1].TYPE == printertype]
     
 class JSPrinter(object):
     NAME = "JS-PRINTER"
@@ -121,7 +122,7 @@ class JSPrinter(object):
         
 class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
-    DESC = "Google V8 format"
+    DESC = "\tGoogle V8 format"
 
     def print_execution(self, program, interp, models=False):
         reads = []
@@ -315,7 +316,7 @@ class JSV8Printer(JSPrinter):
 
 class JST262Printer(JSPrinter):
     NAME = "JS-TEST262"
-    DESC = "TEST262 format"
+    DESC = "\tTEST262 format"
 
     waiting_time = 0
     agent_prefix = "$262"
@@ -324,6 +325,7 @@ class JST262Printer(JSPrinter):
     indent = "   "
 
     str_report = False
+    exp_outputs = True
 
     def print_execution(self, program, interp, models=False):
         reads = []
@@ -437,7 +439,7 @@ class JST262Printer(JSPrinter):
             ret += "\n".join(["outputs[%s] = \"%s\";"%(execs.index(x), x) for x in execs])
             ret += "\nassert(-1 != outputs.indexOf(report));\n"
 
-        if executions:
+        if executions and self.exp_outputs:
             linesize = 80
             execs = self.compute_possible_executions(program, executions, True)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
@@ -599,30 +601,30 @@ class JST262Printer(JSPrinter):
             return "%s;\n"%("; ".join([var_def,mop]))
     
 
+class JST262_G_Printer(JST262Printer):
+    NAME = "JS-TEST262"
+    DESC = "\tTEST262 format"
+    str_report = True
+    exp_outputs = False
+    
 class JST262_NP_Printer(JST262Printer):
     NAME = "JS-TEST262-NP"
-    DESC = "TEST262 format (without $262 prefix)"
-
+    DESC = "\tTEST262 format (NO $262 prefix)"
+    str_report = True
+    exp_outputs = False
     agent_prefix = "$"
 
-class JST262_NA_Printer(JST262Printer):
-    NAME = "JS-TEST262-NA"
-    DESC = "TEST262 format (without assertions)"
+class JST262_NS_Printer(JST262Printer):
+    NAME = "JS-TEST262-NS"
+    DESC = "\tTEST262 format (NO string based report)"
+    str_report = False
+    exp_outputs = False
 
-    asserts = False
-
-class JST262_SR_Printer(JST262Printer):
-    NAME = "JS-TEST262-SR"
-    DESC = "TEST262 format (with string-report)"
-
-    str_report = True
-
-class JST262_SR_NP_Printer(JST262Printer):
-    NAME = "JS-TEST262-SR-NP"
-    DESC = "TEST262 format (with string-report and not $262 prefix)"
-
-    str_report = True
-    agent_prefix = "$"    
+class JST262_DEB_Printer(JST262Printer):
+    NAME = "JS-TEST262-DEB"
+    DESC = "\tTEST262 format (Debugging)"
+    str_report = False
+    exp_outputs = True
     
 class DotPrinter(object):
     NAME = "DOT"
