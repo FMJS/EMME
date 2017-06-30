@@ -89,6 +89,76 @@ def print_evt(ev, value):
     return None
 
 
+def write_program(conf, filename):
+    ret = ""
+    ret += "var x = new SharedArrayBuffer();\n"
+    thread_num = 1
+    value = 1
+    ret += "Thread t%d {\n"%(thread_num)
+    valid = True
+    for el in conf:
+        if el == PC:
+            ret += "}\n"
+            thread_num += 1
+            ret += "Thread t%d {\n"%(thread_num)
+            continue
+        if el == SC:
+            continue
+        ret += print_evt(el, value)
+        if not check_correctness(el):
+            valid = False
+            break
+        value += 1
+    ret += "}\n"
+
+    if not valid:
+        return 1
+
+    with open(filename, "w") as f:
+        f.write(ret)
+
+    return 0
+
+def generate_programs(num_events, sizes, indexes, path):
+    possible_events = []
+    basic_name = "sv_%dev-%0"
+
+    for ty in types:
+        for size in sizes:
+            for index in indexes:
+                if size == sizes[-1] and index == indexes[-1]:
+                    continue
+                possible_events.append((ty,size,index))
+
+    print("Starting computation ...")
+                
+    count = 0
+#    name_length = int(math.log(len(confs), 10))+1
+    name_length = 1
+    
+    for word in list(itertools.product(possible_events, repeat=num_events)):
+        if only_writes(word[0]):
+            continue
+        for ops in list(itertools.product(operators, repeat=(num_events-1))):
+            conf = list(word)
+            for i,v in enumerate(ops):
+                conf.insert(2*i+1,v)
+            if is_canonic(conf):
+                filename = (path+(basic_name+str(name_length)+"d.bex"))%(num_events, count)
+                write_program(conf, filename)
+
+                if ((count % 100) == 0) and (count > 0):
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                if ((count % 10000) == 0) and (count > 0):
+                    sys.stdout.write(" 10k\n")
+                    sys.stdout.flush()            
+
+                count += 1
+
+    print("\nGenerated %s programs"%(count))
+    
+
 def main(args):
     parser = argparse.ArgumentParser(description='Programs generator', formatter_class=RawTextHelpFormatter)
     
@@ -113,73 +183,12 @@ def main(args):
     sizes = [int(x) for x in args.sizes.split(",")]
     indexes = [int(x) for x in args.indexes.split(",")]
 
-    possible_events = []
-
     path = "%s/"%(args.directory)
-    basic_name = "sv_%dev-%0"
 
     if not os.path.exists(path):
         os.makedirs(path)
-    
-    for ty in types:
-        for size in sizes:
-            for index in indexes:
-                if size == 32 and index == 1:
-                    continue
-                possible_events.append((ty,size,index))
 
-    confs = []
-
-    for word in list(itertools.product(possible_events, repeat=num_events)):
-        if only_writes(word[0]):
-            continue
-        for ops in list(itertools.product(operators, repeat=(num_events-1))):
-            conf = list(word)
-            for i,v in enumerate(ops):
-                conf.insert(2*i+1,v)
-            if is_canonic(conf):
-                confs.append(conf)
-
-    sys.stdout.write("Generating %s programs ...\n"%(len(confs)))
-    sys.stdout.flush()
-    
-    count = 0
-    for conf in confs:        
-        ret = ""
-        ret += "var x = new SharedArrayBuffer();\n"
-        thread_num = 1
-        value = 1
-        ret += "Thread t%d {\n"%(thread_num)
-        valid = True
-        for el in conf:
-            if el == PC:
-                ret += "}\n"
-                thread_num += 1
-                ret += "Thread t%d {\n"%(thread_num)
-                continue
-            if el == SC:
-                continue
-            ret += print_evt(el, value)
-            if not check_correctness(el):
-                valid = False
-                break
-            value += 1
-        ret += "}\n"
-
-        if not valid:
-            continue
-        
-        with open((path+(basic_name+str(int(math.log(len(confs), 10))+1)+"d.bex"))%(num_events, count), "w") as f:
-            f.write(ret)
-        if ((count % 100) == 0) and (count > 0):
-            sys.stdout.write(".")
-            sys.stdout.flush()
-        if ((count % 10000) == 0) and (count > 0):
-            sys.stdout.write(" 10k\n")
-            sys.stdout.flush()            
-        count += 1
-
-    print(" DONE")
+    generate_programs(num_events, sizes, indexes, path)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
