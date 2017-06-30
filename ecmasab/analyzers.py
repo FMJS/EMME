@@ -139,6 +139,7 @@ class CVC4ValidExecsModelsManager(ModelsManager):
         executions = Executions()
         executions.executions = shared_objs
         assertions = self.encoder.print_neg_assertions(executions, self.blocking_relations)
+        Logger.log("Blocking: \n%s"%("\n".join(assertions)), 1)
         return "\n"+("\n".join(assertions))
 
     def write_models(self, shared_objs, done):
@@ -199,7 +200,6 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
         AlloyValidExecsModelsManager.id_blocking += 1
 
         exe = self.__generate_execution(smt)
-#        print smt
         blocking = []
         for rbf in self.__extract_tuples("reads_bytes_from", smt):
             blocking.append("RBF [%s, %s, %s]"%tuple(rbf))
@@ -212,7 +212,7 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
             
         blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
 
-#        print blocking
+        Logger.log("Blocking: %s"%(blocking), 1)
         
         return (blocking, exe)
 
@@ -227,6 +227,8 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
             AlloyValidExecsModelsManager.id_blocking += 1
             blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
             constraints.append(blocking)
+
+        Logger.log("Blocking: \n%s"%("".join(constraints)), 1)
             
         return "\n".join(constraints)
 

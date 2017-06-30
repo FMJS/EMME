@@ -88,6 +88,9 @@ fact rbf_def_2 {all er,ew : mem_events | Active2 [er,ew] => (all b : bytes | RBF
 fact rbf_rf_def {all e1,e2 : mem_events | Active2 [e1,e2] => (RF [e1,e2] <=> (some b:bytes | RBF [e1,b,e2]))}
 fact rbf_corr {all er,ew: mem_events | Active2 [er,ew] => (all b: bytes | RBF [er,b,ew] => not (some ev: mem_events | Active [ev] and (RBF [er,b,ev] and (ew != ev))))}
 
+-- This needs to be clarified
+fact rbf_not_self {all ev: mem_events, b: bytes | not RBF [ev, b, ev]}
+
 -- Synchronizes with relation
 one sig synchronizes_with {rel:  mem_events -> mem_events}
 pred SW(e1: mem_events, e2: mem_events) {(e1 -> e2)  in synchronizes_with.rel}

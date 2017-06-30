@@ -784,7 +784,7 @@ ASSERT Label(L_RF_implies_HB, (FORALL (ew, er IN ev_set) : (Active2(ew, er) => (
 
 %% RBF(er,x,ew) and RBF(er,y,ev) => (x not in ev) or (y not in ew)
 
-ASSERT FORALL (ttup1, ttup2: TRTUP) : (((ttup1 IS_IN RBF) AND (ttup2 IS_IN RBF) AND NOT(TT_W(ttup1) = TT_W(ttup2)) AND NOT(TT_A(ttup1) = TT_A(ttup2))) => (NOT(TT_A(ttup1) IS_IN Range(TT_W(ttup2))) OR NOT(TT_A(ttup2) IS_IN Range(TT_W(ttup1)))));
+ASSERT FORALL (ttup1, ttup2: TRTUP) : (((ttup1 IS_IN RBF) AND (ttup2 IS_IN RBF) AND (TT_R(ttup1) = TT_R(ttup2)) AND NOT(TT_W(ttup1) = TT_W(ttup2)) AND NOT(TT_A(ttup1) = TT_A(ttup2))) => (NOT(TT_A(ttup1) IS_IN Range(TT_W(ttup2))) OR NOT(TT_A(ttup2) IS_IN Range(TT_W(ttup1)))));
 
 #endif
 
