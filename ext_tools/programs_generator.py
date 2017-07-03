@@ -13,7 +13,6 @@
 import argparse
 import itertools
 import sys
-import math
 import os
 
 from argparse import RawTextHelpFormatter
@@ -54,7 +53,7 @@ def only_writes(word):
     return True
 
 def check_correctness(ev):
-    ty, size, index = ev
+    ty, size = ev[:2]
     
     if (ty in [RIU, WIU, RIA, WIA]) and (size in [8,16,32]):
         return True
