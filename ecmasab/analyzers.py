@@ -577,7 +577,7 @@ class ConstraintsAnalyzer(object):
         config.silent = True
         config.models = True
 
-        (matched, unmatched) = litmus(config)
+        (matched, unmatched) = run_litmus(config)
         
         Logger.log(" -> Found %s matched models"%(len(matched)), 0)
         Logger.log(" -> Found %s unmatched models"%(len(unmatched)), 0)
