@@ -213,7 +213,7 @@ class CVC4Solver(object):
             unk = checksat.getResult().isUnknown()
             uns = (not sat) and (not unk)
 
-            Logger.log("sat: %s, uns: %s, unk: %s"%(sat, uns, unk), 1)
+            Logger.log("sat: %s, uns: %s, unk: %s"%(sat, uns, unk), 2)
             
             exitcond = (not sat) if exit_with_unknown else uns
             
@@ -222,7 +222,7 @@ class CVC4Solver(object):
 
             (bclauses, shared_obj) = blocking_manager.compute_from_smt(smt)
 
-            Logger.log("%s"%str(shared_obj), 1)
+            Logger.log("%s"%str(shared_obj), 2)
             
             if shared_obj not in shared_objects:
                 shared_objects.append(shared_obj)
@@ -333,6 +333,8 @@ class AlloySolver(object):
     alloy_processes = None
 
     file_limit = 100
+
+    debug = False
     
     def __init__(self):
         self.verbosity = 1
@@ -417,6 +419,8 @@ class AlloySolver(object):
         self.__clean_files()
 
     def __clean_files(self):
+        if self.debug:
+            return
         filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod")]
         for f in filelist:
             os.remove("/tmp/%s"%f)
@@ -431,7 +435,7 @@ class AlloySolver(object):
             if line in ["sat\n", "unsat\n"]:
                 break
         out = out.split("\n")
-        Logger.log("Solver: %s"%out[0], 1)
+        Logger.log("Solver: %s"%out[0], 2)
         if out[-2] == "sat":
             return out
         else:

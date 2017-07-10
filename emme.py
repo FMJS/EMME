@@ -224,11 +224,14 @@ def generate_alloy_model(config, program):
     abspath = os.path.abspath(__file__)
     alloy_mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.alloy_mm
 
-    aprinter = AlloyEncoder()
+    # Preprocessing the model using cpp #
+    cpppre = ExtPreprocessor(CPP)
+    cpppre.set_output_file(config.cvc_model_ex)
+    cpppre.set_defines(config.defines)
+    strmodel = cpppre.preprocess_from_file(alloy_mm)
     
-    with open(alloy_mm, "r") as f:
-        strmodel = f.read()
-
+    aprinter = AlloyEncoder()
+        
     strmodel += aprinter.print_program(program, config.synth)
     
     # Generation of the expanded CVC4 model into the directory #
@@ -307,7 +310,10 @@ def synth_program(config):
         return 0
     
     Logger.msg("Generating relaxed SMT model... ", 0)
-    strmodel = generate_cvc_model(config, program)
+    if config.use_alloy:
+        strmodel = generate_alloy_model(config, program)
+    else:
+        strmodel = generate_cvc_model(config, program)
     Logger.log("DONE", 0)
 
     if config.only_model:
@@ -315,7 +321,10 @@ def synth_program(config):
 
     Logger.msg("Solving... ", 0)
 
-    programs = analyzer.solve_all_synth(strmodel, program, config.threads)
+    if config.use_alloy:
+        programs = analyzer.solve_all_synth_alloy(strmodel, program, config.threads)
+    else:
+        programs = analyzer.solve_all_synth_cvc(strmodel, program, config.threads)
     totmodels = len(programs)
 
     Logger.log(" DONE", 0)
