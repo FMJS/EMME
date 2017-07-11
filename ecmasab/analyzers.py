@@ -106,7 +106,6 @@ class CVC4ValidExecsModelsManager(ModelsManager):
     
     def compute_from_smt(self, smt):
         assigns = self.exprmgr.mkBoolConst(True)
-        posassigns = self.exprmgr.mkBoolConst(True)
         exe = Execution()
 
         for relation in self.relations:
@@ -460,6 +459,10 @@ class EquivalentExecutionSynthetizer(object):
 
     def solve_all_synth_alloy(self, model, program, threads):
         return self.alloy_synth.solve_all_synth(model, program, threads)
+
+    def solve_all_synth_hybrid(self, cvc4model, alloymodel, program, threads):
+        (ao_execs, executions) = self.alloy_synth.find_all_intersect(alloymodel, program, threads)
+        return self.cvc4_synth.prune_not_eq(ao_execs, executions, cvc4model, program, threads)
     
     def set_models_file(self, models_file):
         self.cvc4_synth.set_models_file(models_file)
@@ -468,22 +471,25 @@ class EquivalentExecutionSynthetizer(object):
 class EquivalentExecutionSynthetizerAlloy(object):
 
     allvexecsmanager = None
-    alloysolver = None
+    alloy_solver = None
     alloy_encoder = None
-    run_condition = None
 
     def __init__(self):
         self.allvexecsmanager = AlloySynthProgsModelsManager()
-        self.alloysolver = AlloySolver()
+        self.alloy_solver = AlloySolver()
         self.alloy_encoder = AlloyEncoder()
 
     def set_models_file(self, models_file):
         self.allvexecsmanager.models_file = models_file
 
     def solve_all_synth(self, model, program, threads):
+        threads = 1 # not supported yet
+        (ao_execs, executions) = self.find_all_intersect(model, program, threads)
+        return self.prune_not_eq(ao_execs, executions, model, program, threads)
 
-        self.run_condition = self.alloy_encoder.print_run_condition(program)
-        
+    def find_all_intersect(self, model, program, threads):
+        threads = 1 # not supported yet
+        run_condition = self.alloy_encoder.print_run_condition(program)
         self.allvexecsmanager.program = program
         executions = Executions()
         executions.executions = self.allvexecsmanager.load_models()
@@ -495,7 +501,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
         for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
             assertions = self.alloy_encoder.print_ex_assertions(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
-            execs = self.alloysolver.solve_allsmt(vmodel+self.run_condition, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
+            execs = self.alloy_solver.solve_allsmt(vmodel+run_condition, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
             self.allvexecsmanager.prevmodels = ao_execs
             Logger.msg(" ", 0)
@@ -507,16 +513,23 @@ class EquivalentExecutionSynthetizerAlloy(object):
         if Logger.level(1):
             for el in ao_execs:
                 Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
-        
+
+        return (ao_execs, executions)
+
+    def prune_not_eq(self, ao_execs, executions, model, program, threads):
+        threads = 1 # not supported yet
+        self.allvexecsmanager.preload = False        
         beparser = BeParser()
         eq_progs = []
         equivalent_AOs = []
         events_dic = dict([(x.name, x) for x in program.get_events()])
 
+        run_condition = self.alloy_encoder.print_run_condition(program)
+
         if threads > 1:
-            valid_aos = self.__check_all_mt(model, ao_execs, executions, threads)
+            valid_aos = self.__check_all_mt(model, ao_execs, executions, run_condition, threads)
         else:
-            valid_aos = self.__check_all(model, ao_execs, executions)
+            valid_aos = self.__check_all(model, ao_execs, executions, run_condition)
         
         for exe in valid_aos:
             rel = Relation(AO)
@@ -533,18 +546,16 @@ class EquivalentExecutionSynthetizerAlloy(object):
                 Logger.log("OK: %s"%el.get_AO(), 1)
 
         return eq_progs
-
-    def __check_all(self, model, ao_execs, executions, retlist=None):
+    
+    def __check_all(self, model, ao_execs, executions, run_condition, retlist=None):
         if retlist is None: retlist = []
         for exe in ao_execs:
-            ok = self.__check_ao_correctness(model, exe, executions)
+            ok = self.__check_ao_correctness(model, exe, executions, run_condition)
             if ok: retlist.append(exe)
         return list(retlist)
         
-    def __check_ao_correctness(self, model, exe, executions):
+    def __check_ao_correctness(self, model, exe, executions, run_condition):
         ok = True
-
-        exestr = str(exe.get_AO())
         prev_blocking = self.allvexecsmanager.blocking_relations
         self.allvexecsmanager.blocking_relations = [RF]
         
@@ -554,9 +565,9 @@ class EquivalentExecutionSynthetizerAlloy(object):
         assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
         vmodel += self.alloy_encoder.assert_relation(exe.get_AO())+"\n"
-        vmodel += self.run_condition
+        vmodel += run_condition
 
-        ret = self.alloysolver.solve_allsmt(vmodel, self.allvexecsmanager, 1)
+        ret = self.alloy_solver.solve_allsmt(vmodel, self.allvexecsmanager, 1)
         if ret != []:
             ok = False
 
@@ -565,8 +576,8 @@ class EquivalentExecutionSynthetizerAlloy(object):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
                 vmodel += self.alloy_encoder.assert_relation(exe.get_AO())+"\n"
-                vmodel += self.run_condition
-                ret = self.alloysolver.solve_allsmt(vmodel, self.allvexecsmanager, 1)
+                vmodel += run_condition
+                ret = self.alloy_solver.solve_allsmt(vmodel, self.allvexecsmanager, 1)
                 if ret == []:
                     ok = False
                     break
@@ -579,13 +590,13 @@ class EquivalentExecutionSynthetizerAlloy(object):
 class EquivalentExecutionSynthetizerCVC4(object):
 
     c4vexecsmanager = None
-    c4solver = None
-    cvc_encoder = None
+    c4_solver = None
+    c4_encoder = None
 
     def __init__(self):
         self.c4vexecsmanager = CVC4SynthProgsModelsManager()
-        self.c4solver = CVC4Solver()
-        self.cvc_encoder = CVC4Encoder()
+        self.c4_solver = CVC4Solver()
+        self.c4_encoder = CVC4Encoder()
 
     def set_models_file(self, models_file):
         self.c4vexecsmanager.models_file = models_file
@@ -628,14 +639,14 @@ class EquivalentExecutionSynthetizerCVC4(object):
         prev_blocking = self.c4vexecsmanager.blocking_relations
         self.c4vexecsmanager.blocking_relations = [RF]
         
-        assertions = self.cvc_encoder.print_neg_assertions(executions, self.c4vexecsmanager.blocking_relations)
+        assertions = self.c4_encoder.print_neg_assertions(executions, self.c4vexecsmanager.blocking_relations)
 
         # Checking if the candidate is not a superset
         assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
-        vmodel += self.cvc_encoder.assert_formula_nl("%s"%(exe))
+        vmodel += self.c4_encoder.assert_formula_nl("%s"%(exe))
         
-        ret = self.c4solver.solve_allsmt(vmodel, self.c4vexecsmanager, 1)
+        ret = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, 1)
         if ret != []:
             ok = False
 
@@ -643,8 +654,8 @@ class EquivalentExecutionSynthetizerCVC4(object):
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
-                vmodel += self.cvc_encoder.assert_formula_nl("%s"%(exe))
-                ret = self.c4solver.solve_allsmt(vmodel, self.c4vexecsmanager, 1)
+                vmodel += self.c4_encoder.assert_formula_nl("%s"%(exe))
+                ret = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, 1)
                 if ret == []:
                     ok = False
                     break
@@ -654,21 +665,25 @@ class EquivalentExecutionSynthetizerCVC4(object):
         return ok
     
     def solve_all_synth(self, model, program, threads):
+        (ao_execs, executions) = self.find_all_intersect(model, program, threads)
+        return self.prune_not_eq(ao_execs, executions, model, program, threads)
+
+    def find_all_intersect(self, model, program, threads):
         self.c4vexecsmanager.program = program
         executions = Executions()
         executions.executions = self.c4vexecsmanager.load_models()
         self.c4vexecsmanager.preload = False        
 
-        vmodel = model+"\n"+self.cvc_encoder.print_general_AO(program)
+        vmodel = model+"\n"+self.c4_encoder.print_general_AO(program)
         qupre = QuantPreprocessor()
         qupre.set_expand_sets(True)
         vmodel = qupre.preprocess_from_string(vmodel)
         self.c4vexecsmanager.blocking_relations = [AO]
         ao_execs = []
         for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
-            assertions = self.cvc_encoder.print_ex_assertions(executions, models_blocking)
+            assertions = self.c4_encoder.print_ex_assertions(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
-            execs = self.c4solver.solve_allsmt(vmodel, self.c4vexecsmanager, -1, threads if ao_execs == [] else 1)
+            execs = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
             self.c4vexecsmanager.prevmodels = ao_execs
             Logger.msg(" ", 0)
@@ -680,7 +695,11 @@ class EquivalentExecutionSynthetizerCVC4(object):
         if Logger.level(1):
             for el in ao_execs:
                 Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
-        
+
+        return (ao_execs, executions)
+
+    def prune_not_eq(self, ao_execs, executions, model, program, threads):
+        self.c4vexecsmanager.preload = False        
         beparser = BeParser()
         eq_progs = []
         equivalent_AOs = []
@@ -744,7 +763,7 @@ class ConstraintAnalyzerManager(ModelsManager):
     
 class ConstraintsAnalyzer(object):
 
-    c4solver = None
+    c4_solver = None
     bsolver = None
     encoder = None
 
@@ -752,7 +771,7 @@ class ConstraintsAnalyzer(object):
         self.vexecsmanager.models_file = models_file
     
     def __init__(self):
-        self.c4solver = CVC4Solver()
+        self.c4_solver = CVC4Solver()
         self.bsolver = BDDSolver()
         self.vexecsmanager = ConstraintAnalyzerManager()
         self.encoder = CVC4Encoder()
@@ -784,7 +803,7 @@ class ConstraintsAnalyzer(object):
         objs = []
         Logger.log("\nMatched models analysis", 0)
         Logger.msg("Solving... ", 0)
-        objs = self.c4solver.compute_models(vmodel, self.vexecsmanager, objs)
+        objs = self.c4_solver.compute_models(vmodel, self.vexecsmanager, objs)
         mmodels = " | ".join(objs)
         Logger.log(" DONE", 0)
         mmodels = self.bsolver.simplify(mmodels, True)
@@ -794,7 +813,7 @@ class ConstraintsAnalyzer(object):
         objs = []
         Logger.log("Unmatched models analysis", 0)
         Logger.msg("Solving... ", 0)
-        objs = self.c4solver.compute_models(vmodel, self.vexecsmanager, objs)
+        objs = self.c4_solver.compute_models(vmodel, self.vexecsmanager, objs)
         nmodels = " | ".join(objs)
         Logger.log(" DONE", 0)
         nmodels = self.bsolver.simplify(nmodels, True)

@@ -74,6 +74,7 @@ class Config(object):
     threads = None
     synth = None
     use_alloy = None
+    hybrid = None
     
     cvc_model = None
     cvc_model_ex = None
@@ -118,7 +119,8 @@ class Config(object):
         self.runs = 10
         self.nexecs = -1
         self.use_alloy = False
-        
+        self.hybrid = False
+
     def generate_filenames(self):
         if self.prefix:
             self.cvc_model = self.prefix+CVC_MEMORY_MODEL
@@ -310,10 +312,11 @@ def synth_program(config):
         return 0
     
     Logger.msg("Generating relaxed SMT model... ", 0)
-    if config.use_alloy:
-        strmodel = generate_alloy_model(config, program)
-    else:
-        strmodel = generate_cvc_model(config, program)
+    if config.use_alloy or config.hybrid:
+        strmodel_alloy = generate_alloy_model(config, program)
+        
+    if not config.use_alloy or config.hybrid:
+        strmodel_cvc4 = generate_cvc_model(config, program)
     Logger.log("DONE", 0)
 
     if config.only_model:
@@ -322,9 +325,12 @@ def synth_program(config):
     Logger.msg("Solving... ", 0)
 
     if config.use_alloy:
-        programs = analyzer.solve_all_synth_alloy(strmodel, program, config.threads)
+        programs = analyzer.solve_all_synth_alloy(strmodel_alloy, program, config.threads)
     else:
-        programs = analyzer.solve_all_synth_cvc(strmodel, program, config.threads)
+        if config.hybrid:
+            programs = analyzer.solve_all_synth_hybrid(strmodel_cvc4, strmodel_alloy, program, config.threads)
+        else:
+            programs = analyzer.solve_all_synth_cvc(strmodel_cvc4, program, config.threads)
     totmodels = len(programs)
 
     Logger.log(" DONE", 0)
@@ -493,7 +499,11 @@ def main(args):
 
     parser.set_defaults(use_alloy=False)
     parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
-                        help="relies on Alloy analyzer instead of CVC4. (Default is \"%s\")"%False)
+                        help="relies on Alloy Analyzer instead of CVC4. (Default is \"%s\")"%False)
+
+    parser.set_defaults(best=False)
+    parser.add_argument('-b', '--best', dest='best', action='store_true',
+                        help="relies on CVC4 or Alloy Analyzer for best performance. (Default is \"%s\")"%False)
     
     parser.set_defaults(nexecs=-1)
     parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
@@ -601,6 +611,12 @@ def main(args):
     config.nexecs = args.nexecs
     config.use_alloy = args.use_alloy
 
+    if args.synth and args.best:
+        config.hybrid = True
+        
+    if not args.synth and not args.unmatched and args.best:
+        config.use_alloy = True
+        
     if args.silent:
         config.verbosity = 0
 
