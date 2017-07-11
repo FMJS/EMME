@@ -209,8 +209,10 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
             if len(tuples[0]) == 0:
                 blocking.append("(no %s.rel)"%(self.__relname_mapping()[rel]))
             else:
+                btup = []
                 for tup in tuples:
-                    blocking.append("%s [%s]"%(rel, ", ".join(tuple(tup))))
+                    btup.append(" -> ".join(tuple(tup)))
+                blocking.append("%s.rel = %s"%(self.__relname_mapping()[rel], " + ".join(["{(%s)}"%x for x in btup])))
 
         for var in self.variables:
             value = self.__get_condition(smt, var)
@@ -475,8 +477,6 @@ class EquivalentExecutionSynthetizerAlloy(object):
         self.alloysolver = AlloySolver()
         self.alloy_encoder = AlloyEncoder()
 
-        self.alloysolver.debug = True
-        
     def set_models_file(self, models_file):
         self.allvexecsmanager.models_file = models_file
 
@@ -489,13 +489,13 @@ class EquivalentExecutionSynthetizerAlloy(object):
         executions.executions = self.allvexecsmanager.load_models()
         self.allvexecsmanager.preload = False        
 
-        vmodel = "\n".join([model,self.alloy_encoder.print_general_AO(program),self.alloy_encoder.print_run_condition(program)])
+        vmodel = "\n".join([model,self.alloy_encoder.print_general_AO(program)])
         self.allvexecsmanager.blocking_relations = [AO]
         ao_execs = []
         for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
             assertions = self.alloy_encoder.print_ex_assertions(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
-            execs = self.alloysolver.solve_allsmt(vmodel, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
+            execs = self.alloysolver.solve_allsmt(vmodel+self.run_condition, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
             self.allvexecsmanager.prevmodels = ao_execs
             Logger.msg(" ", 0)
@@ -663,7 +663,6 @@ class EquivalentExecutionSynthetizerCVC4(object):
         qupre = QuantPreprocessor()
         qupre.set_expand_sets(True)
         vmodel = qupre.preprocess_from_string(vmodel)
-
         self.c4vexecsmanager.blocking_relations = [AO]
         ao_execs = []
         for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
