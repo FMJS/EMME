@@ -477,6 +477,8 @@ def main(args):
     
     jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
 
+    # Files generation
+    
     parser.set_defaults(jsprinter=config.jsprinter)
     parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?', 
                         help='select the JS printer between (Default is \"%s\"):\n%s'%(config.jsprinter, "\n".join(jsprinters)))
@@ -484,34 +486,10 @@ def main(args):
     parser.set_defaults(jsdir=None)
     parser.add_argument('-d', '--jsdir', metavar='jsdir', type=str, nargs='?',
                         help='directory where to store all JS programs. (Default is the same as the input file)')
- 
+    
     parser.set_defaults(graphviz=False)
     parser.add_argument('-g', '--graphviz', dest='graphviz', action='store_true',
                         help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
-
-    parser.set_defaults(force_solving=False)
-    parser.add_argument('-f', '--force-solving', dest='force_solving', action='store_true',
-                        help="forces the solving part by discharging the previous models. (Default is \"%s\")"%False)
-    
-    parser.set_defaults(skip_solving=False)
-    parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
-                        help="skips the solving part. (Default is \"%s\")"%False)
-
-    parser.set_defaults(use_alloy=False)
-    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
-                        help="relies on Alloy Analyzer instead of CVC4. (Default is \"%s\")"%False)
-
-    parser.set_defaults(best=False)
-    parser.add_argument('-b', '--best', dest='best', action='store_true',
-                        help="relies on CVC4 or Alloy Analyzer for best performance. (Default is \"%s\")"%False)
-    
-    parser.set_defaults(nexecs=-1)
-    parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
-                       help='maximum number of executions. (Default is \"unlimited\")')
-    
-    parser.set_defaults(verbosity=1)
-    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
-                        help="verbosity level. (Default is \"%s\")"%1)
     
     parser.set_defaults(relations=config.printing_relations)
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
@@ -520,6 +498,44 @@ def main(args):
     parser.set_defaults(prefix=None)
     parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. (Default is the same as the input file)')
+
+    # Possible analyses
+
+    parser.set_defaults(synth=False)
+    parser.add_argument('--synth', dest='synth', action='store_true',
+                        help="enables equivalent programs synthesis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(unmatched=False)
+    parser.add_argument('--unmatched', dest='unmatched', action='store_true',
+                        help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
+    
+    # Solvers selection
+
+    parser.set_defaults(use_alloy=False)
+    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
+                        help="relies on Alloy Analyzer instead of CVC4. (Default is \"%s\")"%False)
+
+    parser.set_defaults(best=False)
+    parser.add_argument('-b', '--best', dest='best', action='store_true',
+                        help="relies on CVC4 or Alloy Analyzer for best performance. (Default is \"%s\")"%False)
+
+    # Simple configurations
+
+    parser.set_defaults(verbosity=1)
+    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
+                        help="verbosity level. (Default is \"%s\")"%1)
+
+    parser.set_defaults(nexecs=-1)
+    parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
+                       help='maximum number of executions. (Default is \"unlimited\")')
+    
+    parser.set_defaults(force_solving=False)
+    parser.add_argument('-f', '--force-solving', dest='force_solving', action='store_true',
+                        help="forces the solving part by discharging the previous models. (Default is \"%s\")"%False)
+    
+    parser.set_defaults(skip_solving=False)
+    parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
+                        help="skips the solving part. (Default is \"%s\")"%False)
 
     parser.set_defaults(silent=False)
     parser.add_argument('-l', '--silent', dest='silent', action='store_true',
@@ -533,6 +549,8 @@ def main(args):
     parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
                         help="exits right after the model generation. (Default is \"%s\")"%False)
 
+    # Advanced configurations
+    
     parser.set_defaults(threads=1)
     parser.add_argument('-j', '--threads', metavar='number', type=int,
                        help='number of threads - EXPERIMENTAL. (Default is \"1\")')
@@ -540,14 +558,6 @@ def main(args):
     parser.set_defaults(debug=False)
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
-
-    parser.set_defaults(synth=False)
-    parser.add_argument('--synth', dest='synth', action='store_true',
-                        help="enables equivalent programs synthesis. (Default is \"%s\")"%False)
-
-    parser.set_defaults(unmatched=False)
-    parser.add_argument('--unmatched', dest='unmatched', action='store_true',
-                        help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
 
     parser.set_defaults(jsengine="")
     parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
