@@ -686,7 +686,7 @@ class JST262_WASM_V8_Printer(JST262_Printer):
 
 class JST262_WASM_JSC_Printer(JST262_Printer):
     NAME = "JS-TEST262-W-JSC"
-    DESC = "\tTEST262 format (Accepted by JSC)"
+    DESC = "\tTEST262 format with WASM (Accepted by JSC)"
     str_report = True
     exp_outputs = True
     agent_prefix = "$"
