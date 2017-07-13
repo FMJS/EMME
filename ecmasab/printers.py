@@ -28,8 +28,44 @@ LICENSE += "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or i
 LICENSE += "// See the License for the specific language governing permissions and\n"
 LICENSE += "// limitations under the License.\n\n"
 
-
 FLOAT_APPROX = 4
+
+ASMACCESS = ""
+ASMACCESS += "let asm_memacc = `(function Module(stdlib, foreign, heap) {\n"
+ASMACCESS += "  \"use asm\";\n"
+ASMACCESS += "  var MEM8 = new stdlib.Int8Array(heap);\n"
+ASMACCESS += "  var MEM16 = new stdlib.Int16Array(heap);\n"
+ASMACCESS += "  var MEM32 = new stdlib.Int32Array(heap);\n"
+ASMACCESS += "  var MEMU8 = new stdlib.Uint8Array(heap);\n"
+ASMACCESS += "  var MEMU16 = new stdlib.Uint16Array(heap);\n"
+ASMACCESS += "  var MEMU32 = new stdlib.Uint32Array(heap);\n"
+ASMACCESS += "  function load8(x) { x = x | 0; return MEM8[x] | 0; }\n"
+ASMACCESS += "  function loadu8(x) { x = x | 0; return MEMU8[x] | 0; }\n"
+ASMACCESS += "  function load16(x) { x = x | 0; return MEM16[x >> 1] | 0; }\n"
+ASMACCESS += "  function loadu16(x) { x = x | 0; return MEMU16[x >> 1] | 0; }\n"
+ASMACCESS += "  function load32(x) { x = x | 0; return MEM32[x >> 2] | 0; }\n"
+ASMACCESS += "  function loadu32(x) { x = x | 0; return MEMU32[x >> 2] | 0; }\n"
+ASMACCESS += "  function store8(x, v) { x = x | 0; v = v | 0; MEM8[x] = v; }\n"
+ASMACCESS += "  function storeu8(x, v) { x = x | 0; v = v | 0; MEMU8[x] = v; }\n"
+ASMACCESS += "  function store16(x, v) { x = x | 0; v = v | 0; MEM16[x >> 1] = v; }\n"
+ASMACCESS += "  function storeu16(x, v) { x = x | 0; v = v | 0; MEMU16[x >> 1] = v; }\n"
+ASMACCESS += "  function store32(x, v) { x = x | 0; v = v | 0; MEM32[x >> 2] = v; }\n"
+ASMACCESS += "  function storeu32(x, v) { x = x | 0; v = v | 0; MEMU32[x >> 2] = v; }\n"
+ASMACCESS += "  return {\n"
+ASMACCESS += "    load8: load8,\n"
+ASMACCESS += "    loadu8: loadu8,\n"
+ASMACCESS += "    load16: load16,\n"
+ASMACCESS += "    loadu16: loadu16,\n"
+ASMACCESS += "    load32: load32,\n"
+ASMACCESS += "    loadu32: loadu32,\n"
+ASMACCESS += "    store8: store8,\n"
+ASMACCESS += "    storeu8: storeu8,\n"
+ASMACCESS += "    store16: store16,\n"
+ASMACCESS += "    storeu16: storeu16,\n"
+ASMACCESS += "    store32: store32,\n"
+ASMACCESS += "    storeu32: storeu32,\n"
+ASMACCESS += "  };\n"
+ASMACCESS += "})`;\n"
 
 def float_approx(value, approx=FLOAT_APPROX):
     val = value*(10**approx)
@@ -59,6 +95,10 @@ class PrintersFactory(object):
         PrintersFactory.register_printer(JST262_JSC_Printer())
         
         PrintersFactory.register_printer(JSV8Printer())
+
+        PrintersFactory.register_printer(JST262_WASM_V8_Printer())
+        PrintersFactory.register_printer(JST262_WASM_JSC_Printer())
+
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
     
@@ -123,7 +163,7 @@ class JSPrinter(object):
         
 class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
-    DESC = "\tGoogle V8 format"
+    DESC = "\t\tGoogle V8 format"
 
     def print_execution(self, program, interp, models=False):
         reads = []
@@ -327,6 +367,8 @@ class JST262_Printer(JSPrinter):
     asserts = True
     indent = "   "
 
+    use_asm = False
+    
     def print_execution(self, program, interp, models=False):
         reads = []
         output = ""
@@ -353,6 +395,9 @@ class JST262_Printer(JSPrinter):
         
         ret = LICENSE
 
+        if self.use_asm:
+            ret += ASMACCESS
+
         blocks = [(x.name, x.size) for x in program.get_blocks()]
         blocks.sort()
 
@@ -363,7 +408,9 @@ class JST262_Printer(JSPrinter):
                 continue
             ret += "\n// Thread %s\n"%thread.name
             ret += "%s.agent.start(\n"%self.agent_prefix
-            ret += (ind*1)+"`%s.agent.receiveBroadcast(function (%s) {\n"%(self.agent_prefix, str_blist if self.str_report else "data")
+            ret += (ind*1)+"`%s.agent.receiveBroadcast(function thread_%s(%s) {\n"%(self.agent_prefix, \
+                                                                                    thread.name, \
+                                                                                    str_blist if self.str_report else "data")
             ret += (ind*2)+"var report = [];\n"
 
             for ev in thread.get_events(False):
@@ -491,14 +538,14 @@ class JST262_Printer(JSPrinter):
     
     def print_event(self, event, postfix=None):
         is_float = event.is_wtear()
-        var_def = ""
-        prt = ""
+        var_def = None
+        prt = None
         mop = None
         
         if (event.operation == WRITE) and (event.ordering == INIT):
             return ""
         
-        if (event.ordering != INIT):
+        if (event.ordering != INIT) and (not self.use_asm):
             if is_float:
                 var_def = "var %s = new Float%sArray(%s%s)"%(event.block.name, \
                                                              event.get_size()*8, \
@@ -528,9 +575,9 @@ class JST262_Printer(JSPrinter):
                                                    event_values)
 
             if event.is_read():
-                mop = "%s = Atomics.load(%s, %s)"%(event.name, \
-                                                   event.block.name, \
-                                                   addr)
+                mop = "%s = Atomics.load(%s, %s) | 0"%(event.name, \
+                                                       event.block.name, \
+                                                       addr)
                 if postfix:
                     prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event.name, postfix, event.name)
                 else:
@@ -575,17 +622,32 @@ class JST262_Printer(JSPrinter):
                 if is_float and event.address:
                     event_values = self.float_pri_js%(float_approx(event_values))
 
-                mop = ("%s[%s] = %s")%(event.block.name, \
-                                       addr, \
-                                       event_values)
-                
+                if self.use_asm and not is_float:
+                    mop = ("(${asm_memacc}(this, {}, %s%s_sab)).store%s(%s, %s)")%("" if self.str_report else "data.", \
+                                                                                   event.block.name, \
+                                                                                   event.get_size()*8, \
+                                                                                   addr, \
+                                                                                   event_values)
+                else:
+                    mop = ("%s[%s] = %s")%(event.block.name, \
+                                           addr, \
+                                           event_values)
+                    
             if event.operation == READ:
                 approx = self.float_app_js if is_float else ""
                     
-                mop = "%s = %s[%s]"%(event.name, \
-                                     event.block.name, \
-                                     addr)
 
+                if self.use_asm and not is_float:
+                    mop = "%s = (${asm_memacc}(this, {}, %s%s_sab)).load%s(%s)"%(event.name, \
+                                                                                 "" if self.str_report else "data.", \
+                                                                                 event.block.name, \
+                                                                                 event.get_size()*8, \
+                                                                                 addr)
+                else:
+                    mop = "%s = %s[%s] | 0"%(event.name, \
+                                             event.block.name, \
+                                             addr)
+                    
                 if postfix:
                     prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
                 else:
@@ -593,12 +655,7 @@ class JST262_Printer(JSPrinter):
 
         assert mop
         
-        if event.is_read_or_modify():
-            return "%s;\n"%("; ".join([var_def,mop,prt]))
-        else:
-            if not mop:
-                return var_def+"\n"
-            return "%s;\n"%("; ".join([var_def,mop]))
+        return "".join("%s; "%x for x in [var_def,mop,prt] if x is not None)+"\n"
     
 
 class JST262_JSC_Printer(JST262_Printer):
@@ -611,7 +668,7 @@ class JST262_JSC_Printer(JST262_Printer):
 class JST262_SM_Printer(JST262_Printer):
     NAME = "JS-TEST262-SM"
     DESC = "\tTEST262 format (Accepted by SM)"
-    str_report = False
+    str_report = True
     exp_outputs = True
 
 class JST262_V8_Printer(JST262_Printer):
@@ -619,6 +676,21 @@ class JST262_V8_Printer(JST262_Printer):
     DESC = "\tTEST262 format (Accepted by V8)"
     str_report = False
     exp_outputs = True
+
+class JST262_WASM_V8_Printer(JST262_Printer):
+    NAME = "JS-TEST262-W-V8"
+    DESC = "\tTEST262 format with WASM (Accepted by V8)"
+    str_report = False
+    exp_outputs = True
+    use_asm = True
+
+class JST262_WASM_JSC_Printer(JST262_Printer):
+    NAME = "JS-TEST262-W-JSC"
+    DESC = "\tTEST262 format with WASM (Accepted by JSC)"
+    str_report = True
+    exp_outputs = True
+    agent_prefix = "$"
+    use_asm = True
     
 class DotPrinter(object):
     NAME = "DOT"

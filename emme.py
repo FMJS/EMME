@@ -24,10 +24,7 @@ from ecmasab.encoders import CVC4Encoder, AlloyEncoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.analyzers import ValidExecutionAnalyzer, EquivalentExecutionSynthetizer, ConstraintsAnalyzer
-
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
-from ecmasab.solvers import CVC4Solver
-
 from ecmasab.logger import Logger
 
 
@@ -74,6 +71,7 @@ class Config(object):
     threads = None
     synth = None
     use_alloy = None
+    hybrid = None
     
     cvc_model = None
     cvc_model_ex = None
@@ -118,7 +116,8 @@ class Config(object):
         self.runs = 10
         self.nexecs = -1
         self.use_alloy = False
-        
+        self.hybrid = False
+
     def generate_filenames(self):
         if self.prefix:
             self.cvc_model = self.prefix+CVC_MEMORY_MODEL
@@ -224,11 +223,14 @@ def generate_alloy_model(config, program):
     abspath = os.path.abspath(__file__)
     alloy_mm = ("/".join(abspath.split("/")[:-1]))+"/"+config.alloy_mm
 
-    aprinter = AlloyEncoder()
+    # Preprocessing the model using cpp #
+    cpppre = ExtPreprocessor(CPP)
+    cpppre.set_output_file(config.cvc_model_ex)
+    cpppre.set_defines(config.defines)
+    strmodel = cpppre.preprocess_from_file(alloy_mm)
     
-    with open(alloy_mm, "r") as f:
-        strmodel = f.read()
-
+    aprinter = AlloyEncoder()
+        
     strmodel += aprinter.print_program(program, config.synth)
     
     # Generation of the expanded CVC4 model into the directory #
@@ -307,7 +309,11 @@ def synth_program(config):
         return 0
     
     Logger.msg("Generating relaxed SMT model... ", 0)
-    strmodel = generate_cvc_model(config, program)
+    if config.use_alloy or config.hybrid:
+        strmodel_alloy = generate_alloy_model(config, program)
+        
+    if not config.use_alloy or config.hybrid:
+        strmodel_cvc4 = generate_cvc_model(config, program)
     Logger.log("DONE", 0)
 
     if config.only_model:
@@ -315,7 +321,13 @@ def synth_program(config):
 
     Logger.msg("Solving... ", 0)
 
-    programs = analyzer.solve_all_synth(strmodel, program, config.threads)
+    if config.use_alloy:
+        programs = analyzer.solve_all_synth_alloy(strmodel_alloy, program, config.threads)
+    else:
+        if config.hybrid:
+            programs = analyzer.solve_all_synth_hybrid(strmodel_cvc4, strmodel_alloy, program, config.threads)
+        else:
+            programs = analyzer.solve_all_synth_cvc(strmodel_cvc4, program, config.threads)
     totmodels = len(programs)
 
     Logger.log(" DONE", 0)
@@ -462,6 +474,8 @@ def main(args):
     
     jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
 
+    # Files generation
+    
     parser.set_defaults(jsprinter=config.jsprinter)
     parser.add_argument('-p', '--jsprinter', metavar='jsprinter', type=str, nargs='?', 
                         help='select the JS printer between (Default is \"%s\"):\n%s'%(config.jsprinter, "\n".join(jsprinters)))
@@ -469,30 +483,10 @@ def main(args):
     parser.set_defaults(jsdir=None)
     parser.add_argument('-d', '--jsdir', metavar='jsdir', type=str, nargs='?',
                         help='directory where to store all JS programs. (Default is the same as the input file)')
- 
+    
     parser.set_defaults(graphviz=False)
     parser.add_argument('-g', '--graphviz', dest='graphviz', action='store_true',
                         help="generates the png files of each execution (requires neato). (Default is \"%s\")"%False)
-
-    parser.set_defaults(force_solving=False)
-    parser.add_argument('-f', '--force-solving', dest='force_solving', action='store_true',
-                        help="forces the solving part by discharging the previous models. (Default is \"%s\")"%False)
-    
-    parser.set_defaults(skip_solving=False)
-    parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
-                        help="skips the solving part. (Default is \"%s\")"%False)
-
-    parser.set_defaults(use_alloy=False)
-    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
-                        help="relies on Alloy analyzer instead of CVC4. (Default is \"%s\")"%False)
-    
-    parser.set_defaults(nexecs=-1)
-    parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
-                       help='maximum number of executions. (Default is \"unlimited\")')
-    
-    parser.set_defaults(verbosity=1)
-    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
-                        help="verbosity level. (Default is \"%s\")"%1)
     
     parser.set_defaults(relations=config.printing_relations)
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
@@ -501,6 +495,44 @@ def main(args):
     parser.set_defaults(prefix=None)
     parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
                         help='directory where to store the results. (Default is the same as the input file)')
+
+    # Possible analyses
+
+    parser.set_defaults(synth=False)
+    parser.add_argument('--synth', dest='synth', action='store_true',
+                        help="enables equivalent programs synthesis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(unmatched=False)
+    parser.add_argument('--unmatched', dest='unmatched', action='store_true',
+                        help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
+    
+    # Solvers selection
+
+    parser.set_defaults(use_alloy=False)
+    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
+                        help="relies on Alloy Analyzer instead of CVC4. (Default is \"%s\")"%False)
+
+    parser.set_defaults(best=False)
+    parser.add_argument('-b', '--best', dest='best', action='store_true',
+                        help="relies on CVC4 or Alloy Analyzer for best performance. (Default is \"%s\")"%False)
+
+    # Simple configurations
+
+    parser.set_defaults(verbosity=1)
+    parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
+                        help="verbosity level. (Default is \"%s\")"%1)
+
+    parser.set_defaults(nexecs=-1)
+    parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
+                       help='maximum number of executions. (Default is \"unlimited\")')
+    
+    parser.set_defaults(force_solving=False)
+    parser.add_argument('-f', '--force-solving', dest='force_solving', action='store_true',
+                        help="forces the solving part by discharging the previous models. (Default is \"%s\")"%False)
+    
+    parser.set_defaults(skip_solving=False)
+    parser.add_argument('-k', '--skip-solving', dest='skip_solving', action='store_true',
+                        help="skips the solving part. (Default is \"%s\")"%False)
 
     parser.set_defaults(silent=False)
     parser.add_argument('-l', '--silent', dest='silent', action='store_true',
@@ -514,6 +546,8 @@ def main(args):
     parser.add_argument('-m', '--only-model', dest='only_model', action='store_true',
                         help="exits right after the model generation. (Default is \"%s\")"%False)
 
+    # Advanced configurations
+    
     parser.set_defaults(threads=1)
     parser.add_argument('-j', '--threads', metavar='number', type=int,
                        help='number of threads - EXPERIMENTAL. (Default is \"1\")')
@@ -521,14 +555,6 @@ def main(args):
     parser.set_defaults(debug=False)
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
-
-    parser.set_defaults(synth=False)
-    parser.add_argument('--synth', dest='synth', action='store_true',
-                        help="enables equivalent programs synthesis. (Default is \"%s\")"%False)
-
-    parser.set_defaults(unmatched=False)
-    parser.add_argument('--unmatched', dest='unmatched', action='store_true',
-                        help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
 
     parser.set_defaults(jsengine="")
     parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
@@ -577,7 +603,10 @@ def main(args):
     config.sat = args.check_sat
     config.only_model = args.only_model
     config.skip_solving = args.skip_solving
-    config.jsprinter = args.jsprinter
+
+    if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]:
+        config.jsprinter = args.jsprinter
+    
     config.printing_relations = args.relations
     if args.relations == ALL:
         config.printing_relations = None
@@ -592,6 +621,12 @@ def main(args):
     config.nexecs = args.nexecs
     config.use_alloy = args.use_alloy
 
+    if args.synth and args.best:
+        config.hybrid = True
+        
+    if not args.synth and not args.unmatched and args.best:
+        config.use_alloy = True
+        
     if args.silent:
         config.verbosity = 0
 

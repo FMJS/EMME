@@ -84,7 +84,7 @@ pred RF(e1: mem_events, e2: mem_events) {(e1 -> e2)  in reads_from.rel}
 pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(e1 -> b -> e2)  in reads_bytes_from.rel}
 
 fact rbf_def {all er : mem_events | Active [er] => (RoM [er] => (all b : bytes | (b in er.M) => (one ew : mem_events | Active [ew] and (b in ew.M) and BlockEQ [er,ew] and WoM [ew] and RBF [er,b,ew]))) }
-fact rbf_def_2 {all er,ew : mem_events | Active2 [er,ew] => (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew]))}
+fact rbf_def_2 {all er,ew : mem_events | Active2 [er,ew] => (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew] and (b in er.M) and (b in ew.M)))}
 fact rbf_rf_def {all e1,e2 : mem_events | Active2 [e1,e2] => (RF [e1,e2] <=> (some b:bytes | RBF [e1,b,e2]))}
 fact rbf_corr {all er,ew: mem_events | Active2 [er,ew] => (all b: bytes | RBF [er,b,ew] => not (some ev: mem_events | Active [ev] and (RBF [er,b,ev] and (ew != ev))))}
 

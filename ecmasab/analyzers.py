@@ -106,7 +106,6 @@ class CVC4ValidExecsModelsManager(ModelsManager):
     
     def compute_from_smt(self, smt):
         assigns = self.exprmgr.mkBoolConst(True)
-        posassigns = self.exprmgr.mkBoolConst(True)
         exe = Execution()
 
         for relation in self.relations:
@@ -131,7 +130,7 @@ class CVC4ValidExecsModelsManager(ModelsManager):
 
         blocking = self.exprmgr.mkExpr(NOT, assigns)
 
-        Logger.log("Blocking: %s"%(blocking.toString()), 1)
+        Logger.log("Blocking: %s"%(blocking.toString()), 2)
 
         return ([blocking], exe)
 
@@ -139,7 +138,7 @@ class CVC4ValidExecsModelsManager(ModelsManager):
         executions = Executions()
         executions.executions = shared_objs
         assertions = self.encoder.print_neg_assertions(executions, self.blocking_relations)
-        Logger.log("Blocking: \n%s"%("\n".join(assertions)), 1)
+        Logger.log("Blocking: \n%s"%("\n".join(assertions)), 2)
         return "\n"+("\n".join(assertions))
 
     def write_models(self, shared_objs, done):
@@ -192,7 +191,10 @@ class CVC4ValidExecsModelsManager(ModelsManager):
 
 class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
     id_blocking = 0
+    encoder = None
 
+    blocking_relations = [RBF]
+    
     def __init__(self):
         self.encoder = AlloyEncoder()
     
@@ -201,8 +203,15 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
 
         exe = self.__generate_execution(smt)
         blocking = []
-        for rbf in self.__extract_tuples("reads_bytes_from", smt):
-            blocking.append("RBF [%s, %s, %s]"%tuple(rbf))
+        for rel in self.blocking_relations:
+            tuples = self.__extract_tuples(self.__relname_mapping()[rel], smt)
+            if len(tuples[0]) == 0:
+                blocking.append("(no %s.rel)"%(self.__relname_mapping()[rel]))
+            else:
+                btup = []
+                for tup in tuples:
+                    btup.append(" -> ".join(tuple(tup)))
+                blocking.append("%s.rel = %s"%(self.__relname_mapping()[rel], " + ".join(["{(%s)}"%x for x in btup])))
 
         for var in self.variables:
             value = self.__get_condition(smt, var)
@@ -210,25 +219,32 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
                 blocking.append("(%s.value = %s)"%(var, value))
                 exe.add_condition(var, value)
             
-        blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
+        blocking = "fact block_smt_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
 
-        Logger.log("Blocking: %s"%(blocking), 1)
+        Logger.log("Blocking: %s"%(blocking), 2)
         
         return (blocking, exe)
 
-    def compute_from_sharedobjs(self, shared_objs):
-        constraints = []
-        
-        for exe in shared_objs:
-            blocking = []
-            for tup in exe.get_RBF().tuples:
-                blocking.append("RBF [%s, byte_%s, %s]"%(tup[0], tup[2], tup[1]))
-                
-            AlloyValidExecsModelsManager.id_blocking += 1
-            blocking = "fact blocking_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
-            constraints.append(blocking)
+    def __relname_mapping(self, inv=False):
+        mapping = []
+        mapping.append((RBF,"reads_bytes_from"))
+        mapping.append((RF,"reads_from"))
+        mapping.append((MO,"memory_order"))
+        mapping.append((AO,"agent_order"))
+        mapping.append((HB,"happens_before"))
+        mapping.append((SW,"synchronizes_with"))
+        if inv:
+            mapping = dict([(x[1],x[0]) for x in mapping])
+        else:
+            mapping = dict(mapping)
 
-        Logger.log("Blocking: \n%s"%("".join(constraints)), 1)
+        return mapping
+    
+    def compute_from_sharedobjs(self, shared_objs):
+        executions = Executions()
+        executions.executions = shared_objs
+        constraints = self.encoder.print_neg_assertions(executions, self.blocking_relations)
+        Logger.log("Blocking: \n%s"%("".join(constraints)), 2)
             
         return "\n".join(constraints)
 
@@ -241,11 +257,7 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
     def __generate_execution(self, model):
         exe = Execution()
         bytes_name = "byte_"
-        rel_map = dict([("reads_bytes_from", RBF),\
-                        ("reads_from", RF),\
-                        ("memory_order", MO),\
-                        ("synchronizes_with", SW),\
-                        ("happens_before", HB)])
+        rel_map = self.__relname_mapping(True)
 
         for el in rel_map:
             tuples = self.__extract_tuples(el, model)
@@ -292,7 +304,7 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
         return rb_cons
     
 
-class SynthProgsModelsManager(CVC4ValidExecsModelsManager):
+class CVC4SynthProgsModelsManager(CVC4ValidExecsModelsManager):
 
     preload = True
     prevmodels = None
@@ -334,13 +346,56 @@ class SynthProgsModelsManager(CVC4ValidExecsModelsManager):
 
         return ao_cons
 
+class AlloySynthProgsModelsManager(AlloyValidExecsModelsManager):
+
+    preload = True
+    prevmodels = None
+    encoder = None
+    
+    def __init__(self):
+        self.preload = True
+        self.prevmodels = None
+        self.encoder = AlloyEncoder()
+    
+    def load_models(self):
+        shared_objs = []
+        if self.prevmodels is not None:
+            return self.prevmodels
+        if not self.preload:
+            return shared_objs
+        
+        parser = BeParser()
+        if self.models_file:
+            if os.path.exists(self.models_file):
+                with open(self.models_file, "r") as f:
+                    shared_objs = (parser.executions_from_string(f.read())).executions
+        return shared_objs
+    
+    def write_models(self, shared_objs, done):
+        pass
+    
+    def solutions_separators(self):
+        if not self.program:
+            return []
+
+        ao_set = [(x.name,y.name) for x in self.program.get_events() for y in self.program.get_events() if x != y]
+        ao_cons = [self.encoder.assert_formula("(AO [%s, %s])"%(x)) for x in ao_set]
+
+        Logger.msg("(%s)"%len(ao_cons), 0)
+        
+        if self.shuffle_constraints:
+            random.shuffle(ao_cons)
+
+        return ao_cons
+    
 class ValidExecutionAnalyzer(object):
 
     cvc4_vexecsmanager = None
     alloy_vexecsmanager = None
     c4solver = CVC4Solver()
     alloysolver = AlloySolver()
-    encoder = CVC4Encoder()
+
+    alloyencoder = AlloyEncoder()
 
     def __init__(self):
         self.cvc4_vexecsmanager = CVC4ValidExecsModelsManager()
@@ -377,6 +432,7 @@ class ValidExecutionAnalyzer(object):
         self.alloy_vexecsmanager.program = program
         if program.has_conditions:
             self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
+        model += self.alloyencoder.print_run_condition(program)
         ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, nexecs, threads)
         return len(ret)
 
@@ -385,20 +441,187 @@ class ValidExecutionAnalyzer(object):
         if program.has_conditions:
             self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
         
+        model += self.alloyencoder.print_run_condition(program)
         ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, 1)
         return len(ret)
-    
-class EquivalentExecutionSynthetizer(object):
 
-    vexecsmanager = None
-    c4solver = CVC4Solver()
-    encoder = CVC4Encoder()
+
+class EquivalentExecutionSynthetizer(object):
+    cvc4_synth = None
+    alloy_synth = None
 
     def __init__(self):
-        self.vexecsmanager = SynthProgsModelsManager()
+        self.cvc4_synth = EquivalentExecutionSynthetizerCVC4()
+        self.alloy_synth = EquivalentExecutionSynthetizerAlloy()
+
+    def solve_all_synth_cvc(self, model, program, threads):
+        return self.cvc4_synth.solve_all_synth(model, program, threads)
+
+    def solve_all_synth_alloy(self, model, program, threads):
+        return self.alloy_synth.solve_all_synth(model, program, threads)
+
+    def solve_all_synth_hybrid(self, cvc4model, alloymodel, program, threads):
+        (ao_execs, executions) = self.alloy_synth.find_all_intersect(alloymodel, program, 1)
+        return self.cvc4_synth.prune_not_eq(ao_execs, executions, cvc4model, program, threads)
+    
+    def set_models_file(self, models_file):
+        self.cvc4_synth.set_models_file(models_file)
+        self.alloy_synth.set_models_file(models_file)
+    
+class EquivalentExecutionSynthetizerAlloy(object):
+
+    allvexecsmanager = None
+    alloy_solver = None
+    alloy_encoder = None
+
+    def __init__(self):
+        self.allvexecsmanager = AlloySynthProgsModelsManager()
+        self.alloy_solver = AlloySolver()
+        self.alloy_encoder = AlloyEncoder()
 
     def set_models_file(self, models_file):
-        self.vexecsmanager.models_file = models_file
+        self.allvexecsmanager.models_file = models_file
+
+    def solve_all_synth(self, model, program, threads):
+        (ao_execs, executions) = self.find_all_intersect(model, program, threads)
+        return self.prune_not_eq(ao_execs, executions, model, program, threads)
+
+    def find_all_intersect(self, model, program, threads):
+        run_condition = self.alloy_encoder.print_run_condition(program)
+        self.allvexecsmanager.program = program
+        executions = Executions()
+        executions.executions = self.allvexecsmanager.load_models()
+        self.allvexecsmanager.preload = False        
+
+        vmodel = "\n".join([model,self.alloy_encoder.print_general_AO(program)])
+        self.allvexecsmanager.blocking_relations = [AO]
+        ao_execs = []
+        for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
+            assertions = self.alloy_encoder.print_ex_assertions(executions, models_blocking)
+            vmodel += "\n%s\n"%assertions
+            execs = self.alloy_solver.solve_allsmt(vmodel+run_condition, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
+            ao_execs += [x for x in execs if x not in ao_execs]
+            self.allvexecsmanager.prevmodels = ao_execs
+            Logger.msg(" ", 0)
+        self.allvexecsmanager.prevmodels = None
+
+        Logger.log(" -> Found %s possible candidates"%(len(ao_execs)), 1)
+        Logger.msg("Checking correctness... ", 1)
+
+        if Logger.level(1):
+            for el in ao_execs:
+                Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
+
+        return (ao_execs, executions)
+
+    def prune_not_eq(self, ao_execs, executions, model, program, threads):
+        self.allvexecsmanager.preload = False        
+        beparser = BeParser()
+        eq_progs = []
+        equivalent_AOs = []
+        events_dic = dict([(x.name, x) for x in program.get_events()])
+
+        run_condition = self.alloy_encoder.print_run_condition(program)
+
+        if threads > 1:
+            valid_aos = self.__check_all_mt(model, ao_execs, executions, run_condition, threads)
+        else:
+            valid_aos = self.__check_all(model, ao_execs, executions, run_condition)
+        
+        for exe in valid_aos:
+            rel = Relation(AO)
+            rel.tuples = [(events_dic[str(x[0])], events_dic[str(x[1])]) for x in exe.get_AO().tuples]
+            exe.set_AO(rel)
+            exe.program = program
+            equivalent_AOs.append(exe)
+            program = beparser.program_from_execution(exe)
+            eq_progs.append(program)
+
+        Logger.log(" DONE", 1)
+        if Logger.level(1):
+            for el in equivalent_AOs:
+                Logger.log("OK: %s"%el.get_AO(), 1)
+
+        return eq_progs
+
+    def __check_all_mt(self, model, ao_execs, executions, run_condition, num_t):
+        num_t = min(len(ao_execs), num_t)
+        size = int(math.ceil(len(ao_execs)/float(num_t)))
+        ao_execs = [ao_execs[x:x+size] for x in xrange(0, len(ao_execs), size)]
+        num_t = len(ao_execs)
+        retlist = []
+        threads = []
+        
+        with Manager() as manager:
+            proclist = []
+            for i in range(num_t):
+                ret = manager.list([])
+                proclist.append(ret)
+                process = Process(target=self.__check_all, args=(model, ao_execs[i], executions, run_condition, ret))
+                threads.append(process)
+                process.start()
+
+            for thread in threads:
+                thread.join()
+
+            for x in proclist:
+                retlist += list(x)
+
+        return list(retlist)
+    
+    def __check_all(self, model, ao_execs, executions, run_condition, retlist=None):
+        if retlist is None: retlist = []
+        for exe in ao_execs:
+            ok = self.__check_ao_correctness(model, exe, executions, run_condition)
+            if ok: retlist.append(exe)
+        return list(retlist)
+        
+    def __check_ao_correctness(self, model, exe, executions, run_condition):
+        ok = True
+        prev_blocking = self.allvexecsmanager.blocking_relations
+        self.allvexecsmanager.blocking_relations = [RF]
+        
+        assertions = self.alloy_encoder.print_neg_assertions(executions, self.allvexecsmanager.blocking_relations)
+
+        # Checking if the candidate is not a superset
+        assertion = "\n%s\n"%("\n".join(assertions))
+        vmodel = model+assertion
+        vmodel += self.alloy_encoder.assert_relation(exe.get_AO())+"\n"
+        vmodel += run_condition
+
+        ret = self.alloy_solver.solve_allsmt(vmodel, self.allvexecsmanager, 1)
+        if ret != []:
+            ok = False
+
+        # Checking if the candidate matches all executions
+        if ok and (len(assertions) > 1):
+            for assertion in assertions:
+                vmodel = "%s\n%s\n"%(model, assertion)
+                vmodel += self.alloy_encoder.assert_relation(exe.get_AO())+"\n"
+                vmodel += run_condition
+                ret = self.alloy_solver.solve_allsmt(vmodel, self.allvexecsmanager, 1)
+                if ret == []:
+                    ok = False
+                    break
+
+        self.allvexecsmanager.blocking_relations = prev_blocking
+                
+        return ok
+    
+
+class EquivalentExecutionSynthetizerCVC4(object):
+
+    c4vexecsmanager = None
+    c4_solver = None
+    c4_encoder = None
+
+    def __init__(self):
+        self.c4vexecsmanager = CVC4SynthProgsModelsManager()
+        self.c4_solver = CVC4Solver()
+        self.c4_encoder = CVC4Encoder()
+
+    def set_models_file(self, models_file):
+        self.c4vexecsmanager.models_file = models_file
 
     def __check_all_mt(self, model, ao_execs, executions, num_t):
         num_t = min(len(ao_execs), num_t)
@@ -435,61 +658,70 @@ class EquivalentExecutionSynthetizer(object):
     def __check_ao_correctness(self, model, exe, executions):
         ok = True
         exe = str(exe.get_AO())
-        prev_blocking = self.vexecsmanager.blocking_relations
-        self.vexecsmanager.blocking_relations = [RF]
+        prev_blocking = self.c4vexecsmanager.blocking_relations
+        self.c4vexecsmanager.blocking_relations = [RF]
         
-        assertions = self.encoder.print_neg_assertions(executions, self.vexecsmanager.blocking_relations)
+        assertions = self.c4_encoder.print_neg_assertions(executions, self.c4vexecsmanager.blocking_relations)
 
         # Checking if the candidate is not a superset
         assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
-        vmodel += self.encoder.assert_formula_nl("%s"%(exe))
+        vmodel += self.c4_encoder.assert_formula_nl("%s"%(exe))
         
-        ret = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, 1)
+        ret = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, 1)
         if ret != []:
             ok = False
 
-        # Checking if the candidate mathces all executions
+        # Checking if the candidate matches all executions
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
-                vmodel += self.encoder.assert_formula_nl("%s"%(exe))
-                ret = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, 1)
+                vmodel += self.c4_encoder.assert_formula_nl("%s"%(exe))
+                ret = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, 1)
                 if ret == []:
                     ok = False
                     break
 
-        self.vexecsmanager.blocking_relations = prev_blocking
+        self.c4vexecsmanager.blocking_relations = prev_blocking
                 
         return ok
     
     def solve_all_synth(self, model, program, threads):
-        self.vexecsmanager.program = program
+        (ao_execs, executions) = self.find_all_intersect(model, program, threads)
+        return self.prune_not_eq(ao_execs, executions, model, program, threads)
+
+    def find_all_intersect(self, model, program, threads):
+        self.c4vexecsmanager.program = program
         executions = Executions()
-        executions.executions = self.vexecsmanager.load_models()
-        self.vexecsmanager.preload = False        
+        executions.executions = self.c4vexecsmanager.load_models()
+        self.c4vexecsmanager.preload = False        
 
-        encoder = CVC4Encoder()
-
-        vmodel = model+"\n"+encoder.print_general_AO(program)
+        vmodel = model+"\n"+self.c4_encoder.print_general_AO(program)
         qupre = QuantPreprocessor()
         qupre.set_expand_sets(True)
         vmodel = qupre.preprocess_from_string(vmodel)
-
-        self.vexecsmanager.blocking_relations = [AO]
+        self.c4vexecsmanager.blocking_relations = [AO]
         ao_execs = []
         for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
-            assertions = encoder.print_ex_assertions(executions, models_blocking)
+            assertions = self.c4_encoder.print_ex_assertions(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
-            execs = self.c4solver.solve_allsmt(vmodel, self.vexecsmanager, -1, threads if ao_execs == [] else 1)
+            execs = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
-            self.vexecsmanager.prevmodels = ao_execs
+            self.c4vexecsmanager.prevmodels = ao_execs
             Logger.msg(" ", 0)
-        self.vexecsmanager.prevmodels = None
+        self.c4vexecsmanager.prevmodels = None
 
         Logger.log(" -> Found %s possible candidates"%(len(ao_execs)), 1)
         Logger.msg("Checking correctness... ", 1)
 
+        if Logger.level(1):
+            for el in ao_execs:
+                Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
+
+        return (ao_execs, executions)
+
+    def prune_not_eq(self, ao_execs, executions, model, program, threads):
+        self.c4vexecsmanager.preload = False        
         beparser = BeParser()
         eq_progs = []
         equivalent_AOs = []
@@ -510,8 +742,9 @@ class EquivalentExecutionSynthetizer(object):
             eq_progs.append(program)
 
         Logger.log(" DONE", 1)
-        for el in equivalent_AOs:
-            Logger.log("OK: %s"%el.get_AO(), 1)
+        if Logger.level(1):
+            for el in equivalent_AOs:
+                Logger.log("OK: %s"%el.get_AO(), 1)
 
         return eq_progs
     
@@ -534,7 +767,7 @@ class ConstraintAnalyzerManager(ModelsManager):
             assigns = self.exprmgr.mkExpr(AND, assigns, assign)
 
         blocking = self.exprmgr.mkExpr(NOT, assigns)
-        Logger.log("Blocking: %s"%(blocking.toString()), 1)
+        Logger.log("Blocking: %s"%(blocking.toString()), 2)
         return ([blocking], "(%s)"%" & ".join(model))
 
     def compute_from_sharedobjs(self, shared_objs):
@@ -552,7 +785,7 @@ class ConstraintAnalyzerManager(ModelsManager):
     
 class ConstraintsAnalyzer(object):
 
-    c4solver = None
+    c4_solver = None
     bsolver = None
     encoder = None
 
@@ -560,7 +793,7 @@ class ConstraintsAnalyzer(object):
         self.vexecsmanager.models_file = models_file
     
     def __init__(self):
-        self.c4solver = CVC4Solver()
+        self.c4_solver = CVC4Solver()
         self.bsolver = BDDSolver()
         self.vexecsmanager = ConstraintAnalyzerManager()
         self.encoder = CVC4Encoder()
@@ -592,7 +825,7 @@ class ConstraintsAnalyzer(object):
         objs = []
         Logger.log("\nMatched models analysis", 0)
         Logger.msg("Solving... ", 0)
-        objs = self.c4solver.compute_models(vmodel, self.vexecsmanager, objs)
+        objs = self.c4_solver.compute_models(vmodel, self.vexecsmanager, objs)
         mmodels = " | ".join(objs)
         Logger.log(" DONE", 0)
         mmodels = self.bsolver.simplify(mmodels, True)
@@ -602,7 +835,7 @@ class ConstraintsAnalyzer(object):
         objs = []
         Logger.log("Unmatched models analysis", 0)
         Logger.msg("Solving... ", 0)
-        objs = self.c4solver.compute_models(vmodel, self.vexecsmanager, objs)
+        objs = self.c4_solver.compute_models(vmodel, self.vexecsmanager, objs)
         nmodels = " | ".join(objs)
         Logger.log(" DONE", 0)
         nmodels = self.bsolver.simplify(nmodels, True)

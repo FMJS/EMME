@@ -14,4 +14,7 @@ class Logger(object):
         if (Logger.verbosity > level) and (condition): 
             sys.stdout.write(msg+"\n")
             sys.stdout.flush()
-            
+
+    @staticmethod        
+    def level(level):
+        return Logger.verbosity > level

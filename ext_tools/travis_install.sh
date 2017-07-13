@@ -10,10 +10,10 @@ if [ ! -f "$BINDINGS" ]; then
     sudo make install
     cd ..
     rm -fr CVC4
-    wget https://github.com/CVC4/CVC4/archive/master.zip
-    unzip master.zip
-    rm -fr master.zip
-    mv CVC4-master CVC4
+    wget https://github.com/CVC4/CVC4/archive/1.5.zip
+    unzip 1.5.zip
+    rm -fr 1.5.zip
+    mv CVC4-1.5 CVC4
     cd CVC4/contrib
     ./get-antlr-3.4
     cd ../
@@ -33,11 +33,8 @@ else
     echo "CVC4 Python bindings already exists!"
 fi
 
-pushd .
-cd ext_tools
 wget https://github.com/cristian-mattarei/compiled_softwares/raw/master/v8/ubuntu-14.04-64/package.zip
 unzip package.zip
 rm -fr package.zip
 echo "`pwd`/v8/v8/out/x64.release/d8 --test --random-seed=\$RANDOM --use-strict --nohard-abort --nodead-code-elimination --nofold-constants `pwd`/v8/v8/test/test262/data/harness/sta.js `pwd`/v8/v8/test/test262/data/harness/assert.js `pwd`/v8/v8/test/test262/harness-adapt.js `pwd`/v8/v8/test/test262/harness-agent.js --harmony-sharedarraybuffer \$1" > run_v8.sh
 echo "for file in \`find \$1 -name \"*.js\"\`; do python litmus.py -c \"bash `pwd`/run_v8.sh\" -i \$file -s -n \$2 -j 1; done" > run_all_v8.sh
-popd

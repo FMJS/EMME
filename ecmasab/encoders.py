@@ -12,22 +12,13 @@ import itertools
 from six.moves import range
 
 from ecmasab.execution import TYPE
+from ecmasab.execution import RBF, RF, HB, SW, MO, AO
 from ecmasab.parsing import T_DONE
 
-class CVC4Encoder(object):
+class Encoder(object):
     def __init__(self):
         pass
 
-    def print_executions(self, interps):
-        ret = []
-        for interp in interps.executions:
-            ret.append(self.print_execution(interp))
-
-        return "\n".join(ret)
-
-    def print_done(self):
-        return T_DONE
-    
     def print_execution(self, interp):
         relations = []
         relations.append(interp.get_HB())
@@ -41,6 +32,30 @@ class CVC4Encoder(object):
             values += ["(%s=%s)"%x for x in interp.conditions]
         
         return " AND ".join(values)
+
+    def __print_relation(self, relation):
+        tup_str = [self.__print_tuple(x) for x in relation.tuples]
+        tup_str.sort()
+        return "%s = {%s}"%(relation.name, ", ".join(tup_str))
+
+    def __print_tuple(self, tup):
+        if len(tup) > 2:
+            return "((%s), %s)"%((", ".join([str(x) for x in tup[:2]])), tup[-1])
+        return "(%s)"%(", ".join([str(x) for x in tup]))
+
+    def print_done(self):
+        return T_DONE
+
+class CVC4Encoder(Encoder):
+    def __init__(self):
+        pass
+
+    def print_executions(self, interps):
+        ret = []
+        for interp in interps.executions:
+            ret.append(self.print_execution(interp))
+
+        return "\n".join(ret)
 
     def big_or(self, formulas):
         return " OR ".join(formulas)
@@ -77,34 +92,6 @@ class CVC4Encoder(object):
         ret = ret.replace("{}", "empty_rel_set")
         return ret
 
-    def print_general_AO(self, program):
-        events = program.get_events()
-        ret = ""
-        
-        for i in range(len(events)):
-            ret += "ev_t%s : SET OF MEM_OP_TYPE;\n"%(i+1)
-
-        for ev in events:
-            if program.has_conditions():
-                ret += "ASSERT (%s.A = ENABLED) <=> %s;\n"%(ev, " OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
-            else:
-                ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
-
-        for ev in events:
-            for i in range(len(events)):
-                ret += "ASSERT (%s IS_IN ev_t%s => NOT(%s));\n"%(ev, i+1, " OR ".join(["(%s IS_IN ev_t%s)"%(ev, j+1) for j in range(len(events)) if i!=j]))
-        
-        for i in range(len(events)):
-            tname = "t%s"%(i+1)
-            ret += "AO_%s : EV_REL;\n"%(tname)
-            ret += "ASSERT AO_%s = TCLOSURE(AO_%s);\n"%(tname, tname)
-            ret += "ASSERT ((FORALL (e1,e2 IN ev_set) : ((NOT(e1 = e2) AND (e1 IS_IN ev_%s) AND (e2 IS_IN ev_%s)) => (((e1,e2) IS_IN AO_%s) OR ((e2,e1) IS_IN AO_%s)))));\n"%(tname, tname, tname, tname)
-
-        ret += "ASSERT AO <= pair_ev_set;\n"
-        ret += "ASSERT AO = %s;\n"%(" | ".join(["AO_t%s"%(x+1) for x in range(len(events))]))
-
-        return ret
-    
     def __print_relation(self, relation):
         tuples = relation.tuples
         return "%s = {%s}"%(relation.name, ", ".join([self.__print_tuple(x) for x in tuples]))
@@ -113,6 +100,42 @@ class CVC4Encoder(object):
         if len(tup) > 2:
             return "((%s), %s)"%((", ".join([str(x) for x in tup[:2]])), tup[-1])
         return "(%s)"%(", ".join([str(x) for x in tup]))
+    
+    def print_general_AO(self, program):
+        events = program.get_events()
+        ret = ""
+        
+        for i in range(len(events)):
+            ret += "ev_t%s : THREAD_TYPE;\n"%(i+1)
+
+        for ev in events:
+            if program.has_conditions():
+                ret += "ASSERT (%s.A = ENABLED) <=> %s;\n"%(ev, \
+                                                            " OR ".join(["(%s IS_IN %s)"%(ev, x) \
+                                                                         for x in ["ev_t%s"%(x+1) \
+                                                                                   for x in range(len(events))]]))
+            else:
+                ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in \
+                                                    ["ev_t%s.E"%(x+1) for x in range(len(events))]]))
+
+        for ev in events:
+            for i in range(len(events)):
+                ret += "ASSERT (%s IS_IN ev_t%s.E => NOT(%s));\n"%(ev, i+1, " OR ".join(["(%s IS_IN ev_t%s.E)"%(ev, j+1) \
+                                                                                         for j in range(len(events)) if i!=j]))
+        
+        for i in range(len(events)):
+            tname = "t%s"%(i+1)
+            ret += "ASSERT ev_%s.PO = TCLOSURE(ev_%s.PO);\n"%(tname, tname)
+            ret += ("ASSERT ((FORALL (e1,e2 IN ev_set) : "+\
+                    "((NOT(e1 = e2) AND (e1 IS_IN ev_{tn}.E) AND (e2 IS_IN ev_{tn}.E)) <=> "+\
+                    "(((e1,e2) IS_IN ev_{tn}.PO) XOR ((e2,e1) IS_IN ev_{tn}.PO)))));\n").format(tn=tname)
+
+        ret += "ASSERT AO <= pair_ev_set;\n"
+        # ret += "ASSERT (FORALL (ev IN ev_set) : (NOT ((ev, ev) IS_IN AO)));\n"
+        # ret += "ASSERT (FORALL (e1,e2 IN ev_set) : ( (((e1,e2) IS_IN AO) AND (e2.R = I)) => (e1.R = I) ));\n"
+        ret += "ASSERT AO = %s;\n"%(" | ".join(["ev_t%s.PO"%(x+1) for x in range(len(events))]))
+
+        return ret
     
     def print_program(self, program, relaxed_order=False):
         program.sort_threads()
@@ -297,8 +320,16 @@ class CVC4Encoder(object):
 
         return (compat_events, compat_bytes_events)
 
-class AlloyEncoder(CVC4Encoder):
+class AlloyEncoder(Encoder):
     id_contr = 0
+    id_blocking = 0
+
+    rel_mapping = dict([(RBF,"reads_bytes_from"),
+                        (RF,"reads_from"),
+                        (MO,"memory_order"),
+                        (AO,"agent_order"),
+                        (HB,"happens_before"),
+                        (SW,"synchronizes_with")])
     
     def __init__(self):
         pass
@@ -316,25 +347,42 @@ class AlloyEncoder(CVC4Encoder):
         for block in program.get_blocks():
             ret += self.print_block(block) + "\n"
         
-        for thread in program.threads:
-            ret += self.print_thread(thread) + "\n"
-
-        for thread in program.threads:
-            for event in thread.get_events(True):
-                ret += self.print_event(event, conditional) + "\n"
+        if not relaxed_order:
+            for thread in program.threads:
+                ret += self.print_thread(thread) + "\n"
 
         for thread in program.threads:
             if not relaxed_order:
+                ret += self.__print_thread_events_set(thread) + "\n"
+            for event in thread.get_events(True):
+                ret += self.print_event(event, conditional) + "\n"
+
+        if not relaxed_order:
+            for thread in program.threads:
                 ret += self.__print_thread_program_order(thread) + "\n"
 
         ret += self.__print_agent_order(program, relaxed_order) + "\n"
-        ret += self.__print_run_condition(program, locs) + "\n"
         
         return ret
 
-    def __print_run_condition(self, program, locs):
+    def assert_relation(self, relation):
+        ret = "fact assert_ret_%s {"%(self.get_unique_id())
+        tuples = []
+        for tup in relation.tuples:
+            tuples.append("%s [%s]"%(relation.name, ", ".join(tup)))
+        ret += " and ".join(tuples)
+
+        if len(tuples) == 0:
+            ret += "no %s.rel"%(self.rel_mapping[relation.name])
+        
+        ret += "}"
+        return ret
+    
+    def print_run_condition(self, program):
         ret = []
 
+        locs = self.__get_locations(program)
+        
         ret.append("3 order_type")
         ret.append("2 tear_type")
         ret.append("3 operation_type")
@@ -345,11 +393,42 @@ class AlloyEncoder(CVC4Encoder):
         
         ret.append("%s mem_events"%(len(program.get_events())))
         ret.append("%s threads"%(len(program.threads)))
-        ret.append("%s blocks"%(len(program.blocks)))
+        ret.append("%s blocks"%(len(program.get_blocks())))
         ret.append("%s bytes"%locs)
 
         ret = ["exactly %s"%x for x in ret]
         return "run {} for %s"%(", ".join(ret))
+
+    @staticmethod        
+    def get_unique_id():
+        AlloyEncoder.id_blocking += 1
+        return AlloyEncoder.id_blocking
+    
+    def print_neg_assertions(self, interps, relations):
+        return ["fact blocking_%s {not(%s)}"%(AlloyEncoder.get_unique_id(), \
+                                              self.print_assert_execution(x, relations)) for x in interps.executions]
+
+    def print_ex_assertions(self, interps, relations):
+        execs = [self.print_assert_execution(x, relations) for x in interps.executions]
+        return "fact block_ex_%s {%s}"%(len(execs), " or ".join(execs))
+
+    def print_assert_execution(self, interp, relations):
+        outrelations = [interp.get_relation_by_name(x) for x in relations]
+        outrelations = ["(%s)"%self.__print_relation(x) for x in outrelations]
+        conds = []
+        if interp.conditions:
+            conds += ["(%s=%s)"%x for x in interp.conditions]
+
+        ret = " and ".join(outrelations+conds)
+        ret = ret.replace("{}", "none")
+        return ret
+
+    def __print_relation(self, relation):
+        tuples = relation.tuples
+        return "%s.rel = (%s)"%(self.rel_mapping[relation.name], " + ".join(["{(%s)}"%" -> ".join(x) for x in tuples]))
+
+    def __print_tuple(self, relname, tup):
+        return "%s [%s]"%(relname, ", ".join([str(x) for x in tup]))
     
     def __print_conditions(self, program):
         if not program.get_conditions():
@@ -402,7 +481,8 @@ class AlloyEncoder(CVC4Encoder):
         return ret
 
     def __print_thread_events_set(self, thread):
-        return "ASSERT %s.E = {%s};" % (str(thread.name), str(", ".join([x.name for x in thread.get_events(True)])))
+        return "fact evset_def_%s {%s.E = {%s}}" % (str(thread.name), str(thread.name), \
+                                                    str(" + ".join([x.name for x in thread.get_events(True)])))
     
     def __print_thread_program_order(self, thread):
         ret = "fact %s_PO_def {"%thread.name
@@ -421,8 +501,10 @@ class AlloyEncoder(CVC4Encoder):
 
     def __print_agent_order(self, program, inverted):
         ao = [x.name+".PO" for x in program.threads]
+
         if inverted:
-            ret = "fact AO_def {not(agent_order.rel = (%s))}" % (" + ".join(ao))
+            return ""
+#            ret = "fact AO_def_inv {not (agent_order.rel = (%s))}" % (" + ".join(ao))
         else:
             ret = "fact AO_def {agent_order.rel = (%s)}" % (" + ".join(ao))
             
@@ -432,7 +514,8 @@ class AlloyEncoder(CVC4Encoder):
         formula = formula.replace("{}", "none")
         AlloyEncoder.id_contr += 1
         return "fact constr_%s {%s}"%(AlloyEncoder.id_contr, formula)
-    
+
+
     def __get_locations(self, program):
         events = program.get_events()
         max_size = 0
@@ -466,3 +549,40 @@ class AlloyEncoder(CVC4Encoder):
                     compat_bytes_events.append("[%s, byte_%s, %s]"%(read.name, inter, write.name))
 
         return (compat_events, compat_bytes_events)
+
+    def print_general_AO(self, program):
+        events = program.get_events()
+        ret = ""
+
+        tpref = "__t__"
+        
+        for i in range(len(events)):
+            ret += "one sig %s%s extends threads{}\n"%(tpref, i+1)
+
+        for ev in events:
+            assert(not program.has_conditions())
+
+        for ev in events:
+            ret += "fact %s_in_thread {%s}\n"%(ev, " or ".join(["(%s in %s%s.E)"%(ev, tpref, j+1) \
+                                                                for j in range(len(events))]))
+            
+            for i in range(len(events)):
+                ret += ("fact ev%s_mutexin_thread "+\
+                        "{(%s in %s%s.E => not(%s))}\n")%(i, ev, tpref, i+1, \
+                                                          " or ".join(["(%s in %s%s.E)"%(ev, tpref, j+1) \
+                                                                       for j in range(len(events)) if i!=j]))
+                
+        for i in range(len(events)):
+            tname = "%s%s"%(tpref, i+1)
+            ret += "pred PO_{relname}(e1, e2: mem_events) {{(e1 -> e2) in {relname}.PO}}\n".format(relname=tname)
+            ret += ("fact tclosure_{relname} {{all e1,e2,e3 : mem_events | "+\
+                    "((PO_{relname} [e1,e2] and PO_{relname} [e2,e3]) => PO_{relname} [e1,e3])}}\n").format(relname=tname)
+            ret += ("fact evpair_in_PO_{relname} {{all e1,e2: mem_events | "+\
+                    "((not(e1 = e2) and (e1 in {relname}.E) and (e2 in {relname}.E)) <=> "+\
+                    "(not(PO_{relname} [e1,e2] <=> PO_{relname} [e2,e1])))}}\n").format(relname=tname)
+            
+        ret += "fact ev_in_PO {{all ev: mem_events | not(AO [ev,ev])}}\n"
+        ret += "fact AO_def {agent_order.rel = %s}\n"%(" + ".join(["%s%s.PO"%(tpref, x+1) for x in range(len(events))]))
+
+        return ret
+    
