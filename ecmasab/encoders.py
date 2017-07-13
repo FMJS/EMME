@@ -110,18 +110,25 @@ class CVC4Encoder(Encoder):
 
         for ev in events:
             if program.has_conditions():
-                ret += "ASSERT (%s.A = ENABLED) <=> %s;\n"%(ev, " OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s"%(x+1) for x in range(len(events))]]))
+                ret += "ASSERT (%s.A = ENABLED) <=> %s;\n"%(ev, \
+                                                            " OR ".join(["(%s IS_IN %s)"%(ev, x) \
+                                                                         for x in ["ev_t%s"%(x+1) \
+                                                                                   for x in range(len(events))]]))
             else:
-                ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in ["ev_t%s.E"%(x+1) for x in range(len(events))]]))
+                ret += "ASSERT %s;\n"%(" OR ".join(["(%s IS_IN %s)"%(ev, x) for x in \
+                                                    ["ev_t%s.E"%(x+1) for x in range(len(events))]]))
 
         for ev in events:
             for i in range(len(events)):
-                ret += "ASSERT (%s IS_IN ev_t%s.E => NOT(%s));\n"%(ev, i+1, " OR ".join(["(%s IS_IN ev_t%s.E)"%(ev, j+1) for j in range(len(events)) if i!=j]))
+                ret += "ASSERT (%s IS_IN ev_t%s.E => NOT(%s));\n"%(ev, i+1, " OR ".join(["(%s IS_IN ev_t%s.E)"%(ev, j+1) \
+                                                                                         for j in range(len(events)) if i!=j]))
         
         for i in range(len(events)):
             tname = "t%s"%(i+1)
             ret += "ASSERT ev_%s.PO = TCLOSURE(ev_%s.PO);\n"%(tname, tname)
-            ret += "ASSERT ((FORALL (e1,e2 IN ev_set) : ((NOT(e1 = e2) AND (e1 IS_IN ev_%s.E) AND (e2 IS_IN ev_%s.E)) <=> (((e1,e2) IS_IN ev_%s.PO) XOR ((e2,e1) IS_IN ev_%s.PO)))));\n"%(tname, tname, tname, tname)
+            ret += ("ASSERT ((FORALL (e1,e2 IN ev_set) : "+\
+                    "((NOT(e1 = e2) AND (e1 IS_IN ev_{tn}.E) AND (e2 IS_IN ev_{tn}.E)) <=> "+\
+                    "(((e1,e2) IS_IN ev_{tn}.PO) XOR ((e2,e1) IS_IN ev_{tn}.PO)))));\n").format(tn=tname)
 
         ret += "ASSERT AO <= pair_ev_set;\n"
         # ret += "ASSERT (FORALL (ev IN ev_set) : (NOT ((ev, ev) IS_IN AO)));\n"
@@ -398,7 +405,8 @@ class AlloyEncoder(Encoder):
         return AlloyEncoder.id_blocking
     
     def print_neg_assertions(self, interps, relations):
-        return ["fact blocking_%s {not(%s)}"%(AlloyEncoder.get_unique_id(), self.print_assert_execution(x, relations)) for x in interps.executions]
+        return ["fact blocking_%s {not(%s)}"%(AlloyEncoder.get_unique_id(), \
+                                              self.print_assert_execution(x, relations)) for x in interps.executions]
 
     def print_ex_assertions(self, interps, relations):
         execs = [self.print_assert_execution(x, relations) for x in interps.executions]
@@ -473,7 +481,8 @@ class AlloyEncoder(Encoder):
         return ret
 
     def __print_thread_events_set(self, thread):
-        return "fact evset_def_%s {%s.E = {%s}}" % (str(thread.name), str(thread.name), str(" + ".join([x.name for x in thread.get_events(True)])))
+        return "fact evset_def_%s {%s.E = {%s}}" % (str(thread.name), str(thread.name), \
+                                                    str(" + ".join([x.name for x in thread.get_events(True)])))
     
     def __print_thread_program_order(self, thread):
         ret = "fact %s_PO_def {"%thread.name
@@ -554,16 +563,23 @@ class AlloyEncoder(Encoder):
             assert(not program.has_conditions())
 
         for ev in events:
-            ret += "fact %s_in_thread {%s}\n"%(ev, " or ".join(["(%s in %s%s.E)"%(ev, tpref, j+1) for j in range(len(events))]))
+            ret += "fact %s_in_thread {%s}\n"%(ev, " or ".join(["(%s in %s%s.E)"%(ev, tpref, j+1) \
+                                                                for j in range(len(events))]))
             
             for i in range(len(events)):
-                ret += "fact ev%s_mutexin_thread {(%s in %s%s.E => not(%s))}\n"%(i, ev, tpref, i+1, " or ".join(["(%s in %s%s.E)"%(ev, tpref, j+1) for j in range(len(events)) if i!=j]))
-        
+                ret += ("fact ev%s_mutexin_thread "+\
+                        "{(%s in %s%s.E => not(%s))}\n")%(i, ev, tpref, i+1, \
+                                                          " or ".join(["(%s in %s%s.E)"%(ev, tpref, j+1) \
+                                                                       for j in range(len(events)) if i!=j]))
+                
         for i in range(len(events)):
             tname = "%s%s"%(tpref, i+1)
             ret += "pred PO_{relname}(e1, e2: mem_events) {{(e1 -> e2) in {relname}.PO}}\n".format(relname=tname)
-            ret += "fact tclosure_{relname} {{all e1,e2,e3 : mem_events | ((PO_{relname} [e1,e2] and PO_{relname} [e2,e3]) => PO_{relname} [e1,e3])}}\n".format(relname=tname)
-            ret += "fact evpair_in_PO_{relname} {{all e1,e2: mem_events | ((not(e1 = e2) and (e1 in {relname}.E) and (e2 in {relname}.E)) <=> (not(PO_{relname} [e1,e2] <=> PO_{relname} [e2,e1])))}}\n".format(relname=tname)
+            ret += ("fact tclosure_{relname} {{all e1,e2,e3 : mem_events | "+\
+                    "((PO_{relname} [e1,e2] and PO_{relname} [e2,e3]) => PO_{relname} [e1,e3])}}\n").format(relname=tname)
+            ret += ("fact evpair_in_PO_{relname} {{all e1,e2: mem_events | "+\
+                    "((not(e1 = e2) and (e1 in {relname}.E) and (e2 in {relname}.E)) <=> "+\
+                    "(not(PO_{relname} [e1,e2] <=> PO_{relname} [e2,e1])))}}\n").format(relname=tname)
             
         ret += "fact ev_in_PO {{all ev: mem_events | not(AO [ev,ev])}}\n"
         ret += "fact AO_def {agent_order.rel = %s}\n"%(" + ".join(["%s%s.PO"%(tpref, x+1) for x in range(len(events))]))
