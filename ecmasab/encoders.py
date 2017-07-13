@@ -34,8 +34,9 @@ class Encoder(object):
         return " AND ".join(values)
 
     def __print_relation(self, relation):
-        tuples = relation.tuples
-        return "%s = {%s}"%(relation.name, ", ".join([self.__print_tuple(x) for x in tuples]))
+        tup_str = [self.__print_tuple(x) for x in relation.tuples]
+        tup_str.sort()
+        return "%s = {%s}"%(relation.name, ", ".join(tup_str))
 
     def __print_tuple(self, tup):
         if len(tup) > 2:

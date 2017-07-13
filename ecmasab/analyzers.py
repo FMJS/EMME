@@ -571,7 +571,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
         if ret != []:
             ok = False
 
-        # Checking if the candidate mathces all executions
+        # Checking if the candidate matches all executions
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
@@ -650,7 +650,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
         if ret != []:
             ok = False
 
-        # Checking if the candidate mathces all executions
+        # Checking if the candidate matches all executions
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)

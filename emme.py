@@ -24,10 +24,7 @@ from ecmasab.encoders import CVC4Encoder, AlloyEncoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.analyzers import ValidExecutionAnalyzer, EquivalentExecutionSynthetizer, ConstraintsAnalyzer
-
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
-from ecmasab.solvers import CVC4Solver
-
 from ecmasab.logger import Logger
 
 
