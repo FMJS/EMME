@@ -603,7 +603,10 @@ def main(args):
     config.sat = args.check_sat
     config.only_model = args.only_model
     config.skip_solving = args.skip_solving
-    config.jsprinter = args.jsprinter
+
+    if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]:
+        config.jsprinter = args.jsprinter
+    
     config.printing_relations = args.relations
     if args.relations == ALL:
         config.printing_relations = None
