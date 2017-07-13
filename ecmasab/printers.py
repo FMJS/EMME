@@ -667,7 +667,7 @@ class JST262_JSC_Printer(JST262_Printer):
 class JST262_SM_Printer(JST262_Printer):
     NAME = "JS-TEST262-SM"
     DESC = "\tTEST262 format (Accepted by SM)"
-    str_report = False
+    str_report = True
     exp_outputs = True
 
 class JST262_V8_Printer(JST262_Printer):
