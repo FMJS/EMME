@@ -461,7 +461,7 @@ class EquivalentExecutionSynthetizer(object):
         return self.alloy_synth.solve_all_synth(model, program, threads)
 
     def solve_all_synth_hybrid(self, cvc4model, alloymodel, program, threads):
-        (ao_execs, executions) = self.alloy_synth.find_all_intersect(alloymodel, program, threads)
+        (ao_execs, executions) = self.alloy_synth.find_all_intersect(alloymodel, program, 1)
         return self.cvc4_synth.prune_not_eq(ao_execs, executions, cvc4model, program, threads)
     
     def set_models_file(self, models_file):
@@ -483,12 +483,10 @@ class EquivalentExecutionSynthetizerAlloy(object):
         self.allvexecsmanager.models_file = models_file
 
     def solve_all_synth(self, model, program, threads):
-        threads = 1 # not supported yet
         (ao_execs, executions) = self.find_all_intersect(model, program, threads)
         return self.prune_not_eq(ao_execs, executions, model, program, threads)
 
     def find_all_intersect(self, model, program, threads):
-        threads = 1 # not supported yet
         run_condition = self.alloy_encoder.print_run_condition(program)
         self.allvexecsmanager.program = program
         executions = Executions()
@@ -517,7 +515,6 @@ class EquivalentExecutionSynthetizerAlloy(object):
         return (ao_execs, executions)
 
     def prune_not_eq(self, ao_execs, executions, model, program, threads):
-        threads = 1 # not supported yet
         self.allvexecsmanager.preload = False        
         beparser = BeParser()
         eq_progs = []
@@ -546,6 +543,31 @@ class EquivalentExecutionSynthetizerAlloy(object):
                 Logger.log("OK: %s"%el.get_AO(), 1)
 
         return eq_progs
+
+    def __check_all_mt(self, model, ao_execs, executions, run_condition, num_t):
+        num_t = min(len(ao_execs), num_t)
+        size = int(math.ceil(len(ao_execs)/float(num_t)))
+        ao_execs = [ao_execs[x:x+size] for x in xrange(0, len(ao_execs), size)]
+        num_t = len(ao_execs)
+        retlist = []
+        threads = []
+        
+        with Manager() as manager:
+            proclist = []
+            for i in range(num_t):
+                ret = manager.list([])
+                proclist.append(ret)
+                process = Process(target=self.__check_all, args=(model, ao_execs[i], executions, run_condition, ret))
+                threads.append(process)
+                process.start()
+
+            for thread in threads:
+                thread.join()
+
+            for x in proclist:
+                retlist += list(x)
+
+        return list(retlist)
     
     def __check_all(self, model, ao_execs, executions, run_condition, retlist=None):
         if retlist is None: retlist = []
