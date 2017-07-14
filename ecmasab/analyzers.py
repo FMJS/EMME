@@ -509,8 +509,9 @@ class EquivalentExecutionSynthetizerAlloy(object):
         Logger.msg("Checking correctness... ", 1)
 
         if Logger.level(1):
+            Logger.msg("\n", -1)
             for el in ao_execs:
-                Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
+                Logger.log("INTERSECTING: %s"%el.get_AO(), 1)
 
         return (ao_execs, executions)
 
@@ -540,7 +541,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
         Logger.log(" DONE", 1)
         if Logger.level(1):
             for el in equivalent_AOs:
-                Logger.log("OK: %s"%el.get_AO(), 1)
+                Logger.log("EQUIVALENT: %s"%el.get_AO(), 1)
 
         return eq_progs
 
@@ -715,8 +716,9 @@ class EquivalentExecutionSynthetizerCVC4(object):
         Logger.msg("Checking correctness... ", 1)
 
         if Logger.level(1):
+            Logger.msg("\n", -1)
             for el in ao_execs:
-                Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
+                Logger.log("INTERSECTING: %s"%el.get_AO(), 1)
 
         return (ao_execs, executions)
 
@@ -744,7 +746,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
         Logger.log(" DONE", 1)
         if Logger.level(1):
             for el in equivalent_AOs:
-                Logger.log("OK: %s"%el.get_AO(), 1)
+                Logger.log("EQUIVALENT: %s"%el.get_AO(), 1)
 
         return eq_progs
     
