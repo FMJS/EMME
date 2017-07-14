@@ -137,7 +137,7 @@ class CVC4ValidExecsModelsManager(ModelsManager):
     def compute_from_sharedobjs(self, shared_objs):
         executions = Executions()
         executions.executions = shared_objs
-        assertions = self.encoder.print_neg_assertions(executions, self.blocking_relations)
+        assertions = self.encoder.print_assert_neg_execs(executions, self.blocking_relations)
         Logger.log("Blocking: \n%s"%("\n".join(assertions)), 2)
         return "\n"+("\n".join(assertions))
 
@@ -243,7 +243,7 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
     def compute_from_sharedobjs(self, shared_objs):
         executions = Executions()
         executions.executions = shared_objs
-        constraints = self.encoder.print_neg_assertions(executions, self.blocking_relations)
+        constraints = self.encoder.print_assert_neg_execs(executions, self.blocking_relations)
         Logger.log("Blocking: \n%s"%("".join(constraints)), 2)
             
         return "\n".join(constraints)
@@ -497,7 +497,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
         self.allvexecsmanager.blocking_relations = [AO]
         ao_execs = []
         for models_blocking in [[RBF]]:
-            assertions = self.alloy_encoder.print_ex_assertions(executions, models_blocking)
+            assertions = self.alloy_encoder.print_assert_exl_execs(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
             execs = self.alloy_solver.solve_allsmt(vmodel+run_condition, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
@@ -580,11 +580,10 @@ class EquivalentExecutionSynthetizerAlloy(object):
     def __check_ao_correctness(self, model, exe, executions, run_condition):
         ok = True
         prev_blocking = self.allvexecsmanager.blocking_relations
-        self.allvexecsmanager.blocking_relations = [RF]
+        self.allvexecsmanager.blocking_relations = [RBF]
         
-        assertions = self.alloy_encoder.print_neg_assertions(executions, self.allvexecsmanager.blocking_relations)
-
         # Checking if the candidate is not a superset
+        assertions = self.alloy_encoder.print_assert_neg_execs(executions, self.allvexecsmanager.blocking_relations)
         assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
         vmodel += self.alloy_encoder.assert_relation(exe.get_AO())+"\n"
@@ -595,6 +594,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
             ok = False
 
         # Checking if the candidate matches all executions
+        assertions = self.alloy_encoder.print_assert_pos_execs(executions, self.allvexecsmanager.blocking_relations)
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
@@ -660,11 +660,10 @@ class EquivalentExecutionSynthetizerCVC4(object):
         ok = True
         exe = str(exe.get_AO())
         prev_blocking = self.c4vexecsmanager.blocking_relations
-        self.c4vexecsmanager.blocking_relations = [RF]
+        self.c4vexecsmanager.blocking_relations = [RBF]
         
-        assertions = self.c4_encoder.print_neg_assertions(executions, self.c4vexecsmanager.blocking_relations)
-
         # Checking if the candidate is not a superset
+        assertions = self.c4_encoder.print_assert_neg_execs(executions, self.c4vexecsmanager.blocking_relations)
         assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
         vmodel += self.c4_encoder.assert_formula_nl("%s"%(exe))
@@ -674,6 +673,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
             ok = False
 
         # Checking if the candidate matches all executions
+        assertions = self.c4_encoder.print_assert_pos_execs(executions, self.c4vexecsmanager.blocking_relations)
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
@@ -704,7 +704,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
         self.c4vexecsmanager.blocking_relations = [AO]
         ao_execs = []
         for models_blocking in [[RBF]]:
-            assertions = self.c4_encoder.print_ex_assertions(executions, models_blocking)
+            assertions = self.c4_encoder.print_assert_exl_execs(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
             execs = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
