@@ -496,7 +496,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
         vmodel = "\n".join([model,self.alloy_encoder.print_general_AO(program)])
         self.allvexecsmanager.blocking_relations = [AO]
         ao_execs = []
-        for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
+        for models_blocking in [[RBF]]:
             assertions = self.alloy_encoder.print_ex_assertions(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
             execs = self.alloy_solver.solve_allsmt(vmodel+run_condition, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
@@ -703,7 +703,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
         vmodel = qupre.preprocess_from_string(vmodel)
         self.c4vexecsmanager.blocking_relations = [AO]
         ao_execs = []
-        for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
+        for models_blocking in [[RBF]]:
             assertions = self.c4_encoder.print_ex_assertions(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
             execs = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, -1, threads if ao_execs == [] else 1)

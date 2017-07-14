@@ -216,6 +216,7 @@ class CVC4Encoder(Encoder):
     def __print_agent_order(self, program, inverted):
         ao = [x.name+".PO" for x in program.threads]
         if inverted:
+            return ""
             ret = "ASSERT NOT(AO = %s);" % (" | ".join(ao))
         else:
             ret = "ASSERT AO = %s;" % (" | ".join(ao))
@@ -425,10 +426,12 @@ class AlloyEncoder(Encoder):
 
     def __print_relation(self, relation):
         tuples = relation.tuples
-        return "%s.rel = (%s)"%(self.rel_mapping[relation.name], " + ".join(["{(%s)}"%" -> ".join(x) for x in tuples]))
+        return "%s.rel = (%s)"%(self.rel_mapping[relation.name], " + ".join([self.__print_tuple(x) for x in tuples]))
 
-    def __print_tuple(self, relname, tup):
-        return "%s [%s]"%(relname, ", ".join([str(x) for x in tup]))
+    def __print_tuple(self, tup):
+        if len(tup) > 2:
+            tup = (tup[0], "byte_"+str(tup[2]), tup[1])
+        return "{(%s)}"%" -> ".join(tup)
     
     def __print_conditions(self, program):
         if not program.get_conditions():
