@@ -1,3 +1,22 @@
+-- Copyright 2017 Cristian Mattarei
+--
+-- Licensed under the modified BSD (3-clause BSD) License.
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+
+------------------------------------------------------------
+-- CONDITIONAL MODEL
+------------------------------------------------------------
+
+-- Additional constraints bounding the VE
+#define en_SINGLE_WRITES 1
+
+------------------------------------------------------------
+
 sig mem_events {T: tear_type, R: order_type, O: operation_type, B : blocks, M: set bytes, A: active_type}
 
 abstract sig tear_type {}
@@ -140,6 +159,9 @@ fact mo_tot {all e1,e2 : mem_events | Active2 [e1,e2] => ((e1 != e2) => MO [e1,e
 
 -- RBF(er,x,ew) and RBF(er,y,ev) => (x not in ev) or (y not in ew)
 
+
+#if en_SINGLE_WRITES == 1
 fact rbf_sw {all er,ev,ew: mem_events, x,y: bytes | (RBF [er,x,ew] and RBF [er,y,ev] and (ew != ev) and (x != y)) => (not (x in ev.M) or not(y in ew.M)) }
+#endif
 
 -- Checks

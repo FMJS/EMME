@@ -582,6 +582,8 @@ class BeParser(object):
                 thread_name = command[1]
                 if thread:
                     program.add_thread(thread)
+                if thread_name in [x.name for x in program.threads]:
+                    raise ParsingErrorException("ERROR (L%s): thread \"%s\" already defined"%(linenum, thread_name))
                 thread = Thread(thread_name)
                 
             elif command_name == P_SABDEF:
