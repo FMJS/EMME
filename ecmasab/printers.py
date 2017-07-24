@@ -959,8 +959,6 @@ class JSONPrinter(object):
 
         program.blocks = program.get_blocks()
         
-        print json.dumps(program, default=to_json, check_circular=True, indent=2)
-
         return json.dumps(program, default=to_json, check_circular=True, indent=2)
 
 
