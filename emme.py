@@ -472,7 +472,7 @@ def main(args):
 
     config = Config()
     
-    jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]
+    jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
 
     # Files generation
     
@@ -556,7 +556,7 @@ def main(args):
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
 
-    parser.set_defaults(jsengine="")
+    parser.set_defaults(jsengine=None)
     parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
                         help='the command used to call the JavaScript engine.')
 
@@ -590,10 +590,6 @@ def main(args):
         print("File not found: \"%s\""%args.input_file)
         return 1
 
-    if config.unmatched and not config.jsengine:
-        print("JavaScript engine not specified")
-        return 1
-    
     config.inputfile = args.input_file
     config.prefix = prefix
     config.preproc = args.preproc
@@ -603,14 +599,7 @@ def main(args):
     config.sat = args.check_sat
     config.only_model = args.only_model
     config.skip_solving = args.skip_solving
-
-    if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.JS)]:
-        config.jsprinter = args.jsprinter
-    
     config.printing_relations = args.relations
-    if args.relations == ALL:
-        config.printing_relations = None
-
     config.graphviz = args.graphviz
     config.jsdir = args.jsdir
     config.debug = args.debug
@@ -620,7 +609,15 @@ def main(args):
     config.runs = args.runs
     config.nexecs = args.nexecs
     config.use_alloy = args.use_alloy
-
+    config.unmatched = args.unmatched
+    
+    if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
+        config.jsprinter = args.jsprinter
+    
+    if config.unmatched and not config.jsengine:
+        Logger.error("JavaScript engine not specified")
+        return 1
+    
     if args.synth and args.best:
         config.hybrid = True
         
@@ -630,6 +627,9 @@ def main(args):
     if args.silent:
         config.verbosity = 0
 
+    if args.relations == ALL:
+        config.printing_relations = None
+        
     Logger.verbosity = config.verbosity
 
     Logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)

@@ -25,13 +25,7 @@ from multiprocessing import Process, Manager
 from CVC4 import EQUAL, AND, NOT
 from litmus import Config, run_litmus
 
-LABELLING_VARS = []
-LABELLING_VARS.append("L_HB4a")
-LABELLING_VARS.append("L_HB4b")
-LABELLING_VARS.append("L_HB4c")
-LABELLING_VARS.append("L_HB4d")
-
-LABELLING_VARS.append("L_RF_implies_HB")
+LABELLING_VAR_PREF = "L_"
 
 class CVC4ValidExecsModelsManager(ModelsManager):
 
@@ -753,6 +747,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
 class ConstraintAnalyzerManager(ModelsManager):
 
     encoder = None
+    labelling_vars = None
     
     def __init(self):
         self.encoder = CVC4Encoder()
@@ -760,7 +755,7 @@ class ConstraintAnalyzerManager(ModelsManager):
     def compute_from_smt(self, smt):
         assigns = self.exprmgr.mkBoolConst(True)
         model = []
-        for varstr in LABELLING_VARS:
+        for varstr in self.labelling_vars:
             assign = self.symboltable.lookup(varstr)
             value = smt.getValue(assign)
             model.append("%s%s"%("" if value.getConstBoolean() else "~", assign.toString()))
@@ -812,13 +807,22 @@ class ConstraintsAnalyzer(object):
         config.silent = True
         config.models = True
 
+        labelling_vars = [x.split(" ")[0] for x in model.split("\n") \
+                          if x[:len(LABELLING_VAR_PREF)] == LABELLING_VAR_PREF]
+        if len(labelling_vars) == 0:
+            Logger.error("No labelling vars defined")
+            return None
+
+        self.vexecsmanager.labelling_vars = labelling_vars
+        
         (matched, unmatched) = run_litmus(config)
         
         Logger.log(" -> Found %s matched models"%(len(matched)), 0)
         Logger.log(" -> Found %s unmatched models"%(len(unmatched)), 0)
 
         if len(unmatched) == 0:
-            return
+            Logger.error("No unmatched models")
+            return None
         
         matched = self.encoder.big_or(matched)
         unmatched = self.encoder.big_or(unmatched)

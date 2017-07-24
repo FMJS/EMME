@@ -16,5 +16,10 @@ class Logger(object):
             sys.stdout.flush()
 
     @staticmethod        
+    def error(msg):
+        sys.stderr.write(msg+"\n")
+        sys.stderr.flush()
+            
+    @staticmethod        
     def level(level):
         return Logger.verbosity > level
