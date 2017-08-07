@@ -386,14 +386,18 @@ class ValidExecutionAnalyzer(object):
 
     cvc4_vexecsmanager = None
     alloy_vexecsmanager = None
-    c4solver = CVC4Solver()
-    alloysolver = AlloySolver()
-
-    alloyencoder = AlloyEncoder()
+    c4solver = None
+    alloysolver = None
+    alloyencoder = None
 
     def __init__(self):
         self.cvc4_vexecsmanager = CVC4ValidExecsModelsManager()
         self.alloy_vexecsmanager = AlloyValidExecsModelsManager()
+
+        self.c4solver = CVC4Solver()
+        self.alloysolver = AlloySolver()
+        self.alloyencoder = AlloyEncoder()
+        
 
     def set_models_file(self, models_file):
         self.cvc4_vexecsmanager.models_file = models_file
@@ -427,6 +431,7 @@ class ValidExecutionAnalyzer(object):
         if program.has_conditions:
             self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
         model += self.alloyencoder.print_run_condition(program)
+        print self.alloyencoder.print_run_condition(program)
         ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, nexecs, threads)
         return len(ret)
 
@@ -455,8 +460,13 @@ class EquivalentExecutionSynthetizer(object):
         return self.alloy_synth.solve_all_synth(model, program, threads)
 
     def solve_all_synth_hybrid(self, cvc4model, alloymodel, program, threads):
+        timer = Logger.start_timer()
         (ao_execs, executions) = self.alloy_synth.find_all_intersect(alloymodel, program, 1)
-        return self.cvc4_synth.prune_not_eq(ao_execs, executions, cvc4model, program, threads)
+        Logger.log("Elapsed Time: %.2f sec"%Logger.stop_timer(timer), 1)
+        timer = Logger.start_timer()
+        ret = self.cvc4_synth.prune_not_eq(ao_execs, executions, cvc4model, program, threads)
+        Logger.log("Elapsed Time: %.2f sec"%Logger.stop_timer(timer), 1)
+        return ret
     
     def set_models_file(self, models_file):
         self.cvc4_synth.set_models_file(models_file)
@@ -477,8 +487,13 @@ class EquivalentExecutionSynthetizerAlloy(object):
         self.allvexecsmanager.models_file = models_file
 
     def solve_all_synth(self, model, program, threads):
+        timer = Logger.start_timer()
         (ao_execs, executions) = self.find_all_intersect(model, program, threads)
-        return self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.log("Elapsed Time: %.2f sec"%Logger.stop_timer(timer), 1)
+        timer = Logger.start_timer()
+        ret = self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.log("Elapsed Time: %.2f sec"%Logger.stop_timer(timer), 1)
+        return ret
 
     def find_all_intersect(self, model, program, threads):
         run_condition = self.alloy_encoder.print_run_condition(program)
@@ -682,8 +697,13 @@ class EquivalentExecutionSynthetizerCVC4(object):
         return ok
     
     def solve_all_synth(self, model, program, threads):
+        timer = Logger.start_timer()
         (ao_execs, executions) = self.find_all_intersect(model, program, threads)
-        return self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.log("Elapsed Time: %.2f sec"%Logger.stop_timer(timer), 1)
+        timer = Logger.start_timer()
+        ret = self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.log("Elapsed Time: %.2f sec"%Logger.stop_timer(timer), 1)
+        return ret
 
     def find_all_intersect(self, model, program, threads):
         self.c4vexecsmanager.program = program
