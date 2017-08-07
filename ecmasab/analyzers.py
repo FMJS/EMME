@@ -431,7 +431,6 @@ class ValidExecutionAnalyzer(object):
         if program.has_conditions:
             self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
         model += self.alloyencoder.print_run_condition(program)
-        print self.alloyencoder.print_run_condition(program)
         ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, nexecs, threads)
         return len(ret)
 
