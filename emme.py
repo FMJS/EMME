@@ -92,6 +92,7 @@ class Config(object):
     jsengine = None
     runs = None
     nexecs = None
+    time = None
     
     def __init__(self):
         self.inputfile = None
@@ -117,6 +118,7 @@ class Config(object):
         self.nexecs = -1
         self.use_alloy = False
         self.hybrid = False
+        self.time = False
 
     def generate_filenames(self):
         if self.prefix:
@@ -556,6 +558,10 @@ def main(args):
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help="enables debugging setup. (Default is \"%s\")"%False)
 
+    parser.set_defaults(time=False)
+    parser.add_argument('-t', '--time', dest='time', action='store_true',
+                        help="enables time debugging setup. (Default is \"%s\")"%False)
+    
     parser.set_defaults(jsengine=None)
     parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
                         help='the command used to call the JavaScript engine.')
@@ -610,6 +616,7 @@ def main(args):
     config.nexecs = args.nexecs
     config.use_alloy = args.use_alloy
     config.unmatched = args.unmatched
+    config.time = args.time
     
     if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
         config.jsprinter = args.jsprinter
@@ -635,6 +642,7 @@ def main(args):
     Logger.log("** Processing file \"%s\" **"%(config.inputfile), -1)
     
     try:
+        Logger.time = config.time
         ret = -1
         ret = analyze_program(config)
         
