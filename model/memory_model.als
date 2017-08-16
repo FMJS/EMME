@@ -1,3 +1,22 @@
+-- Copyright 2017 Cristian Mattarei
+--
+-- Licensed under the modified BSD (3-clause BSD) License.
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+
+------------------------------------------------------------
+-- CONDITIONAL MODEL
+------------------------------------------------------------
+
+-- Additional constraints bounding the VE
+#define en_SINGLE_WRITES 1
+
+------------------------------------------------------------
+
 sig mem_events {T: tear_type, R: order_type, O: operation_type, B : blocks, M: set bytes, A: active_type}
 
 abstract sig tear_type {}
@@ -83,10 +102,11 @@ pred RF(e1: mem_events, e2: mem_events) {(e1 -> e2)  in reads_from.rel}
 // pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(b in e2.M) and (b in e1.M) and ((e1 -> e2) in reads_from.rel)}
 pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(e1 -> b -> e2)  in reads_bytes_from.rel}
 
-fact rbf_def {all er : mem_events | Active [er] => (RoM [er] => (all b : bytes | (b in er.M) => (one ew : mem_events | Active [ew] and (b in ew.M) and BlockEQ [er,ew] and WoM [ew] and RBF [er,b,ew]))) }
-fact rbf_def_2 {all er,ew : mem_events | Active2 [er,ew] => (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew] and (b in er.M) and (b in ew.M)))}
-fact rbf_rf_def {all e1,e2 : mem_events | Active2 [e1,e2] => (RF [e1,e2] <=> (some b:bytes | RBF [e1,b,e2]))}
-fact rbf_corr {all er,ew: mem_events | Active2 [er,ew] => (all b: bytes | RBF [er,b,ew] => not (some ev: mem_events | Active [ev] and (RBF [er,b,ev] and (ew != ev))))}
+fact rbf_def {all er : mem_events | ((RoM [er] and Active [er]) => (all b : bytes | (b in er.M) => (one ew : mem_events | Active [ew] and (b in ew.M) and BlockEQ [er,ew] and WoM [ew] and RBF [er,b,ew]))) }
+fact rbf_def_2 {all er,ew : mem_events | (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew] and (b in er.M) and (b in ew.M)))}
+fact rbf_rf_def {all e1,e2 : mem_events | (RF [e1,e2] <=> (some b:bytes | RBF [e1,b,e2]))}
+fact rbf_corr {all er,ew: mem_events | (all b: bytes | RBF [er,b,ew] => not (some ev: mem_events | (RBF [er,b,ev] and (ew != ev))))}
+fact rbf_act {all er,ew: mem_events | (all b: bytes | RBF [er,b,ew] => Active2 [er,ew])}
 
 -- This needs to be clarified
 fact rbf_not_self {all ev: mem_events, b: bytes | not RBF [ev, b, ev]}
@@ -101,6 +121,7 @@ pred SW4di(er:mem_events) {all ev: mem_events | RF [er,ev] => Init [ev]}
 pred SW4d(er,ew: mem_events) {Init [ew] and SW4di [er]}
 
 fact sw_def {all er,ew : mem_events | Active2 [ew,er] => (SW [ew,er] <=> ((SW4 [er,ew] and (SW4c [er,ew] or SW4d [er,ew]))))}
+fact sw_act {all e1,e2 : mem_events | SW [e1,e2] => Active2 [e1,e2]}
 
 -- Happens Before relation
 one sig happens_before {rel:  mem_events -> mem_events}
@@ -113,6 +134,7 @@ pred HB4d(ee, ed: mem_events) {some ef : mem_events | HB [ee, ef] and HB [ef, ed
 
 fact hb_def {all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee != ed) and (HB4a [ee,ed] or HB4b [ee,ed] or HB4c [ee,ed] or HB4d [ee,ed])))}
 fact hb_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (HB [e1,e2] and HB [e2,e3] => HB [e1,e3])}
+fact hb_act {all e1,e2 : mem_events | HB [e1,e2] => Active2 [e1,e2]}
 
 -- Coherent Reads
 fact cr_def {all er,ew : mem_events | Active2 [er,ew] => ((RoM [er] and WoM[ew]) => (all b: bytes | (RBF [er,b,ew] => ((not HB [er,ew]) and (not (some ev: mem_events | Active [ev] and (WoM [ev] and (HB [ew,ev] and HB [ev,er] and BlockEQ [ev,ew] and (b in ev.M)))))))))}
@@ -136,10 +158,13 @@ pred MO3a(ee,ed: mem_events) {HB [ee,ed] => MO [ee,ed]}
 fact mo_def {all ee,ed: mem_events | Active2 [ee,ed] => (MO3a [ee,ed] and MO3b [ee,ed])}
 fact mo_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (MO [e1,e2] and MO [e2,e3] => MO [e1,e3])}
 fact mo_tot {all e1,e2 : mem_events | Active2 [e1,e2] => ((e1 != e2) => MO [e1,e2] <=> not (MO [e2,e1]))}
-
+fact mo_act {all e1,e2 : mem_events | MO [e1,e2] => Active2 [e1,e2]}
 
 -- RBF(er,x,ew) and RBF(er,y,ev) => (x not in ev) or (y not in ew)
 
+
+#if en_SINGLE_WRITES == 1
 fact rbf_sw {all er,ev,ew: mem_events, x,y: bytes | (RBF [er,x,ew] and RBF [er,y,ev] and (ew != ev) and (x != y)) => (not (x in ev.M) or not(y in ew.M)) }
+#endif
 
 -- Checks

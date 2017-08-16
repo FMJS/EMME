@@ -74,10 +74,15 @@ class CVC4Encoder(Encoder):
             end = ";\n"
         return "ASSERT (%s)%s"%(formula, end)
     
-    def print_neg_assertions(self, interps, relations):
-        return ["ASSERT NOT(%s);"%self.print_assert_execution(x, relations) for x in interps.executions]
+    def print_assert_neg_execs(self, interps, relations):
+        execs = [self.print_assert_execution(x, relations) for x in interps.executions]
+        return ["ASSERT NOT(%s);"%x for x in execs]
 
-    def print_ex_assertions(self, interps, relations):
+    def print_assert_pos_execs(self, interps, relations):
+        execs = [self.print_assert_execution(x, relations) for x in interps.executions]
+        return ["ASSERT (%s);"%x for x in execs]
+    
+    def print_assert_exl_execs(self, interps, relations):
         execs = [self.print_assert_execution(x, relations) for x in interps.executions]
         return "ASSERT (%s);"%(" OR ".join(execs))
         
@@ -216,11 +221,9 @@ class CVC4Encoder(Encoder):
     def __print_agent_order(self, program, inverted):
         ao = [x.name+".PO" for x in program.threads]
         if inverted:
-            ret = "ASSERT NOT(AO = %s);" % (" | ".join(ao))
-        else:
-            ret = "ASSERT AO = %s;" % (" | ".join(ao))
-            
-        return ret
+            return ""
+        
+        return "ASSERT AO = %s;" % (" | ".join(ao))
 
     def __print_conditions(self, program):
         if not program.get_conditions():
@@ -404,11 +407,17 @@ class AlloyEncoder(Encoder):
         AlloyEncoder.id_blocking += 1
         return AlloyEncoder.id_blocking
     
-    def print_neg_assertions(self, interps, relations):
+    def print_assert_neg_execs(self, interps, relations):
+        execs = [self.print_assert_execution(x, relations) for x in interps.executions]
         return ["fact blocking_%s {not(%s)}"%(AlloyEncoder.get_unique_id(), \
-                                              self.print_assert_execution(x, relations)) for x in interps.executions]
+                                              x) for x in execs]
 
-    def print_ex_assertions(self, interps, relations):
+    def print_assert_pos_execs(self, interps, relations):
+        execs = [self.print_assert_execution(x, relations) for x in interps.executions]
+        return ["fact blocking_%s {(%s)}"%(AlloyEncoder.get_unique_id(), \
+                                           x) for x in execs]
+    
+    def print_assert_exl_execs(self, interps, relations):
         execs = [self.print_assert_execution(x, relations) for x in interps.executions]
         return "fact block_ex_%s {%s}"%(len(execs), " or ".join(execs))
 
@@ -425,10 +434,12 @@ class AlloyEncoder(Encoder):
 
     def __print_relation(self, relation):
         tuples = relation.tuples
-        return "%s.rel = (%s)"%(self.rel_mapping[relation.name], " + ".join(["{(%s)}"%" -> ".join(x) for x in tuples]))
+        return "%s.rel = (%s)"%(self.rel_mapping[relation.name], " + ".join([self.__print_tuple(x) for x in tuples]))
 
-    def __print_tuple(self, relname, tup):
-        return "%s [%s]"%(relname, ", ".join([str(x) for x in tup]))
+    def __print_tuple(self, tup):
+        if len(tup) > 2:
+            tup = (tup[0], "byte_"+str(tup[2]), tup[1])
+        return "{(%s)}"%" -> ".join(tup)
     
     def __print_conditions(self, program):
         if not program.get_conditions():
@@ -501,14 +512,10 @@ class AlloyEncoder(Encoder):
 
     def __print_agent_order(self, program, inverted):
         ao = [x.name+".PO" for x in program.threads]
-
         if inverted:
             return ""
-#            ret = "fact AO_def_inv {not (agent_order.rel = (%s))}" % (" + ".join(ao))
-        else:
-            ret = "fact AO_def {agent_order.rel = (%s)}" % (" + ".join(ao))
-            
-        return ret
+        
+        return "fact AO_def {agent_order.rel = (%s)}" % (" + ".join(ao))
 
     def assert_formula(self, formula):
         formula = formula.replace("{}", "none")

@@ -9,9 +9,10 @@
 # limitations under the License.
 
 import re
+import json
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event
+from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event, Thread
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN
 from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
@@ -77,11 +78,23 @@ class NotRegisteredPrinterException(Exception):
     pass
 
 class PrinterType(object):
-    SMT = 0
-    JS = 1
-    GRAPH = 2
-    BEXEC = 3
+    c_size = 10
+    ####################
 
+    SMT = 0
+
+    ENCODERS = 10
+    ####################
+    
+    JS = 11
+    BEXEC = 12
+    JSON = 13
+
+    PROGRAMS = 20
+    ####################
+    
+    GRAPH = 21
+    
 class PrintersFactory(object):
     printers = []
 
@@ -101,6 +114,7 @@ class PrintersFactory(object):
 
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
+        PrintersFactory.register_printer(JSONPrinter())
     
     @staticmethod
     def register_printer(printer):
@@ -123,12 +137,17 @@ class PrintersFactory(object):
     @staticmethod    
     def get_printers_by_type(printertype):
         PrintersFactory.init_printers()
+        if (printertype % PrinterType.c_size) == 0:
+            return [x[1] for x in PrintersFactory.printers \
+                    if (x[1].TYPE < printertype) and (x[1].TYPE >= printertype-PrinterType.c_size)]
+        
         return [x[1] for x in PrintersFactory.printers if x[1].TYPE == printertype]
     
 class JSPrinter(object):
     NAME = "JS-PRINTER"
     DESC = "MISSING DESCRIPTION!"
     TYPE = PrinterType.JS
+    EXT = ".js"
 
     DATA = "// Expected Output (Compressed Data) //"
     OUT = "//output// "
@@ -360,6 +379,7 @@ class JST262_Printer(JSPrinter):
     DESC = "\tTEST262 format (Standard)"
     str_report = True
     exp_outputs = False
+    or_zero = True
 
     waiting_time = 0
     agent_prefix = "$262"
@@ -575,9 +595,10 @@ class JST262_Printer(JSPrinter):
                                                    event_values)
 
             if event.is_read():
-                mop = "%s = Atomics.load(%s, %s) | 0"%(event.name, \
-                                                       event.block.name, \
-                                                       addr)
+                mop = "%s = Atomics.load(%s, %s)%s"%(event.name, \
+                                                     event.block.name, \
+                                                     addr,\
+                                                     " | 0" if self.or_zero else "")
                 if postfix:
                     prt = "report.push(\"%s_\"+%s+\": \"+%s)"%(event.name, postfix, event.name)
                 else:
@@ -644,9 +665,10 @@ class JST262_Printer(JSPrinter):
                                                                                  event.get_size()*8, \
                                                                                  addr)
                 else:
-                    mop = "%s = %s[%s] | 0"%(event.name, \
-                                             event.block.name, \
-                                             addr)
+                    mop = "%s = %s[%s]%s"%(event.name, \
+                                           event.block.name, \
+                                           addr, \
+                                           " | 0" if self.or_zero else "")
                     
                 if postfix:
                     prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
@@ -662,8 +684,9 @@ class JST262_JSC_Printer(JST262_Printer):
     NAME = "JS-TEST262-JSC"
     DESC = "\tTEST262 format (Accepted by JSC)"
     str_report = True
-    exp_outputs = True
+    exp_outputs = False
     agent_prefix = "$"
+    or_zero = False
 
 class JST262_SM_Printer(JST262_Printer):
     NAME = "JS-TEST262-SM"
@@ -906,20 +929,86 @@ class DotPrinter(object):
                 return T_FLO64
             else:
                 raise UnreachableCodeException("Float size %s not valid"%str(size))
+
+
+class JSONPrinter(object):
+    NAME = "JSON"
+    DESC = "\t\tJSON format"
+    TYPE = PrinterType.JSON
+
+    def __init__(self):
+        pass
+
+    
+    def print_program(self, program, executions=None):
+        def get_dict_attrs(obj, attrs):
+            return dict([(x, obj.__dict__[x]) for x in attrs])
+        
+        def to_json(obj):
+            if type(obj) == range:
+                return list(obj)
+            if type(obj) == Thread:
+                return get_dict_attrs(obj, ["name", "events"])
+            if type(obj) == Memory_Event:
+                return get_dict_attrs(obj, ["name", "operation", \
+                                            "tear", "ordering", \
+                                            "address", "block", \
+                                            "values"])
+            
+            return obj.__dict__
+
+        program.blocks = program.get_blocks()
+        
+        return json.dumps(program, default=to_json, check_circular=True, indent=2)
+
+
+    def compute_possible_executions(self, program, interps, models=False):
+        ret = []
+        for interp in interps.get_coherent_executions():
+            exe = self.print_execution(program, interp, models)
+            if exe not in ret:
+                ret.append(exe)
+
+        return ret
+    
+    def print_executions(self, program, interps):
+        return "\n".join(self.compute_possible_executions(program, interps))
+
+
+    def print_execution(self, program, interp, models=False):
+        reads = []
+        output = ""
+        for el in interp.reads_values:
+            value = el.get_correct_read_value()
+            if el.is_wtear():
+                if (self.float_pri_js%value) == "-0.00":
+                    value = 0
+                output = ("%s: "+self.float_pri_js)%(el.name, float_approx(value))
+            else:
+                output = "%s: %s"%(el.name, value)
+            reads.append(output)
+        ret = ";".join(reads)
+        ret = ret.replace("nan", "NaN")
+        if models:
+            ret += "%s%s"%(self.MOD, str(interp))
+
+        return ret
     
 class BePrinter(object):
     NAME = "BE"
+    DESC = "\t\tBounded Execution format"
     TYPE = PrinterType.BEXEC
+    EXT = ".bex"
 
     float_pri_js = "%.2f"
     
     def __init__(self):
         pass
 
-    def print_execution(self, program):
+    def print_execution(self, program, interp, models=False):
         return self.print_program(program)
     
-    def print_program(self, program):
+    def print_program(self, program, executions=None):
         program.sort_threads()
         ret = ""
 
@@ -1142,3 +1231,15 @@ class BePrinter(object):
             ret.append("%s = [%s];"%(el, ",".join([str(self.__get_round_value(x)) for x in params[el]])))
 
         return "\n".join(ret)
+
+    def compute_possible_executions(self, program, interps, models=False):
+        ret = []
+        for interp in interps.get_coherent_executions():
+            exe = self.print_execution(program, interp, models)
+            if exe not in ret:
+                ret.append(exe)
+
+        return ret
+    
+    def print_executions(self, program, interps):
+        return "\n".join(self.compute_possible_executions(program, interps))

@@ -25,13 +25,7 @@ from multiprocessing import Process, Manager
 from CVC4 import EQUAL, AND, NOT
 from litmus import Config, run_litmus
 
-LABELLING_VARS = []
-LABELLING_VARS.append("L_HB4a")
-LABELLING_VARS.append("L_HB4b")
-LABELLING_VARS.append("L_HB4c")
-LABELLING_VARS.append("L_HB4d")
-
-LABELLING_VARS.append("L_RF_implies_HB")
+LABELLING_VAR_PREF = "L_"
 
 class CVC4ValidExecsModelsManager(ModelsManager):
 
@@ -137,7 +131,7 @@ class CVC4ValidExecsModelsManager(ModelsManager):
     def compute_from_sharedobjs(self, shared_objs):
         executions = Executions()
         executions.executions = shared_objs
-        assertions = self.encoder.print_neg_assertions(executions, self.blocking_relations)
+        assertions = self.encoder.print_assert_neg_execs(executions, self.blocking_relations)
         Logger.log("Blocking: \n%s"%("\n".join(assertions)), 2)
         return "\n"+("\n".join(assertions))
 
@@ -243,7 +237,7 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
     def compute_from_sharedobjs(self, shared_objs):
         executions = Executions()
         executions.executions = shared_objs
-        constraints = self.encoder.print_neg_assertions(executions, self.blocking_relations)
+        constraints = self.encoder.print_assert_neg_execs(executions, self.blocking_relations)
         Logger.log("Blocking: \n%s"%("".join(constraints)), 2)
             
         return "\n".join(constraints)
@@ -392,14 +386,18 @@ class ValidExecutionAnalyzer(object):
 
     cvc4_vexecsmanager = None
     alloy_vexecsmanager = None
-    c4solver = CVC4Solver()
-    alloysolver = AlloySolver()
-
-    alloyencoder = AlloyEncoder()
+    c4solver = None
+    alloysolver = None
+    alloyencoder = None
 
     def __init__(self):
         self.cvc4_vexecsmanager = CVC4ValidExecsModelsManager()
         self.alloy_vexecsmanager = AlloyValidExecsModelsManager()
+
+        self.c4solver = CVC4Solver()
+        self.alloysolver = AlloySolver()
+        self.alloyencoder = AlloyEncoder()
+        
 
     def set_models_file(self, models_file):
         self.cvc4_vexecsmanager.models_file = models_file
@@ -417,7 +415,9 @@ class ValidExecutionAnalyzer(object):
         if program.has_conditions:
             self.cvc4_vexecsmanager.set_additional_variables(program.get_conditions())
 
+        timer = Logger.start_timer("CVC4 solve all")
         ret = self.c4solver.solve_allsmt(model, self.cvc4_vexecsmanager, nexecs, threads)
+        Logger.stop_timer(timer)
         return len(ret)
 
     def solve_one_cvc4(self, model, program=None):
@@ -433,7 +433,9 @@ class ValidExecutionAnalyzer(object):
         if program.has_conditions:
             self.alloy_vexecsmanager.set_additional_variables(program.get_conditions())
         model += self.alloyencoder.print_run_condition(program)
+        timer = Logger.start_timer("Alloy solve all")
         ret = self.alloysolver.solve_allsmt(model, self.alloy_vexecsmanager, nexecs, threads)
+        Logger.stop_timer(timer)
         return len(ret)
 
     def solve_one_alloy(self, model, program=None):
@@ -461,8 +463,13 @@ class EquivalentExecutionSynthetizer(object):
         return self.alloy_synth.solve_all_synth(model, program, threads)
 
     def solve_all_synth_hybrid(self, cvc4model, alloymodel, program, threads):
+        timer = Logger.start_timer("Alloy intersect")
         (ao_execs, executions) = self.alloy_synth.find_all_intersect(alloymodel, program, 1)
-        return self.cvc4_synth.prune_not_eq(ao_execs, executions, cvc4model, program, threads)
+        Logger.stop_timer(timer)
+        timer = Logger.start_timer("CVC4 prune equivalent")
+        ret = self.cvc4_synth.prune_not_eq(ao_execs, executions, cvc4model, program, threads)
+        Logger.stop_timer(timer)
+        return ret
     
     def set_models_file(self, models_file):
         self.cvc4_synth.set_models_file(models_file)
@@ -483,8 +490,13 @@ class EquivalentExecutionSynthetizerAlloy(object):
         self.allvexecsmanager.models_file = models_file
 
     def solve_all_synth(self, model, program, threads):
+        timer = Logger.start_timer("Alloy intersect")
         (ao_execs, executions) = self.find_all_intersect(model, program, threads)
-        return self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.stop_timer(timer)
+        timer = Logger.start_timer("Alloy prune equivalent")
+        ret = self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.stop_timer(timer)
+        return ret
 
     def find_all_intersect(self, model, program, threads):
         run_condition = self.alloy_encoder.print_run_condition(program)
@@ -496,8 +508,8 @@ class EquivalentExecutionSynthetizerAlloy(object):
         vmodel = "\n".join([model,self.alloy_encoder.print_general_AO(program)])
         self.allvexecsmanager.blocking_relations = [AO]
         ao_execs = []
-        for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
-            assertions = self.alloy_encoder.print_ex_assertions(executions, models_blocking)
+        for models_blocking in [[RBF]]:
+            assertions = self.alloy_encoder.print_assert_exl_execs(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
             execs = self.alloy_solver.solve_allsmt(vmodel+run_condition, self.allvexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
@@ -509,8 +521,9 @@ class EquivalentExecutionSynthetizerAlloy(object):
         Logger.msg("Checking correctness... ", 1)
 
         if Logger.level(1):
+            Logger.msg("\n", -1)
             for el in ao_execs:
-                Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
+                Logger.log("INTERSECTING: %s"%el.get_AO(), 1)
 
         return (ao_execs, executions)
 
@@ -540,7 +553,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
         Logger.log(" DONE", 1)
         if Logger.level(1):
             for el in equivalent_AOs:
-                Logger.log("OK: %s"%el.get_AO(), 1)
+                Logger.log("EQUIVALENT: %s"%el.get_AO(), 1)
 
         return eq_progs
 
@@ -579,11 +592,10 @@ class EquivalentExecutionSynthetizerAlloy(object):
     def __check_ao_correctness(self, model, exe, executions, run_condition):
         ok = True
         prev_blocking = self.allvexecsmanager.blocking_relations
-        self.allvexecsmanager.blocking_relations = [RF]
+        self.allvexecsmanager.blocking_relations = [RBF]
         
-        assertions = self.alloy_encoder.print_neg_assertions(executions, self.allvexecsmanager.blocking_relations)
-
         # Checking if the candidate is not a superset
+        assertions = self.alloy_encoder.print_assert_neg_execs(executions, self.allvexecsmanager.blocking_relations)
         assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
         vmodel += self.alloy_encoder.assert_relation(exe.get_AO())+"\n"
@@ -594,6 +606,7 @@ class EquivalentExecutionSynthetizerAlloy(object):
             ok = False
 
         # Checking if the candidate matches all executions
+        assertions = self.alloy_encoder.print_assert_pos_execs(executions, self.allvexecsmanager.blocking_relations)
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
@@ -659,11 +672,10 @@ class EquivalentExecutionSynthetizerCVC4(object):
         ok = True
         exe = str(exe.get_AO())
         prev_blocking = self.c4vexecsmanager.blocking_relations
-        self.c4vexecsmanager.blocking_relations = [RF]
+        self.c4vexecsmanager.blocking_relations = [RBF]
         
-        assertions = self.c4_encoder.print_neg_assertions(executions, self.c4vexecsmanager.blocking_relations)
-
         # Checking if the candidate is not a superset
+        assertions = self.c4_encoder.print_assert_neg_execs(executions, self.c4vexecsmanager.blocking_relations)
         assertion = "\n%s\n"%("\n".join(assertions))
         vmodel = model+assertion
         vmodel += self.c4_encoder.assert_formula_nl("%s"%(exe))
@@ -673,6 +685,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
             ok = False
 
         # Checking if the candidate matches all executions
+        assertions = self.c4_encoder.print_assert_pos_execs(executions, self.c4vexecsmanager.blocking_relations)
         if ok and (len(assertions) > 1):
             for assertion in assertions:
                 vmodel = "%s\n%s\n"%(model, assertion)
@@ -687,8 +700,13 @@ class EquivalentExecutionSynthetizerCVC4(object):
         return ok
     
     def solve_all_synth(self, model, program, threads):
+        timer = Logger.start_timer("CVC4 intersect")
         (ao_execs, executions) = self.find_all_intersect(model, program, threads)
-        return self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.stop_timer(timer)
+        timer = Logger.start_timer("CVC4 prune equivalent")
+        ret = self.prune_not_eq(ao_execs, executions, model, program, threads)
+        Logger.stop_timer(timer)
+        return ret
 
     def find_all_intersect(self, model, program, threads):
         self.c4vexecsmanager.program = program
@@ -702,8 +720,8 @@ class EquivalentExecutionSynthetizerCVC4(object):
         vmodel = qupre.preprocess_from_string(vmodel)
         self.c4vexecsmanager.blocking_relations = [AO]
         ao_execs = []
-        for models_blocking in [[RF, HB, MO]]: #[[RF, HB, MO], [RF, RBF]]:
-            assertions = self.c4_encoder.print_ex_assertions(executions, models_blocking)
+        for models_blocking in [[RBF]]:
+            assertions = self.c4_encoder.print_assert_exl_execs(executions, models_blocking)
             vmodel += "\n%s\n"%assertions
             execs = self.c4_solver.solve_allsmt(vmodel, self.c4vexecsmanager, -1, threads if ao_execs == [] else 1)
             ao_execs += [x for x in execs if x not in ao_execs]
@@ -715,8 +733,9 @@ class EquivalentExecutionSynthetizerCVC4(object):
         Logger.msg("Checking correctness... ", 1)
 
         if Logger.level(1):
+            Logger.msg("\n", -1)
             for el in ao_execs:
-                Logger.log("CANDIDATE: %s"%el.get_AO(), 1)
+                Logger.log("INTERSECTING: %s"%el.get_AO(), 1)
 
         return (ao_execs, executions)
 
@@ -744,13 +763,14 @@ class EquivalentExecutionSynthetizerCVC4(object):
         Logger.log(" DONE", 1)
         if Logger.level(1):
             for el in equivalent_AOs:
-                Logger.log("OK: %s"%el.get_AO(), 1)
+                Logger.log("EQUIVALENT: %s"%el.get_AO(), 1)
 
         return eq_progs
     
 class ConstraintAnalyzerManager(ModelsManager):
 
     encoder = None
+    labelling_vars = None
     
     def __init(self):
         self.encoder = CVC4Encoder()
@@ -758,7 +778,7 @@ class ConstraintAnalyzerManager(ModelsManager):
     def compute_from_smt(self, smt):
         assigns = self.exprmgr.mkBoolConst(True)
         model = []
-        for varstr in LABELLING_VARS:
+        for varstr in self.labelling_vars:
             assign = self.symboltable.lookup(varstr)
             value = smt.getValue(assign)
             model.append("%s%s"%("" if value.getConstBoolean() else "~", assign.toString()))
@@ -810,13 +830,22 @@ class ConstraintsAnalyzer(object):
         config.silent = True
         config.models = True
 
+        labelling_vars = [x.split(" ")[0] for x in model.split("\n") \
+                          if x[:len(LABELLING_VAR_PREF)] == LABELLING_VAR_PREF]
+        if len(labelling_vars) == 0:
+            Logger.error("No labelling vars defined")
+            return None
+
+        self.vexecsmanager.labelling_vars = labelling_vars
+        
         (matched, unmatched) = run_litmus(config)
         
         Logger.log(" -> Found %s matched models"%(len(matched)), 0)
         Logger.log(" -> Found %s unmatched models"%(len(unmatched)), 0)
 
         if len(unmatched) == 0:
-            return
+            Logger.error("No unmatched models")
+            return None
         
         matched = self.encoder.big_or(matched)
         unmatched = self.encoder.big_or(unmatched)

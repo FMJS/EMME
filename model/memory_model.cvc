@@ -59,9 +59,9 @@
 % #define ASSERT_TFR
 % #define ASSERT_NEG_TFR
 
-% #define ENABLE_AOT
-% #define ASSERT_AOT
-% #define ASSERT_NEG_AOT
+% #define ENABLE_OTA
+% #define ASSERT_OTA
+% #define ASSERT_NEG_OTA
 
 %% Different conditional encodings for performance comparsion
 % #define enc_RF 0 # 5
@@ -544,15 +544,15 @@ CHECKSAT;
 %% No Out of Thin Air property %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-AOT : BOOLEAN;
+OTA : BOOLEAN;
 
-en_AOT : BOOLEAN;
+en_OTA : BOOLEAN;
 
-#ifdef ENABLE_AOT
-ASSERT en_AOT => (AOT <=> (FORALL (ee IN ev_set) : (Active(ee) => (NOT((ee,ee) IS_IN TCLOSURE(DO | RF))))));
+#ifdef ENABLE_OTA
+ASSERT en_OTA => (OTA <=> (FORALL (ee IN ev_set) : (Active(ee) => (NOT((ee,ee) IS_IN TCLOSURE(DO | RF))))));
 #endif
 
-ASSERT en_AOT;
+ASSERT en_OTA;
 
 #ifdef ENABLE_INCREMENTAL
 CHECKSAT;
@@ -676,12 +676,12 @@ ASSERT CR;
 ASSERT NOT CR;
 #endif
 
-#ifdef ASSERT_AOT
-ASSERT AOT;
+#ifdef ASSERT_OTA
+ASSERT OTA;
 #endif
 
-#ifdef ASSERT_NEG_AOT
-ASSERT NOT AOT;
+#ifdef ASSERT_NEG_OTA
+ASSERT NOT OTA;
 #endif
 
 #ifdef ASSERT_TFR

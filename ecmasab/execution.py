@@ -12,6 +12,7 @@ import ast
 import operator
 import sys
 import re
+import json
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -352,6 +353,9 @@ class Program(object):
         self.conditions = None
         self.params = None
 
+    def to_json(self):
+        return json.dumps(self.__dict__)
+        
     def add_thread(self, thread):
         self.threads.append(thread)
 
@@ -469,6 +473,9 @@ class Thread(object):
         self.uevents = []
         self.name = name
 
+    def to_json(self):
+        return json.dumps(self.__dict__)
+        
     def get_conditions(self):
         conditions = []
         for event in self.events:
