@@ -485,7 +485,7 @@ class Thread(object):
         attrs = []
         attrs.append(("name", self.name))
         attrs.append(("events", self.events))
-        return ("thread", dict(attrs))
+        return dict(attrs)
         
     def get_conditions(self):
         conditions = []
