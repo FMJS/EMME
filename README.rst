@@ -23,7 +23,24 @@ To start playing with the tool, you can run:
 For more details on the license, have a look at LICENSE.txt
 
 ========================
-Status
+Installation
+========================
+Using Docker:
+
+1) install Docker with your package manager e.g., ``sudo apt-get install docker``
+
+2) build the Docker image: ``cd docker/fedora_64 && docker build -f fedora-emme .``
+
+3) run the Docker image: ``docker run -i -t fedora-emme /bin/bash``
+
+On Linux and MacOS:
+
+1) install python package dependencies: ``pip install -r requirements.txt``
+
+2) compile CVC4: ``cd ext_tools && bash get_CVC4.sh && export PYTHONPATH=`pwd`/CVC4/python_bindings:$PYTHONPATH``
+
+========================
+Build Status
 ========================
 .. image:: https://landscape.io/github/FMJS/EMME/master/landscape.svg?style=flat
    :target: https://landscape.io/github/FMJS/EMME/master
