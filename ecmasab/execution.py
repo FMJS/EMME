@@ -764,16 +764,20 @@ class Memory_Event(object):
         attrs.append(("ordering", self.ordering))
         if self.is_modify():
             attrs.append(("operator", self.operator))
+
+        if self.get_correct_value() is not None:
+            attrs.append(("value", self.get_correct_value()))
+        if self.is_init():
+            attrs.append(("value", 0))
+            
         if self.is_parametric():
             attrs.append(("value", "".join(self.value)))
             attrs.append(("address", self.offset))
         else:
             attrs.append(("address", self.address))
-        if self.get_correct_value() is not None:
-            attrs.append(("value", self.get_correct_value()))
+            
         attrs.append(("size", self.get_size()*8))
-        if self.is_init():
-            attrs.append(("value", 0))
+        
         return ("event", dict(attrs))
         
     def __repr__(self):
