@@ -12,7 +12,7 @@ import re
 import json
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event, Thread
+from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event, Thread, Program, Block
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN
 from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
@@ -179,10 +179,14 @@ class JSPrinter(object):
     
     def print_event(self, event, postfix=None):
         pass
+
+    def get_extension(self):
+        return self.EXT
         
 class JSV8Printer(JSPrinter):
     NAME = "JS-V8"
     DESC = "\t\tGoogle V8 format"
+    EXT = ".js"
 
     def print_execution(self, program, interp, models=False):
         reads = []
@@ -373,6 +377,8 @@ class JSV8Printer(JSPrinter):
         else:
             return "%s;\n"%("; ".join([var_def,mop]))
 
+    def get_extension(self):
+        return self.EXT
 
 class JST262_Printer(JSPrinter):
     NAME = "JS-TEST262"
@@ -935,10 +941,11 @@ class JSONPrinter(object):
     NAME = "JSON"
     DESC = "\t\tJSON format"
     TYPE = PrinterType.JSON
+    float_pri_js = "%.2f"
+    EXT = ".json"
 
     def __init__(self):
         pass
-
     
     def print_program(self, program, executions=None):
         def get_dict_attrs(obj, attrs):
@@ -946,36 +953,28 @@ class JSONPrinter(object):
         
         def to_json(obj):
             if type(obj) == range:
-                return list(obj)
-            if type(obj) == Thread:
-                return get_dict_attrs(obj, ["name", "events"])
-            if type(obj) == Memory_Event:
-                return get_dict_attrs(obj, ["name", "operation", \
-                                            "tear", "ordering", \
-                                            "address", "block", \
-                                            "values"])
+                return obj[0]
             
-            return obj.__dict__
+            return obj.to_json()
 
         program.blocks = program.get_blocks()
-        
-        return json.dumps(program, default=to_json, check_circular=True, indent=2)
-
+        execs = self.compute_executions(program, executions)
+        return json.dumps(dict([("program", program), ("executions", execs)]), \
+                           default=to_json, check_circular=True, indent=2)
 
     def compute_possible_executions(self, program, interps, models=False):
+        return [str(x) for x in self.compute_executions(program, interps, models)]
+    
+    def compute_executions(self, program, interps, models=False):
         ret = []
         for interp in interps.get_coherent_executions():
-            exe = self.print_execution(program, interp, models)
+            exe = self.compute_execution(program, interp, models)
             if exe not in ret:
                 ret.append(exe)
 
         return ret
     
-    def print_executions(self, program, interps):
-        return "\n".join(self.compute_possible_executions(program, interps))
-
-
-    def print_execution(self, program, interp, models=False):
+    def compute_execution(self, program, interp, models=False):
         reads = []
         output = ""
         for el in interp.reads_values:
@@ -983,16 +982,14 @@ class JSONPrinter(object):
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                output = ("%s: "+self.float_pri_js)%(el.name, float_approx(value))
+                output = (el.name, (""+self.float_pri_js)%float_approx(value))
             else:
-                output = "%s: %s"%(el.name, value)
+                output = (el.name, value)
             reads.append(output)
-        ret = ";".join(reads)
-        ret = ret.replace("nan", "NaN")
-        if models:
-            ret += "%s%s"%(self.MOD, str(interp))
+        return dict(reads)
 
-        return ret
+    def get_extension(self):
+        return self.EXT
     
 class BePrinter(object):
     NAME = "BE"
@@ -1243,3 +1240,7 @@ class BePrinter(object):
     
     def print_executions(self, program, interps):
         return "\n".join(self.compute_possible_executions(program, interps))
+
+    def get_extension(self):
+        return self.EXT
+    
