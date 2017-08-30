@@ -32,6 +32,7 @@ Usage
 ========================
 
 To start playing with the tool, you can run:
+
 1) ``python emme.py examples/single_var/sv_simple01.bex`` (to generate the valid executions in the folder examples/single_var/sv_simple01/)
 
 2) ``python emme.py examples/single_var/sv_simple01.bex --synth`` (to generate all equivalent programs in the folder examples/single_var/sv_simple01/)
