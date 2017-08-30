@@ -354,7 +354,10 @@ class Program(object):
         self.params = None
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        attrs = []
+        attrs.append(("blocks", self.blocks))
+        attrs.append(("threads", self.threads))
+        return dict(attrs)
         
     def add_thread(self, thread):
         self.threads.append(thread)
@@ -454,6 +457,11 @@ class Block(object):
         self.name = name
         self.size = 1
 
+    def to_json(self):
+        attrs = []
+        attrs.append(("name", self.name))
+        return dict(attrs)
+        
     def __repr__(self):
         return self.name
 
@@ -474,7 +482,10 @@ class Thread(object):
         self.name = name
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        attrs = []
+        attrs.append(("name", self.name))
+        attrs.append(("events", self.events))
+        return ("thread", dict(attrs))
         
     def get_conditions(self):
         conditions = []
@@ -537,6 +548,14 @@ class For_Loop(object):
         self.toind = 0
         self.cname = None
 
+    def to_json(self):
+        attrs = []
+        attrs.append(("index", self.cname))
+        attrs.append(("from", self.fromind))
+        attrs.append(("to", self.toind))
+        attrs.append(("events", self.events))
+        return ("for", dict(attrs))
+        
     def set_values(self, cname, frind, toind):
         self.cname = cname
         self.fromind = frind
@@ -626,6 +645,13 @@ class ITE_Statement(object):
     @staticmethod        
     def reset_unique_names():
         ITE_Statement.global_id_cond = 1
+
+    def to_json(self):
+        attrs = []
+        attrs.append(("conditions", ["%s %s %s"%x for x in self.conditions]))
+        attrs.append(("then", self.then_events))
+        attrs.append(("else", self.else_events))
+        return ("ite", dict(attrs))
         
     def apply_param(self, pardic):
         if not self.pconditions:
@@ -728,6 +754,28 @@ class Memory_Event(object):
         
         self.id_ev = Memory_Event.global_id_ev
 
+    def to_json(self):
+        attrs = []
+        attrs.append(("name", self.name))
+        attrs.append(("block", self.block.name))
+        attrs.append(("operation", self.operation))
+        attrs.append(("tear", self.tear))
+        attrs.append(("ordering", self.ordering))
+        if self.is_modify():
+            attrs.append(("operator", self.operator))
+        if self.is_parametric():
+            attrs.append(("value", "".join(self.value)))
+            attrs.append(("address", self.offset))
+        else:
+            attrs.append(("address", self.address))
+        if self.get_correct_value() is not None:
+            attrs.append(("value", self.get_correct_value()))
+        if not self.is_init():
+            attrs.append(("size", self.get_size()*8))
+        if self.is_init():
+            attrs.append(("value", 0))
+        return ("event", dict(attrs))
+        
     def __repr__(self):
         return self.name
 
@@ -847,7 +895,16 @@ class Memory_Event(object):
         if self.is_init():
             self.set_init_values()
         return self.values
-        
+
+    def is_parametric(self):
+        if self.value is None:
+            return False
+        try:
+            float(self.value)
+            return False
+        except:
+            return True
+    
     def get_size(self):
         if self.size:
             return self.size
@@ -894,14 +951,17 @@ class Memory_Event(object):
         self.values = [0]*self.block.size
         
     def get_correct_value(self):
-        if self.is_read():
-            return self.get_correct_read_value()
-        elif self.is_write():
-            return self.get_correct_write_value()
-        elif self.is_modify():
-            return self.get_correct_write_value()
-        else:
-            raise UnreachableCodeException("Event type not defined")
+        try:
+            if self.is_read():
+                return self.get_correct_read_value()
+            elif self.is_write():
+                return self.get_correct_write_value()
+            elif self.is_modify():
+                return self.get_correct_write_value()
+            else:
+                raise UnreachableCodeException("Event type not defined")
+        except:
+            return None
 
     def __compute_correct_value(self, with_offset=True):
         if not self.values:

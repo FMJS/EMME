@@ -42,7 +42,7 @@ ID_TYPE = "id_type.cvc"
 MODELS = "models.txt"
 DOTS = "mm%s.dot"
 GRAP = "gmm%s.png"
-JSPROGRAM = "program.js"
+OUTPROGRAM = "program"
 EXECS = "outputs.txt"
 EQPROGS = "%s_eq%s.bex"
 
@@ -84,7 +84,7 @@ class Config(object):
     models = None
     dots = None
     grap = None
-    jsprogram = None
+    outprogram = None
     execs = None
     cvc_mm = None
     alloy_mm = None
@@ -133,7 +133,7 @@ class Config(object):
             self.models = self.prefix+MODELS
             self.dots = self.prefix+DOTS
             self.grap = self.prefix+GRAP
-            self.jsprogram = self.prefix+JSPROGRAM
+            self.outprogram = self.prefix+OUTPROGRAM
             self.execs = self.prefix+EXECS
             self.cvc_mm = CVC_FORMAL_MODEL
             self.alloy_mm = ALL_FORMAL_MODEL
@@ -289,7 +289,7 @@ def unmatched_analysis(config):
                                             config.jsengine, \
                                             config.runs, \
                                             config.threads, \
-                                            config.jsprogram)
+                                            config.outprogram)
 
     return 0
     
@@ -395,7 +395,7 @@ def analyze_program(config):
         Logger.log(" -> No viable executions found", 0)
         
     # Generation of the JS litmus test #
-    jprinter = PrintersFactory.printer_by_name(config.jsprinter)
+    pprinter = PrintersFactory.printer_by_name(config.jsprinter)
     dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
     dprinter.set_printing_relations(config.printing_relations)
 
@@ -426,16 +426,18 @@ def analyze_program(config):
                 
             Logger.log("DONE", 0)
                 
-        Logger.msg("Generating JS program... ", 0)
+        Logger.msg("Generating program... ", 0)
 
-        jsfiles = [config.jsprogram]
+        outfiles = [config.outprogram]
         if config.jsdir:
-            jsprogram = "%s/%s"%(config.jsdir, config.jsprogram.replace("/","-"))
-            jsfiles = [jsprogram]
+            outprogram = "%s/%s"%(config.jsdir, config.outprogram.replace("/","-"))
+            outfiles = [outprogram]
 
-        for jsfile in jsfiles:    
-            with open(jsfile, "w") as f:
-                f.write(jprinter.print_program(program, executions))
+        extension = pprinter.get_extension()
+            
+        for outfile in outfiles:    
+            with open(outfile+extension, "w") as f:
+                f.write(pprinter.print_program(program, executions))
 
         Logger.log("DONE", 0)
 
@@ -444,11 +446,12 @@ def analyze_program(config):
 
             # Generation of all possible outputs for the JS litmus test #
             
-            jsexecs = jprinter.compute_possible_executions(program, executions)
+            execs = pprinter.compute_possible_executions(program, executions)
 
             if config.debug:
-                with open(config.execs, "w") as exefile:
-                    exefile.write("\n".join(jsexecs))
+                if execs is not None:
+                    with open(config.execs, "w") as exefile:
+                        exefile.write("\n".join(execs))
 
             # Generation of all possible MM interpretations #
             mms = dprinter.print_executions(program, executions)
@@ -461,7 +464,7 @@ def analyze_program(config):
 
             Logger.log("DONE", 0)
 
-            Logger.log(" -> Found %s possible output%s"%(len(jsexecs), "" if len(jsexecs) == 1 else "s"), 0)
+            Logger.log(" -> Found %s possible output%s"%(len(execs), "" if len(execs) == 1 else "s"), 0)
 
     return 0
         
