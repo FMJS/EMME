@@ -460,6 +460,7 @@ class Block(object):
     def to_json(self):
         attrs = []
         attrs.append(("name", self.name))
+        attrs.append(("size", self.size*8))
         return dict(attrs)
         
     def __repr__(self):
@@ -770,8 +771,7 @@ class Memory_Event(object):
             attrs.append(("address", self.address))
         if self.get_correct_value() is not None:
             attrs.append(("value", self.get_correct_value()))
-        if not self.is_init():
-            attrs.append(("size", self.get_size()*8))
+        attrs.append(("size", self.get_size()*8))
         if self.is_init():
             attrs.append(("value", 0))
         return ("event", dict(attrs))
