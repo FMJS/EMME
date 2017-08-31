@@ -289,7 +289,7 @@ def unmatched_analysis(config):
                                             config.jsengine, \
                                             config.runs, \
                                             config.threads, \
-                                            config.outprogram)
+                                            config.outprogram+".js")
 
     return 0
     
@@ -585,6 +585,10 @@ def main(args):
     parser.add_argument('--preproc', metavar='preproc', type=str, nargs='?',
                         help='the memory model preprocessor. (Default is \"%s\")'%CPP)
 
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
+    
     args = parser.parse_args(args)
 
     prefix = args.prefix
