@@ -12,7 +12,7 @@ import re
 import json
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event, Thread, Program, Block
+from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event, Thread, Block
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN
 from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
@@ -948,8 +948,6 @@ class JSONPrinter(object):
         pass
     
     def print_program(self, program, executions=None):
-        def get_dict_attrs(obj, attrs):
-            return dict([(x, obj.__dict__[x]) for x in attrs])
         
         def to_json(obj):
             if type(obj) == range:
@@ -968,13 +966,13 @@ class JSONPrinter(object):
     def compute_executions(self, program, interps, models=False):
         ret = []
         for interp in interps.get_coherent_executions():
-            exe = self.compute_execution(program, interp, models)
+            exe = self.compute_execution(interp)
             if exe not in ret:
                 ret.append(exe)
 
         return ret
     
-    def compute_execution(self, program, interp, models=False):
+    def compute_execution(self, interp):
         reads = []
         output = ""
         for el in interp.reads_values:
