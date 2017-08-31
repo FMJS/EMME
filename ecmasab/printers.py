@@ -12,7 +12,7 @@ import re
 import json
 from six.moves import range
 
-from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event, Thread, Block
+from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN
 from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
