@@ -690,21 +690,24 @@ class JST262_JSC_Printer(JST262_Printer):
     NAME = "JS-TEST262-JSC"
     DESC = "\tTEST262 format (Accepted by JSC)"
     str_report = True
-    exp_outputs = False
+    exp_outputs = True
     agent_prefix = "$"
-    or_zero = False
+    or_zero = True
+    asserts = True
 
 class JST262_SM_Printer(JST262_Printer):
     NAME = "JS-TEST262-SM"
     DESC = "\tTEST262 format (Accepted by SM)"
     str_report = True
     exp_outputs = True
+    asserts = True
 
 class JST262_V8_Printer(JST262_Printer):
     NAME = "JS-TEST262-V8"
     DESC = "\tTEST262 format (Accepted by V8)"
     str_report = False
     exp_outputs = True
+    asserts = True
 
 class JST262_WASM_V8_Printer(JST262_Printer):
     NAME = "JS-TEST262-W-V8"
@@ -712,6 +715,7 @@ class JST262_WASM_V8_Printer(JST262_Printer):
     str_report = False
     exp_outputs = True
     use_asm = True
+    asserts = True
 
 class JST262_WASM_JSC_Printer(JST262_Printer):
     NAME = "JS-TEST262-W-JSC"
@@ -720,6 +724,7 @@ class JST262_WASM_JSC_Printer(JST262_Printer):
     exp_outputs = True
     agent_prefix = "$"
     use_asm = True
+    asserts = True
     
 class DotPrinter(object):
     NAME = "DOT"
@@ -956,14 +961,14 @@ class JSONPrinter(object):
             return obj.to_json()
 
         program.blocks = program.get_blocks()
-        execs = self.compute_executions(program, executions)
+        execs = self.compute_executions(executions)
         return json.dumps(dict([("program", program), ("executions", execs)]), \
                            default=to_json, check_circular=True, indent=2)
 
     def compute_possible_executions(self, program, interps, models=False):
-        return [str(x) for x in self.compute_executions(program, interps, models)]
+        return [str(x) for x in self.compute_executions(interps)]
     
-    def compute_executions(self, program, interps, models=False):
+    def compute_executions(self, interps):
         ret = []
         for interp in interps.get_coherent_executions():
             exe = self.compute_execution(interp)
