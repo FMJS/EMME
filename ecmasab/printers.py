@@ -394,6 +394,9 @@ class JST262_Printer(JSPrinter):
     indent = "   "
 
     use_asm = False
+
+    add_wait = False
+    wait_cycles = 100000
     
     def print_execution(self, program, interp, models=False):
         reads = []
@@ -567,7 +570,7 @@ class JST262_Printer(JSPrinter):
         var_def = None
         prt = None
         mop = None
-        
+
         if (event.operation == WRITE) and (event.ordering == INIT):
             return ""
         
@@ -682,8 +685,13 @@ class JST262_Printer(JSPrinter):
                     prt = "report.push(\"%s: \"+%s%s)"%(event.name, event.name, approx)
 
         assert mop
+
+        ret_ev = "".join("%s; "%x for x in [var_def,mop,prt] if x is not None)+"\n"
         
-        return "".join("%s; "%x for x in [var_def,mop,prt] if x is not None)+"\n"
+        if self.add_wait:
+            ret_ev = ("for (i = 0; i < Math.random()*%s; i++) {;}; "%(self.wait_cycles)) + ret_ev
+
+        return ret_ev
     
 
 class JST262_JSC_Printer(JST262_Printer):
