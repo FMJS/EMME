@@ -10,10 +10,10 @@ if [ ! -f "$BINDINGS" ]; then
     sudo make install
     cd ..
     rm -fr CVC4
-    wget https://github.com/CVC4/CVC4/archive/1.5.zip
-    unzip 1.5.zip
-    rm -fr 1.5.zip
-    mv CVC4-1.5 CVC4
+    wget https://github.com/CVC4/CVC4/archive/1.5.x.zip
+    unzip 1.5.x.zip
+    rm -fr 1.5.x.zip
+    mv CVC4-1.5.x CVC4
     cd CVC4/contrib
     ./get-antlr-3.4
     cd ../

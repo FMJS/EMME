@@ -1,9 +1,9 @@
 #!/bin/bash
 pushd .
 rm -fr CVC4 master.zip
-wget https://github.com/CVC4/CVC4/archive/master.zip
-unzip master.zip
-mv CVC4-master CVC4
+wget https://github.com/CVC4/CVC4/archive/1.5.x.zip
+unzip 1.5.x.zip
+mv CVC4-1.5.x CVC4
 cd CVC4/contrib
 ./get-antlr-3.4
 cd ../
