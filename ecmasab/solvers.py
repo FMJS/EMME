@@ -15,7 +15,6 @@ from six.moves import range
 from multiprocessing import Process, Manager
 from ecmasab.logger import Logger
 import subprocess
-import itertools
 
 from CVC4 import Options, \
     ExprManager, \
