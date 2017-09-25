@@ -773,8 +773,7 @@ class DotPrinter(EPrinter):
             return True
         return relation in self.printing_relations
             
-    def print_execution(self, program, interp):
-
+    def print_execution(self, program, interp, models=False):
         reads_dic = dict([(x.name, x) for x in interp.reads_values])
         ev_dic = dict([(x.name, x) for x in interp.get_events()])
 
