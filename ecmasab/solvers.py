@@ -15,6 +15,7 @@ from six.moves import range
 from multiprocessing import Process, Manager
 from ecmasab.logger import Logger
 import subprocess
+import itertools
 
 from CVC4 import Options, \
     ExprManager, \
@@ -407,9 +408,10 @@ class AlloySolver(object):
     def __init_solvers(self, n):
         self.alloy_processes = []
         command = "%s"%self.ALLOY_ABS
+        
         self.alloy_processes = [subprocess.Popen(command.split(), \
                                                  stdin=subprocess.PIPE, \
-                                                 stdout=subprocess.PIPE, shell=True) for x in range(n)]
+                                                 stdout=subprocess.PIPE, shell=True) for _ in range(n)]
 
     def __quit_solvers(self):
         for solver in self.alloy_processes:
@@ -421,7 +423,7 @@ class AlloySolver(object):
     def __clean_files(self):
         if self.debug:
             return
-        filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod")]
+        filelist = [f for f in os.listdir("/tmp/") if f.startswith("kodkod")]
         for f in filelist:
             os.remove("/tmp/%s"%f)
             
