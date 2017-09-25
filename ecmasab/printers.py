@@ -143,15 +143,15 @@ class PrintersFactory(object):
         
         return [x[1] for x in PrintersFactory.printers if x[1].TYPE == printertype]
     
-class JSPrinter(object):
-    NAME = "JS-PRINTER"
+class EPrinter(object):
+    NAME = "PRINTER"
     DESC = "MISSING DESCRIPTION!"
     TYPE = PrinterType.JS
-    EXT = ".js"
+    EXT  = ".js"
 
     DATA = "// Expected Output (Compressed Data) //"
-    OUT = "//output// "
-    MOD = "//model// "
+    OUT  = "//output// "
+    MOD  = "//model// "
     
     float_app_js = ".toFixed("+str(FLOAT_APPROX)+")"
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
@@ -183,7 +183,7 @@ class JSPrinter(object):
     def get_extension(self):
         return self.EXT
         
-class JSV8Printer(JSPrinter):
+class JSV8Printer(EPrinter):
     NAME = "JS-V8"
     DESC = "\t\tGoogle V8 format"
     EXT = ".js"
@@ -380,7 +380,7 @@ class JSV8Printer(JSPrinter):
     def get_extension(self):
         return self.EXT
 
-class JST262_Printer(JSPrinter):
+class JST262_Printer(EPrinter):
     NAME = "JS-TEST262"
     DESC = "\tTEST262 format (Standard)"
     str_report = True
@@ -740,7 +740,7 @@ class JST262_WASM_JSC_Printer(JST262_Printer):
     use_asm = True
     asserts = True
     
-class DotPrinter(object):
+class DotPrinter(EPrinter):
     NAME = "DOT"
     TYPE = PrinterType.GRAPH
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
@@ -956,7 +956,7 @@ class DotPrinter(object):
                 raise UnreachableCodeException("Float size %s not valid"%str(size))
 
 
-class JSONPrinter(object):
+class JSONPrinter(EPrinter):
     NAME = "JSON"
     DESC = "\t\tJSON format"
     TYPE = PrinterType.JSON
@@ -1008,7 +1008,7 @@ class JSONPrinter(object):
     def get_extension(self):
         return self.EXT
     
-class BePrinter(object):
+class BePrinter(EPrinter):
     NAME = "BE"
     DESC = "\t\tBounded Execution format"
     TYPE = PrinterType.BEXEC

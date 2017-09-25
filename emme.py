@@ -627,7 +627,9 @@ def main(args):
     
     if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
         config.jsprinter = args.jsprinter
-    
+    else:
+        Logger.error("Printer \"%s\" not found"%(args.jsprinter))
+        
     if config.unmatched and not config.jsengine:
         Logger.error("JavaScript engine not specified")
         return 1
