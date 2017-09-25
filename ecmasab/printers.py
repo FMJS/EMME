@@ -396,8 +396,9 @@ class JST262_Printer(JSPrinter):
     use_asm = False
 
     add_wait = False
-    wait_cycles = 100000
-    
+    wait_cycles = 10000
+    only_reads_reports = False
+
     def print_execution(self, program, interp, models=False):
         reads = []
         output = ""
@@ -502,7 +503,9 @@ class JST262_Printer(JSPrinter):
         ret += (ind*3)+"print(thread_report[i]);\n"
         ret += (ind*2)+"}\n"
         ret += (ind*2)+"reports += 1;\n"
-        ret += (ind*2)+"if (reports >= %s) break;\n"%(len(program.threads)-1)
+        reports_num = len([x for x in program.threads if len([y for y in x.get_events(True) if y.is_read() or y.is_modify()])]) \
+                      if self.only_reads_reports else len(program.threads)-1 if 
+        ret += (ind*2)+"if (reports >= %s) break;\n"%(reports_num)
         ret += (ind*1)+"}\n"
         ret += "}\n\n"
         
@@ -689,7 +692,7 @@ class JST262_Printer(JSPrinter):
         ret_ev = "".join("%s; "%x for x in [var_def,mop,prt] if x is not None)+"\n"
         
         if self.add_wait:
-            ret_ev = ("for (i = 0; i < Math.random()*%s; i++) {;}; "%(self.wait_cycles)) + ret_ev
+            ret_ev = ("for (i = 0; i < %s; i+=Math.random()*10); "%(self.wait_cycles)) + ret_ev
 
         return ret_ev
     
@@ -713,9 +716,12 @@ class JST262_SM_Printer(JST262_Printer):
 class JST262_V8_Printer(JST262_Printer):
     NAME = "JS-TEST262-V8"
     DESC = "\tTEST262 format (Accepted by V8)"
-    str_report = False
+    str_report = True
     exp_outputs = True
     asserts = True
+    add_wait = True
+    wait_cycles = 10000
+    only_reads_reports = True
 
 class JST262_WASM_V8_Printer(JST262_Printer):
     NAME = "JS-TEST262-W-V8"
