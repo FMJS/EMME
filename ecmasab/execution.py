@@ -12,7 +12,6 @@ import ast
 import operator
 import sys
 import re
-import json
 from six.moves import range
 
 from ecmasab.exceptions import UnreachableCodeException
@@ -906,7 +905,7 @@ class Memory_Event(object):
         try:
             float(self.value)
             return False
-        except:
+        except Exception:
             return True
     
     def get_size(self):
@@ -964,7 +963,7 @@ class Memory_Event(object):
                 return self.get_correct_write_value()
             else:
                 raise UnreachableCodeException("Event type not defined")
-        except:
+        except Exception:
             return None
 
     def __compute_correct_value(self, with_offset=True):
