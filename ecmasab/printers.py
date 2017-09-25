@@ -504,7 +504,7 @@ class JST262_Printer(JSPrinter):
         ret += (ind*2)+"}\n"
         ret += (ind*2)+"reports += 1;\n"
         reports_num = len([x for x in program.threads if len([y for y in x.get_events(True) if y.is_read() or y.is_modify()])]) \
-                      if self.only_reads_reports else len(program.threads)-1 if 
+                      if self.only_reads_reports else len(program.threads)-1
         ret += (ind*2)+"if (reports >= %s) break;\n"%(reports_num)
         ret += (ind*1)+"}\n"
         ret += "}\n\n"
