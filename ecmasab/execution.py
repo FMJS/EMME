@@ -55,7 +55,7 @@ RELATIONS.append(SW)
 
 def arit_eval(s):
     if sys.version_info[0] >= 3:
-        return eval(s)
+        return ast.literal_eval(s)
     
     node = ast.parse(s, mode='eval')
 
