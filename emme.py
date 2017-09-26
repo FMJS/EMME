@@ -285,11 +285,11 @@ def unmatched_analysis(config):
     if config.only_model:
         return 0
 
-    programs = analyzer.analyze_constraints(strmodel, \
-                                            config.jsengine, \
-                                            config.runs, \
-                                            config.threads, \
-                                            config.outprogram+".js")
+    analyzer.analyze_constraints(strmodel, \
+                                 config.jsengine, \
+                                 config.runs, \
+                                 config.threads, \
+                                 config.outprogram+".js")
 
     return 0
     
