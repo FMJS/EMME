@@ -8,9 +8,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ast
-import operator
-import sys
 import re
 from six.moves import range
 from asteval import Interpreter
