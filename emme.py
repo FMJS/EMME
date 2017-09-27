@@ -633,6 +633,13 @@ def main(args):
     if config.unmatched and not config.jsengine:
         Logger.error("JavaScript engine not specified")
         return 1
+
+    if not config.use_alloy:
+        try:
+            import CVC4
+        except Exception:
+            Logger.error("Error importing CVC4 module")
+            return 1
     
     if args.synth and args.best:
         config.hybrid = True

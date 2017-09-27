@@ -13,6 +13,7 @@ import operator
 import sys
 import re
 from six.moves import range
+from asteval import Interpreter
 
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.utils import values_from_int, values_from_float, float_from_values, int_from_values
@@ -54,43 +55,7 @@ RELATIONS.append(AO)
 RELATIONS.append(SW)
 
 def arit_eval(s):
-    if sys.version_info[0] >= 3:
-        return eval(s)
-    
-    node = ast.parse(s, mode='eval')
-
-    def _eval(node):
-
-        binOps = {
-            ast.Add: operator.add,
-            ast.Sub: operator.sub,
-            ast.Mult: operator.mul,
-            ast.Div: operator.div,
-            ast.Mod: operator.mod
-        }
-
-        cmpOps = {
-            ast.Eq: operator.eq,
-            ast.Lt: operator.lt,
-            ast.LtE: operator.le,
-            ast.Gt: operator.gt,
-            ast.GtE: operator.ge
-        }
-        
-        if isinstance(node, ast.Expression):
-            return _eval(node.body)
-        elif isinstance(node, ast.Str):
-            return node.s
-        elif isinstance(node, ast.Num):
-            return node.n
-        elif isinstance(node, ast.Compare):
-            return cmpOps[type(node.ops[0])](_eval(node.left), _eval(list(node.comparators)[0]))
-        elif isinstance(node, ast.BinOp):
-            return binOps[type(node.op)](_eval(node.left), _eval(node.right))
-        else:
-            raise Exception('Unsupported type {}'.format(node))
-
-    return _eval(node.body)
+    return Interpreter()(s)
 
 class Executions(object):
     program = None

@@ -8,7 +8,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import CVC4
 import re
 import os
 from six.moves import range
@@ -16,14 +15,18 @@ from multiprocessing import Process, Manager
 from ecmasab.logger import Logger
 import subprocess
 
-from CVC4 import Options, \
-    ExprManager, \
-    ParserBuilder, \
-    SmtEngine, \
-    SExpr, \
-    CheckSatCommand, \
-    AssertCommand
-
+try:
+    import CVC4
+    from CVC4 import Options, \
+        ExprManager, \
+        ParserBuilder, \
+        SmtEngine, \
+        SExpr, \
+        CheckSatCommand, \
+        AssertCommand
+except Exception:
+    pass
+    
 from dd.autoref import BDD
 
 class ModelsManager(object):

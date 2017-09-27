@@ -19,11 +19,13 @@ from ecmasab.parsing import BeParser
 from ecmasab.execution import Memory_Event, Relation, Executions, Execution, \
     RELATIONS, AO, RF, RBF, MO, HB, SW
 from ecmasab.preprocess import QuantPreprocessor
-
 from multiprocessing import Process, Manager
-
-from CVC4 import EQUAL, AND, NOT
 from litmus import Config, run_litmus
+
+try:
+    from CVC4 import EQUAL, AND, NOT
+except Exception:
+    pass
 
 LABELLING_VAR_PREF = "L_"
 
