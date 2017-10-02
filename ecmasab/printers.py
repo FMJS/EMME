@@ -509,14 +509,15 @@ class JST262_Printer(EPrinter):
         ret += (ind*1)+"}\n"
         ret += "}\n\n"
         
-        if self.asserts and executions:
+        if executions:
             ret += "report.sort();\n"
             ret += "report = report.join(\";\");\n"
             ret += "var outputs = [];\n"
             
             execs = self.compute_possible_executions(program, executions)
             ret += "\n".join(["outputs[%s] = \"%s\";"%(execs.index(x), x) for x in execs])
-            ret += "\nassert(-1 != outputs.indexOf(report));\n"
+            if self.asserts:
+                ret += "\nassert(-1 != outputs.indexOf(report));\n"
 
         if executions and self.exp_outputs:
             linesize = 80
@@ -692,7 +693,7 @@ class JST262_Printer(EPrinter):
         ret_ev = "".join("%s; "%x for x in [var_def,mop,prt] if x is not None)+"\n"
         
         if self.add_wait:
-            ret_ev = ("for (i = 0; i < %s; i+=Math.random()*10); "%(self.wait_cycles)) + ret_ev
+            ret_ev = ("for (__ind__ = 0; __ind__ < %s; __ind__+=Math.random()*10); "%(self.wait_cycles)) + ret_ev
 
         return ret_ev
     
@@ -703,15 +704,20 @@ class JST262_JSC_Printer(JST262_Printer):
     str_report = True
     exp_outputs = True
     agent_prefix = "$"
-    or_zero = True
+    or_zero = False
     asserts = True
+    add_wait = True
+    wait_cycles = 10000
 
 class JST262_SM_Printer(JST262_Printer):
     NAME = "JS-TEST262-SM"
     DESC = "\tTEST262 format (Accepted by SM)"
     str_report = True
     exp_outputs = True
+    or_zero = False
     asserts = True
+    add_wait = True
+    wait_cycles = 10000
 
 class JST262_V8_Printer(JST262_Printer):
     NAME = "JS-TEST262-V8"
@@ -722,6 +728,7 @@ class JST262_V8_Printer(JST262_Printer):
     add_wait = True
     wait_cycles = 10000
     only_reads_reports = True
+    or_zero = False
 
 class JST262_WASM_V8_Printer(JST262_Printer):
     NAME = "JS-TEST262-W-V8"
