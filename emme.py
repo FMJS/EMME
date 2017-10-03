@@ -104,7 +104,7 @@ class Config(object):
         self.sat = False
         self.only_model = False
         self.skip_solving = False
-        self.jsprinter = None
+        self.jsprinter = PrintersFactory.get_default().NAME
         self.graphviz = None
         self.printing_relations = ",".join([RBF,HB,SW])
         self.jsdir = None
@@ -475,10 +475,8 @@ def main(args):
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
 
-    config = Config()
-    
     jsprinters = [" - \"%s\": %s"%(x.NAME, x.get_desc()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
-    config.jsprinter = PrintersFactory.get_default().NAME
+    config = Config()
     
     # Files generation
     
