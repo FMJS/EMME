@@ -410,21 +410,22 @@ class JSV8Printer(EPrinter):
 class JST262_Printer(EPrinter):
     NAME = "JS-TEST262"
     DESC = "TEST262 format (Standard)"
-
     str_report = True
-    exp_outputs = True
-    asserts = True
-    add_wait = True
-    wait_cycles = 10000
-    only_reads_reports = True
-    or_zero = False
-    use_asm = False
-    agent_prefix = "$262"
-
+    exp_outputs = False
+    or_zero = True
 
     waiting_time = 0
+    agent_prefix = "$262"
+
+    asserts = True
     indent = "   "
-    
+
+    use_asm = False
+
+    add_wait = False
+    wait_cycles = 10000
+    only_reads_reports = False
+
     def print_execution(self, program, interp, models=False):
         reads = []
         output = ""
