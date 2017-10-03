@@ -414,12 +414,13 @@ class JST262_Printer(EPrinter):
     str_report = True
     exp_outputs = True
     asserts = True
-    add_wait = False
+    add_wait = True
     wait_cycles = 10000
     only_reads_reports = True
     or_zero = False
     use_asm = False
     agent_prefix = "$262"
+
 
     waiting_time = 0
     indent = "   "
