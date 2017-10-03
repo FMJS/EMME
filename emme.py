@@ -95,6 +95,8 @@ class Config(object):
     time = None
     
     def __init__(self):
+        PrintersFactory.init_printers()
+
         self.inputfile = None
         self.preproc = CPP
         self.expand_bounded_sets = True
