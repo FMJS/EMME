@@ -19,7 +19,7 @@ import subprocess
 from argparse import RawTextHelpFormatter
 
 from ecmasab.parsing import BeParser
-from ecmasab.printers import JST262_V8_Printer, DotPrinter, PrintersFactory, PrinterType, BePrinter
+from ecmasab.printers import DotPrinter, PrintersFactory, PrinterType, BePrinter
 from ecmasab.encoders import CVC4Encoder, AlloyEncoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
@@ -104,7 +104,7 @@ class Config(object):
         self.sat = False
         self.only_model = False
         self.skip_solving = False
-        self.jsprinter = JST262_V8_Printer().NAME
+        self.jsprinter = None
         self.graphviz = None
         self.printing_relations = ",".join([RBF,HB,SW])
         self.jsdir = None
@@ -477,8 +477,9 @@ def main(args):
 
     config = Config()
     
-    jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
-
+    jsprinters = [" - \"%s\": %s"%(x.NAME, x.get_desc()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
+    config.jsprinter = PrintersFactory.get_default().NAME
+    
     # Files generation
     
     parser.set_defaults(jsprinter=config.jsprinter)

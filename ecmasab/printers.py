@@ -10,13 +10,18 @@
 
 import re
 import json
+import configparser
 from six.moves import range
 
 from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN
 from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.utils import compress_string
+from ecmasab.utils import compress_string, auto_convert
+
+PRINTERS_FILE = "printers.ini"
+DEFAULT = "DEFAULT"
+TYPE = "type"
 
 LICENSE = ""
 LICENSE += "// Copyright 2017 Cristian Mattarei\n"
@@ -97,29 +102,48 @@ class PrinterType(object):
     
 class PrintersFactory(object):
     printers = []
+    default_printer = None
 
     # Additional printers should be registered here #
     @staticmethod
     def init_printers():
-        PrintersFactory.register_printer(JST262_Printer())
-        
-        PrintersFactory.register_printer(JST262_V8_Printer())
-        PrintersFactory.register_printer(JST262_SM_Printer())
-        PrintersFactory.register_printer(JST262_JSC_Printer())
-        
-        PrintersFactory.register_printer(JSV8Printer())
-
-        PrintersFactory.register_printer(JST262_WASM_V8_Printer())
-        PrintersFactory.register_printer(JST262_WASM_JSC_Printer())
+        PrintersFactory.register_printer(JST262_Printer(), True)
 
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
         PrintersFactory.register_printer(JSONPrinter())
-    
+
+        PrintersFactory.load_printers()
+
     @staticmethod
-    def register_printer(printer):
+    def load_printers():
+        config = configparser.ConfigParser()
+        config.optionxform=str
+        with open(PRINTERS_FILE, "r") as f:
+            config.read_string(u""+f.read())
+
+        for value in config:
+            if value == DEFAULT: continue
+            printer = config[value]
+            if TYPE in printer:
+                pinstance = globals()[printer[TYPE]]()
+                for attr in printer:
+                    if attr == TYPE: continue
+                    setattr(pinstance, attr, auto_convert(printer[attr]))
+                PrintersFactory.register_printer(pinstance)
+                if (DEFAULT in printer) and auto_convert(printer[DEFAULT]):
+                    PrintersFactory.default_printer = pinstance
+
+    @staticmethod
+    def get_default():
+        return PrintersFactory.default_printer
+                
+    @staticmethod
+    def register_printer(printer, default=False):
         if printer.NAME not in dict(PrintersFactory.printers):
             PrintersFactory.printers.append((printer.NAME, printer))
+            if default:
+                PrintersFactory.default_printer = printer
 
     @staticmethod    
     def printer_by_name(name):
@@ -182,10 +206,13 @@ class EPrinter(object):
 
     def get_extension(self):
         return self.EXT
+
+    def get_desc(self):
+        return "\t"+self.DESC
         
 class JSV8Printer(EPrinter):
     NAME = "JS-V8"
-    DESC = "\t\tGoogle V8 format"
+    DESC = "\tGoogle V8 format"
     EXT = ".js"
 
     def print_execution(self, program, interp, models=False):
@@ -382,23 +409,22 @@ class JSV8Printer(EPrinter):
 
 class JST262_Printer(EPrinter):
     NAME = "JS-TEST262"
-    DESC = "\tTEST262 format (Standard)"
-    str_report = True
-    exp_outputs = False
-    or_zero = True
+    DESC = "TEST262 format (Standard)"
 
-    waiting_time = 0
+    str_report = True
+    exp_outputs = True
+    asserts = True
+    add_wait = True
+    wait_cycles = 10000
+    only_reads_reports = True
+    or_zero = False
+    use_asm = False
     agent_prefix = "$262"
 
-    asserts = True
+
+    waiting_time = 0
     indent = "   "
-
-    use_asm = False
-
-    add_wait = False
-    wait_cycles = 10000
-    only_reads_reports = False
-
+    
     def print_execution(self, program, interp, models=False):
         reads = []
         output = ""
@@ -697,56 +723,6 @@ class JST262_Printer(EPrinter):
 
         return ret_ev
     
-
-class JST262_JSC_Printer(JST262_Printer):
-    NAME = "JS-TEST262-JSC"
-    DESC = "\tTEST262 format (Accepted by JSC)"
-    str_report = True
-    exp_outputs = True
-    agent_prefix = "$"
-    or_zero = False
-    asserts = True
-    add_wait = True
-    wait_cycles = 10000
-
-class JST262_SM_Printer(JST262_Printer):
-    NAME = "JS-TEST262-SM"
-    DESC = "\tTEST262 format (Accepted by SM)"
-    str_report = True
-    exp_outputs = True
-    or_zero = False
-    asserts = True
-    add_wait = True
-    wait_cycles = 10000
-
-class JST262_V8_Printer(JST262_Printer):
-    NAME = "JS-TEST262-V8"
-    DESC = "\tTEST262 format (Accepted by V8)"
-    str_report = True
-    exp_outputs = True
-    asserts = True
-    add_wait = True
-    wait_cycles = 10000
-    only_reads_reports = True
-    or_zero = False
-
-class JST262_WASM_V8_Printer(JST262_Printer):
-    NAME = "JS-TEST262-W-V8"
-    DESC = "\tTEST262 format with WASM (Accepted by V8)"
-    str_report = False
-    exp_outputs = True
-    use_asm = True
-    asserts = True
-
-class JST262_WASM_JSC_Printer(JST262_Printer):
-    NAME = "JS-TEST262-W-JSC"
-    DESC = "\tTEST262 format with WASM (Accepted by JSC)"
-    str_report = True
-    exp_outputs = True
-    agent_prefix = "$"
-    use_asm = True
-    asserts = True
-    
 class DotPrinter(EPrinter):
     NAME = "DOT"
     TYPE = PrinterType.GRAPH
@@ -964,7 +940,7 @@ class DotPrinter(EPrinter):
 
 class JSONPrinter(EPrinter):
     NAME = "JSON"
-    DESC = "\t\tJSON format"
+    DESC = "\tJSON format"
     TYPE = PrinterType.JSON
     float_pri_js = "%.2f"
     EXT = ".json"
@@ -1016,7 +992,7 @@ class JSONPrinter(EPrinter):
     
 class BePrinter(EPrinter):
     NAME = "BE"
-    DESC = "\t\tBounded Execution format"
+    DESC = "\tBounded Execution format"
     TYPE = PrinterType.BEXEC
     EXT = ".bex"
 
