@@ -145,7 +145,7 @@ def be_parsing(example):
     parser = BeParser()
     program = parser.program_from_string(strp)
 
-    beprinter = PrintersFactory.printer_by_name(BePrinter().NAME)
+    beprinter = PrintersFactory.printer_by_name(BePrinter().get_name())
     beprogram = beprinter.print_program(program)
     strp = re.sub("\n+","\n",strp)
     strp = re.sub("//.*\n","",strp)

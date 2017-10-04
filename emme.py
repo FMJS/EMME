@@ -106,7 +106,7 @@ class Config(object):
         self.sat = False
         self.only_model = False
         self.skip_solving = False
-        self.jsprinter = PrintersFactory.get_default().NAME
+        self.jsprinter = PrintersFactory.get_default().get_name()
         self.graphviz = None
         self.printing_relations = ",".join([RBF,HB,SW])
         self.jsdir = None
@@ -343,7 +343,7 @@ def synth_program(config):
 
     Logger.msg("Generating equivalent programs... ", 0)
         
-    printer = PrintersFactory.printer_by_name(BePrinter.NAME)
+    printer = PrintersFactory.printer_by_name(BePrinter.get_name())
     filename = (config.inputfile.split("/")[-1]).split(".")[0]
     
     for i in range(len(programs)):
@@ -398,7 +398,7 @@ def analyze_program(config):
         
     # Generation of the JS litmus test #
     pprinter = PrintersFactory.printer_by_name(config.jsprinter)
-    dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
+    dprinter = PrintersFactory.printer_by_name(DotPrinter().get_name())
     dprinter.set_printing_relations(config.printing_relations)
 
     prefix = config.prefix
@@ -477,7 +477,7 @@ def main(args):
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
 
-    jsprinters = [" - \"%s\": %s"%(x.NAME, x.get_desc()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
+    jsprinters = [" - \"%s\": %s"%(x.get_name(), x.get_desc()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
     config = Config()
     
     # Files generation
@@ -626,7 +626,7 @@ def main(args):
     config.unmatched = args.unmatched
     config.time = args.time
     
-    if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
+    if args.jsprinter in [str(x.get_name()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
         config.jsprinter = args.jsprinter
     else:
         Logger.error("Printer \"%s\" not found"%(args.jsprinter))
