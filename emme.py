@@ -527,9 +527,9 @@ def main(args):
     
     # Solvers selection
 
-    parser.set_defaults(use_alloy=False)
-    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
-                        help="relies on Alloy Analyzer instead of CVC4. (Default is \"%s\")"%False)
+    parser.set_defaults(use_cvc4=False)
+    parser.add_argument('-c', '--use-cvc4', dest='use_cvc4', action='store_true',
+                        help="relies on CVC4 instead of Alloy Analyzer. (Default is \"%s\")"%False)
 
     parser.set_defaults(best=False)
     parser.add_argument('-b', '--best', dest='best', action='store_true',
@@ -635,7 +635,7 @@ def main(args):
     config.jsengine = args.jsengine
     config.runs = args.runs
     config.nexecs = args.nexecs
-    config.use_alloy = args.use_alloy
+    config.use_alloy = not args.use_cvc4
     config.unmatched = args.unmatched
     config.time = args.time
     
