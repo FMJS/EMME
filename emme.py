@@ -509,7 +509,7 @@ def main(args):
     
     parser.set_defaults(relations=config.printing_relations)
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
-                        help='a (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
+                        help='a (comma separated) list of relations to consider in the graphviz file.\nKeyword \"%s\" means all.'%ALL)
 
     parser.set_defaults(prefix=None)
     parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
@@ -524,6 +524,14 @@ def main(args):
     parser.set_defaults(unmatched=False)
     parser.add_argument('--unmatched', dest='unmatched', action='store_true',
                         help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(jsengine=None)
+    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
+                        help='the command used to call the JavaScript engine, to use with \"--unmatched\".')
+
+    parser.set_defaults(runs=10)
+    parser.add_argument('-n', '--runs', metavar='runs', type=str,
+                        help='number of runs for the unmatched outputs analysis, to use with \"--unmatched\".\n(Default is \"10\")')
     
     # Solvers selection
 
@@ -578,14 +586,6 @@ def main(args):
     parser.set_defaults(time=False)
     parser.add_argument('-t', '--time', dest='time', action='store_true',
                         help="enables time debugging setup. (Default is \"%s\")"%False)
-    
-    parser.set_defaults(jsengine=None)
-    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
-                        help='the command used to call the JavaScript engine.')
-
-    parser.set_defaults(runs=10)
-    parser.add_argument('-n', '--runs', metavar='runs', type=str,
-                       help='number of runs for the unmatched outputs analysis. (Default is \"10\")')
     
     parser.set_defaults(no_expand_bounded_sets=False)
     parser.add_argument('--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
