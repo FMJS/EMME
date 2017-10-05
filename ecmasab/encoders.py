@@ -381,7 +381,7 @@ class AlloyEncoder(Encoder):
         ret += "}"
         return ret
     
-    def print_run_condition(self, program):
+    def print_run_condition(self, program, labelling=False):
         ret = []
 
         locs = self.__get_locations(program)
@@ -391,7 +391,7 @@ class AlloyEncoder(Encoder):
         ret.append("3 operation_type")
         ret.append("2 active_type")
 
-        if program.has_conditions():
+        if program.has_conditions() or labelling:
             ret.append("2 boolean")
         
         ret.append("%s mem_events"%(len(program.get_events())))
@@ -430,10 +430,12 @@ class AlloyEncoder(Encoder):
 
         ret = " and ".join(outrelations+conds)
         ret = ret.replace("{}", "none")
-        return ret
+        return "(%s)"%ret
 
     def __print_relation(self, relation):
         tuples = relation.tuples
+        if len(tuples) == 0:
+            return "no %s.rel"%self.rel_mapping[relation.name]
         return "%s.rel = (%s)"%(self.rel_mapping[relation.name], " + ".join([self.__print_tuple(x) for x in tuples]))
 
     def __print_tuple(self, tup):

@@ -769,7 +769,7 @@ class EquivalentExecutionSynthetizerCVC4(object):
 
         return eq_progs
     
-class ConstraintAnalyzerManager(ModelsManager):
+class CVC4ConstraintAnalyzerManager(ModelsManager):
 
     encoder = None
     labelling_vars = None
@@ -804,23 +804,89 @@ class ConstraintAnalyzerManager(ModelsManager):
     def solutions_separators(self):
         pass
 
+class AlloyConstraintAnalyzerManager(ModelsManager):
+
+    encoder = None
+    labelling_vars = None
+    id_blocking = 0
+    
+    def __init(self):
+        self.encoder = AlloyEncoder()
+    
+    def compute_from_smt(self, model):
+        AlloyConstraintAnalyzerManager.id_blocking += 1
+
+        blocking = []
+        bddmodel = []
+        for var in self.labelling_vars:
+            value = self.__get_condition(model, var)
+            if value is not None:
+                blocking.append("(%s.value = %s)"%(var, value))
+                bddmodel.append("(%s%s)"%("~" if value == "TRUE" else "", var))
+            
+        blocking_str = "fact block_smt_%s {not (%s)}\n"%(AlloyConstraintAnalyzerManager.id_blocking, " and ".join(blocking))
+        Logger.log("Blocking: %s"%(blocking_str), 2)
+        return (blocking_str, (" and ".join(blocking), " & ".join(bddmodel)))
+
+    def __get_condition(self, model, condition):
+        for el in model:
+            if ("this/%s<:value="%condition in el):
+                return str("TRUE" in el).upper()
+        return None
+    
+    def compute_from_sharedobjs(self, shared_objs):
+
+        ret = []
+        idx = 0
+        for el in shared_objs:
+            idx += 1
+            ret.append("fact block_smt_%s {not (%s)}\n"%(idx, el[0]))
+
+        return "\n".join(ret)
+
+    def write_models(self, shared_objs, done):
+        pass
+
+    def load_models(self):
+        return []
+    
+    def solutions_separators(self):
+        pass
+    
     
 class ConstraintsAnalyzer(object):
 
     c4_solver = None
+    c4_encoder = None
+
+    al_solver = None
+    al_encoder = None
+    
     bsolver = None
-    encoder = None
 
     def set_models_file(self, models_file):
-        self.vexecsmanager.models_file = models_file
+        self.c4_consamanager.models_file = models_file
+        self.al_consamanager.models_file = models_file
     
     def __init__(self):
         self.c4_solver = CVC4Solver()
-        self.bsolver = BDDSolver()
-        self.vexecsmanager = ConstraintAnalyzerManager()
-        self.encoder = CVC4Encoder()
+        self.c4_encoder = CVC4Encoder()
 
-    def analyze_constraints(self, model, jsengine, runs, threads, jsprogram):
+        self.al_solver = AlloySolver()
+        self.al_encoder = AlloyEncoder()
+        
+        self.bsolver = BDDSolver()
+        self.c4_consamanager = CVC4ConstraintAnalyzerManager()
+        self.al_consamanager = AlloyConstraintAnalyzerManager()
+
+
+    def analyze_constraints_cvc4(self, program, model, jsengine, runs, threads, jsprogram):
+        return self.analyze_constraints(program, model, jsengine, runs, threads, jsprogram, False)
+
+    def analyze_constraints_alloy(self, program, model, jsengine, runs, threads, jsprogram):
+        return self.analyze_constraints(program, model, jsengine, runs, threads, jsprogram, True)
+        
+    def analyze_constraints(self, program, model, jsengine, runs, threads, jsprogram, use_alloy):
         matched = []
         unmatched = []
 
@@ -832,15 +898,27 @@ class ConstraintsAnalyzer(object):
         config.silent = True
         config.models = True
 
-        labelling_vars = [x.split(" ")[0] for x in model.split("\n") \
-                          if x[:len(LABELLING_VAR_PREF)] == LABELLING_VAR_PREF]
+        if use_alloy:
+            labelling_vars = [y[2] for y in [x.split(" ") for x in model.split("\n") if len(x.split(" "))>2] \
+                              if y[2][:len(LABELLING_VAR_PREF)] == LABELLING_VAR_PREF]
+        else:
+            labelling_vars = [x.split(" ")[0] for x in model.split("\n") \
+                              if x[:len(LABELLING_VAR_PREF)] == LABELLING_VAR_PREF]
+        
         if len(labelling_vars) == 0:
             Logger.error("No labelling vars defined")
             return None
 
-        self.vexecsmanager.labelling_vars = labelling_vars
-        
+        if use_alloy:
+            self.al_consamanager.labelling_vars = labelling_vars
+        else:
+            self.c4_consamanager.labelling_vars = labelling_vars
+            
         (matched, unmatched) = run_litmus(config)
+
+        parser = BeParser()
+        mexecs = parser.executions_from_string("\n".join(matched), program)
+        uexecs = parser.executions_from_string("\n".join(unmatched), program)
         
         Logger.log(" -> Found %s matched models"%(len(matched)), 0)
         Logger.log(" -> Found %s unmatched models"%(len(unmatched)), 0)
@@ -848,26 +926,44 @@ class ConstraintsAnalyzer(object):
         if len(unmatched) == 0:
             Logger.error("No unmatched models")
             return None
+
+        rels = [x for x in RELATIONS if x != AO]
         
-        matched = self.encoder.big_or(matched)
-        unmatched = self.encoder.big_or(unmatched)
-        
-        vmodel = "%s\n%s"%(model, self.encoder.assert_formula_nl(matched))
+        matched = self.al_encoder.print_assert_exl_execs(mexecs, rels) if use_alloy else \
+                  self.c4_encoder.print_assert_exl_execs(mexecs, rels)
+        unmatched = self.al_encoder.print_assert_exl_execs(uexecs, rels) if use_alloy else \
+                    self.c4_encoder.print_assert_exl_execs(uexecs, rels)
+            
         objs = []
         Logger.log("\nMatched models analysis", 0)
         Logger.msg("Solving... ", 0)
-        objs = self.c4_solver.compute_models(vmodel, self.vexecsmanager, objs)
-        mmodels = " | ".join(objs)
+        
+        if use_alloy:
+            vmodel = "\n".join([model, matched, self.al_encoder.print_run_condition(program, True)])
+            objs = self.al_solver.compute_models(vmodel, self.al_consamanager, objs)
+            mmodels = " | ".join([x[1] for x in objs])
+        else:
+            vmodel = "%s\n%s"%(model, matched)
+            objs = self.c4_solver.compute_models(vmodel, self.c4_consamanager, objs)
+            mmodels = " | ".join(objs)
+            
         Logger.log(" DONE", 0)
         mmodels = self.bsolver.simplify(mmodels, True)
         Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(mmodels), " | \n".join(mmodels)), 0)
 
-        vmodel = "%s\n%s"%(model, self.encoder.assert_formula_nl(unmatched))
         objs = []
         Logger.log("Unmatched models analysis", 0)
         Logger.msg("Solving... ", 0)
-        objs = self.c4_solver.compute_models(vmodel, self.vexecsmanager, objs)
-        nmodels = " | ".join(objs)
+        
+        if use_alloy:
+            vmodel = "\n".join([model, unmatched, self.al_encoder.print_run_condition(program, True)])
+            objs = self.al_solver.compute_models(vmodel, self.al_consamanager, objs)
+            nmodels = " | ".join([x[1] for x in objs])
+        else:
+            vmodel = "%s\n%s"%(model, unmatched)
+            objs = self.c4_solver.compute_models(vmodel, self.c4_consamanager, objs)
+            nmodels = " | ".join(objs)
+            
         Logger.log(" DONE", 0)
         nmodels = self.bsolver.simplify(nmodels, True)
         Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(nmodels), " | \n".join(nmodels)), 0)
@@ -882,3 +978,4 @@ class ConstraintsAnalyzer(object):
         Logger.log(" -> Found %s labelling solutions\n%s"%(len(diffmodels), " | \n".join(diffmodels)), 0)
         
         return (mmodels, nmodels, diffmodels)
+    

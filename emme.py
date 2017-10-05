@@ -281,18 +281,31 @@ def unmatched_analysis(config):
     program = parse_program(config)
     
     Logger.msg("Generating model... ", 0)
-    strmodel = generate_cvc_model(config, program)
+
+    if config.use_alloy:
+        strmodel = generate_alloy_model(config, program)
+    else:
+        strmodel = generate_cvc_model(config, program)
+        
     Logger.log("DONE", 0)
 
     if config.only_model:
         return 0
 
-    analyzer.analyze_constraints(strmodel, \
-                                 config.jsengine, \
-                                 config.runs, \
-                                 config.threads, \
-                                 config.outprogram+".js")
-
+    if config.use_alloy:
+        analyzer.analyze_constraints_alloy(program, \
+                                           strmodel, \
+                                           config.jsengine, \
+                                           config.runs, \
+                                           config.threads, \
+                                           config.outprogram+".js")
+    else:
+        analyzer.analyze_constraints_cvc4(program, \
+                                          strmodel, \
+                                          config.jsengine, \
+                                          config.runs, \
+                                          config.threads, \
+                                          config.outprogram+".js")
     return 0
     
 def synth_program(config):
