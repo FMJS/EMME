@@ -251,6 +251,8 @@ class BDDSolver(object):
         pass
     
     def simplify(self, strformula, lst=False):
+        if (strformula is None) or (strformula == ""):
+            return [] if lst else None
         variables = re.sub('[~\&\|\(\)]',' ',strformula)
         variables = re.sub(' +',' ',variables.strip())
         variables = variables.split(" ")
@@ -275,6 +277,9 @@ class BDDSolver(object):
         return " | ".join(conj)
 
     def support_exist(self, expr1, expr2, lst=False):
+        if ((expr1 is None) or (expr1 == "")) or ((expr2 is None) or (expr2 == "")):
+            return [] if lst else None
+
         variables = re.sub('[~\&\|\(\)]',' ',expr1+expr2)
         variables = re.sub(' +',' ',variables.strip())
         variables = variables.split(" ")
@@ -378,7 +383,13 @@ class AlloySolver(object):
 
         self.__quit_solvers()
         return ret
-        
+
+    def compute_models(self, model, blocking_manager, shared_objects=None):
+        self.__init_solvers(1)
+        ret = self.__solve_nsat(model, -1, blocking_manager, shared_objects)
+        self.__quit_solvers()
+        return ret
+    
     def __compute_models(self, model, solver, num, blocking_manager, constraints=None, shared_objects=None):
         if constraints:
             model += "\n"+constraints
@@ -430,6 +441,11 @@ class AlloySolver(object):
             os.remove("/tmp/%s"%f)
             
     def solve_one(self, model, solver):
+        if Logger.level(3):
+            linenum = 0
+            for line in model.split("\n"):
+                linenum += 1
+                Logger.log("%s: %s"%(linenum, line), 3)
         solver.stdin.write(('%s\nreset\n'%(model)).encode())
         solver.stdin.flush()
         out = ""

@@ -281,18 +281,31 @@ def unmatched_analysis(config):
     program = parse_program(config)
     
     Logger.msg("Generating model... ", 0)
-    strmodel = generate_cvc_model(config, program)
+
+    if config.use_alloy:
+        strmodel = generate_alloy_model(config, program)
+    else:
+        strmodel = generate_cvc_model(config, program)
+        
     Logger.log("DONE", 0)
 
     if config.only_model:
         return 0
 
-    analyzer.analyze_constraints(strmodel, \
-                                 config.jsengine, \
-                                 config.runs, \
-                                 config.threads, \
-                                 config.outprogram+".js")
-
+    if config.use_alloy:
+        analyzer.analyze_constraints_alloy(program, \
+                                           strmodel, \
+                                           config.jsengine, \
+                                           config.runs, \
+                                           config.threads, \
+                                           config.outprogram+".js")
+    else:
+        analyzer.analyze_constraints_cvc4(program, \
+                                          strmodel, \
+                                          config.jsengine, \
+                                          config.runs, \
+                                          config.threads, \
+                                          config.outprogram+".js")
     return 0
     
 def synth_program(config):
@@ -496,7 +509,7 @@ def main(args):
     
     parser.set_defaults(relations=config.printing_relations)
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
-                        help='a (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
+                        help='a (comma separated) list of relations to consider in the graphviz file.\nKeyword \"%s\" means all.'%ALL)
 
     parser.set_defaults(prefix=None)
     parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
@@ -511,12 +524,20 @@ def main(args):
     parser.set_defaults(unmatched=False)
     parser.add_argument('--unmatched', dest='unmatched', action='store_true',
                         help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(jsengine=None)
+    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
+                        help='the command used to call the JavaScript engine, to use with \"--unmatched\".')
+
+    parser.set_defaults(runs=10)
+    parser.add_argument('-n', '--runs', metavar='runs', type=str,
+                        help='number of runs for the unmatched outputs analysis, to use with \"--unmatched\".\n(Default is \"10\")')
     
     # Solvers selection
 
-    parser.set_defaults(use_alloy=False)
-    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
-                        help="relies on Alloy Analyzer instead of CVC4. (Default is \"%s\")"%False)
+    parser.set_defaults(use_cvc4=False)
+    parser.add_argument('-c', '--use-cvc4', dest='use_cvc4', action='store_true',
+                        help="relies on CVC4 instead of Alloy Analyzer. (Default is \"%s\")"%False)
 
     parser.set_defaults(best=False)
     parser.add_argument('-b', '--best', dest='best', action='store_true',
@@ -566,14 +587,6 @@ def main(args):
     parser.add_argument('-t', '--time', dest='time', action='store_true',
                         help="enables time debugging setup. (Default is \"%s\")"%False)
     
-    parser.set_defaults(jsengine=None)
-    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
-                        help='the command used to call the JavaScript engine.')
-
-    parser.set_defaults(runs=10)
-    parser.add_argument('-n', '--runs', metavar='runs', type=str,
-                       help='number of runs for the unmatched outputs analysis. (Default is \"10\")')
-    
     parser.set_defaults(no_expand_bounded_sets=False)
     parser.add_argument('--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
                         help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%False)
@@ -622,7 +635,7 @@ def main(args):
     config.jsengine = args.jsengine
     config.runs = args.runs
     config.nexecs = args.nexecs
-    config.use_alloy = args.use_alloy
+    config.use_alloy = not args.use_cvc4
     config.unmatched = args.unmatched
     config.time = args.time
     
