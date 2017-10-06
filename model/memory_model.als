@@ -178,6 +178,14 @@ one sig FALSE extends boolean{}
 one sig L_RF_implies_HB {value: boolean}
 fact L_RF_implies_HB_def {(L_RF_implies_HB.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (RF [er,ew] => HB [ew,er])))}
 
+one sig L_HB_implies_RF {value: boolean}
+fact L_HB_implies_RF_def {(L_HB_implies_RF.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (HB [er,ew] => RF [ew,er])))}
+
+one sig L_RF_implies_SW {value: boolean}
+fact L_RF_implies_SW_def {(L_RF_implies_SW.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (RF [er,ew] => SW [ew,er])))}
+
+one sig L_SW_implies_RF {value: boolean}
+fact L_SW_implies_RF_def {(L_SW_implies_RF.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (SW [er,ew] => RF [ew,er])))}
 
 one sig L_SW4 {value: boolean}
 one sig L_SW4c {value: boolean}
