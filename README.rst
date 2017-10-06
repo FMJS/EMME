@@ -1,7 +1,7 @@
 EMME: ECMAScript Memory Model Evaluator
 ========================
     
-This tools provides an SMT-based verification for JavaScript programs
+This tools provides a SAT/SMT-based verification for JavaScript programs
 with shared array memory access (i.e., SharedArrayBuffer).
 
 `Learn more <https://github.com/FMJS/emme>`_.

@@ -187,7 +187,6 @@ fact L_RF_implies_SW_def {(L_RF_implies_SW.value = TRUE) <=> (all ew,er : mem_ev
 one sig L_SW_implies_RF {value: boolean}
 fact L_SW_implies_RF_def {(L_SW_implies_RF.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (SW [er,ew] => RF [ew,er])))}
 
-
 one sig L_SW4 {value: boolean}
 one sig L_SW4c {value: boolean}
 one sig L_SW4d {value: boolean}

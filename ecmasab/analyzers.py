@@ -884,7 +884,6 @@ class ConstraintsAnalyzer(object):
         self.c4_consamanager = CVC4ConstraintAnalyzerManager()
         self.al_consamanager = AlloyConstraintAnalyzerManager()
 
-
     def analyze_constraints_cvc4(self, program, model, jsengine, runs, threads, jsprogram):
         return self.analyze_constraints(program, model, jsengine, runs, threads, jsprogram, False)
 
@@ -980,7 +979,7 @@ class ConstraintsAnalyzer(object):
         self.user_defined_analyses(mmodels, nmodels)
         
         return (mmodels, nmodels, diffmodels)
-
+    
     def user_defined_analyses(self, mmodels, nmodels):
         config = configparser.ConfigParser()
         config.optionxform=str
