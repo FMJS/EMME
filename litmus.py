@@ -323,6 +323,9 @@ if __name__ == "__main__":
                        help='show the total number of matches')
 
     
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
 
     args = parser.parse_args()
 

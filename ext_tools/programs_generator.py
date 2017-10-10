@@ -14,6 +14,7 @@ import argparse
 import itertools
 import sys
 import os
+import random
 
 from argparse import RawTextHelpFormatter
 
@@ -118,7 +119,7 @@ def write_program(conf, filename):
 
     return 0
 
-def generate_programs(num_events, sizes, indexes, path):
+def generate_programs(num_events, num_programs, sizes, indexes, path, en_random):
     possible_events = []
     basic_name = "sv_%dev-%0"
 
@@ -134,11 +135,22 @@ def generate_programs(num_events, sizes, indexes, path):
     count = 0
 #    name_length = int(math.log(len(confs), 10))+1
     name_length = 1
-    
+
     for word in itertools.product(possible_events, repeat=num_events):
+        if (num_programs != -1) and (count >= num_programs):
+            break
+        
         if only_writes(word[0]):
             continue
+        
+        if en_random:
+            word = random.sample(possible_events, num_events)
+        
         for ops in itertools.product(operators, repeat=(num_events-1)):
+
+            if en_random and (random.randint(0,1) == 1):
+                continue
+            
             conf = list(word)
             for i,v in enumerate(ops):
                 conf.insert(2*i+1,v)
@@ -154,6 +166,8 @@ def generate_programs(num_events, sizes, indexes, path):
                     sys.stdout.flush()            
 
                 count += 1
+                if (num_programs != -1) and (count >= num_programs):
+                    break
 
     print("\nGenerated %s programs"%(count))
     
@@ -168,6 +182,14 @@ def main(args):
     parser.add_argument('-n', '--num-events', metavar='num_events', type=int,
                        help='number of possible events. (Default is \"1\")')
 
+    parser.set_defaults(num_programs=-1)
+    parser.add_argument('-p', '--num-programs', metavar='num_programs', type=int,
+                        help='number of generated programs. (Default is all)')
+    
+    parser.set_defaults(random=False)
+    parser.add_argument('-r', '--enable-random', dest='en_random', action='store_true',
+                        help="generate random programs instead of ordered. (Default is \"%s\")"%False)
+    
     parser.set_defaults(sizes="16,32")
     parser.add_argument('-s', '--sizes', metavar='sizes', type=str, nargs='?',
                         help='comma separated list of possible sizes. (Default is \"16,32\")')
@@ -176,18 +198,24 @@ def main(args):
     parser.add_argument('-i', '--indexes', metavar='indexes', type=str,
                         help='comma separated list of possible indexes. (Default is \"0,1\")')
 
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
+    
     args = parser.parse_args(args)
         
     num_events = args.num_events
+    num_programs = args.num_programs
     sizes = [int(x) for x in args.sizes.split(",")]
     indexes = [int(x) for x in args.indexes.split(",")]
+    en_random = args.en_random
 
     path = "%s/"%(args.directory)
 
     if not os.path.exists(path):
         os.makedirs(path)
 
-    generate_programs(num_events, sizes, indexes, path)
+    generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
