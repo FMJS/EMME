@@ -135,10 +135,10 @@ def generate_programs(num_events, sizes, indexes, path):
 #    name_length = int(math.log(len(confs), 10))+1
     name_length = 1
     
-    for word in list(itertools.product(possible_events, repeat=num_events)):
+    for word in itertools.product(possible_events, repeat=num_events):
         if only_writes(word[0]):
             continue
-        for ops in list(itertools.product(operators, repeat=(num_events-1))):
+        for ops in itertools.product(operators, repeat=(num_events-1)):
             conf = list(word)
             for i,v in enumerate(ops):
                 conf.insert(2*i+1,v)
