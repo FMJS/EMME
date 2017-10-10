@@ -12,6 +12,7 @@ import os
 import re
 import random
 import math
+import configparser
 from ecmasab.solvers import CVC4Solver, AlloySolver, BDDSolver, ModelsManager
 from ecmasab.logger import Logger
 from ecmasab.encoders import CVC4Encoder, AlloyEncoder
@@ -28,6 +29,10 @@ except Exception:
     pass
 
 LABELLING_VAR_PREF = "L_"
+UNMATCHED_FILE = "configs/unmatched.ini"
+DEFAULT = "DEFAULT"
+DESCRIPTION = "description"
+FORMULA = "formula"
 
 class CVC4ValidExecsModelsManager(ModelsManager):
 
@@ -879,7 +884,6 @@ class ConstraintsAnalyzer(object):
         self.c4_consamanager = CVC4ConstraintAnalyzerManager()
         self.al_consamanager = AlloyConstraintAnalyzerManager()
 
-
     def analyze_constraints_cvc4(self, program, model, jsengine, runs, threads, jsprogram):
         return self.analyze_constraints(program, model, jsengine, runs, threads, jsprogram, False)
 
@@ -968,14 +972,31 @@ class ConstraintsAnalyzer(object):
         nmodels = self.bsolver.simplify(nmodels, True)
         Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(nmodels), " | \n".join(nmodels)), 0)
 
-        # Logger.log("Difference analysis (mmatched \\ unmatched)", 0)
-        # diffmodels = "%s & ~(%s)"%(" | ".join(mmodels), " | ".join(nmodels))
-        # diffmodels = self.bsolver.simplify(diffmodels, True)
-        # Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(diffmodels), " | \n".join(diffmodels)), 0)
-
         Logger.log("Difference analysis (exist support(matched) in unmatched)", 0)
         diffmodels = self.bsolver.support_exist(" | ".join(mmodels), " | ".join(nmodels), True)
         Logger.log(" -> Found %s labelling solutions\n%s"%(len(diffmodels), " | \n".join(diffmodels)), 0)
+
+        self.user_defined_analyses(mmodels, nmodels)
         
         return (mmodels, nmodels, diffmodels)
     
+    def user_defined_analyses(self, mmodels, nmodels):
+        config = configparser.ConfigParser()
+        config.optionxform=str
+        
+        with open(UNMATCHED_FILE, "r") as f:
+            config.read_string(u""+f.read())
+
+        analyses = []
+            
+        for value in config:
+            if value == DEFAULT: continue
+            analysis = config[value]
+            analyses.append((analysis[DESCRIPTION], analysis[FORMULA]))
+
+        for analysis in analyses:
+            Logger.log("\n"+analysis[0], 0)
+            formula = analysis[1].replace("unmatched", "{u}").replace("matched", "{m}").replace("!","~")
+            formula = formula.format(m=" | ".join(mmodels), u=" | ".join(nmodels))
+            formula = self.bsolver.simplify(formula, True)
+            Logger.log(" -> Found %s labelling solutions\n%s"%(len(formula), " | \n".join(formula)), 0)

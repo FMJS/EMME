@@ -19,7 +19,7 @@ from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T
 from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.utils import compress_string, auto_convert
 
-PRINTERS_FILE = "printers.ini"
+PRINTERS_FILE = "configs/printers.ini"
 DEFAULT = "DEFAULT"
 TYPE = "type"
 
