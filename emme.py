@@ -445,7 +445,8 @@ def analyze_program(config):
 
         outfiles = [config.outprogram]
         if config.jsdir:
-            outprogram = "%s/%s"%(config.jsdir, config.outprogram.replace("/","-"))
+            filename = config.outprogram.replace("../","").replace("/","-").replace("..","")
+            outprogram = "%s/%s"%(config.jsdir, filename)
             outfiles = [outprogram]
 
         extension = pprinter.get_extension()

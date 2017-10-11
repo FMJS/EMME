@@ -918,7 +918,11 @@ class ConstraintsAnalyzer(object):
         else:
             self.c4_consamanager.labelling_vars = labelling_vars
             
+        timer = Logger.start_timer("Run Litmus")
         (matched, unmatched) = run_litmus(config)
+        Logger.stop_timer(timer)        
+
+        timer = Logger.start_timer("Analyze output")
 
         parser = BeParser()
         mexecs = parser.executions_from_string("\n".join(matched), program)
@@ -929,6 +933,7 @@ class ConstraintsAnalyzer(object):
 
         if len(unmatched) == 0:
             Logger.error("No unmatched models")
+            Logger.stop_timer(timer)
             return None
 
         rels = [x for x in RELATIONS if x != AO]
@@ -978,6 +983,7 @@ class ConstraintsAnalyzer(object):
 
         self.user_defined_analyses(mmodels, nmodels)
         
+        Logger.stop_timer(timer)
         return (mmodels, nmodels, diffmodels)
     
     def user_defined_analyses(self, mmodels, nmodels):
