@@ -136,6 +136,9 @@ def generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
 #    name_length = int(math.log(len(confs), 10))+1
     name_length = 1
 
+    if en_random:
+        picked = set([])
+    
     for word in itertools.product(possible_events, repeat=num_events):
         if (num_programs != -1) and (count >= num_programs):
             break
@@ -144,7 +147,10 @@ def generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
             continue
         
         if en_random:
-            word = random.sample(possible_events, num_events)
+            word = None
+            while (word is None) or (str(word) in picked):
+                word = random.sample(possible_events, num_events)
+            picked.add(str(word))
         
         for ops in itertools.product(operators, repeat=(num_events-1)):
 
