@@ -143,14 +143,14 @@ def generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
         if (num_programs != -1) and (count >= num_programs):
             break
         
-        if only_writes(word[0]):
-            continue
-        
         if en_random:
             word = None
             while (word is None) or (str(word) in picked):
                 word = random.sample(possible_events, num_events)
             picked.add(str(word))
+
+        if only_writes(word[0]):
+            continue
         
         for ops in itertools.product(operators, repeat=(num_events-1)):
 
