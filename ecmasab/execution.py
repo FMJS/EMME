@@ -910,7 +910,7 @@ class Memory_Event(object):
         self.values = values_from_float(float_value, begin, end)
         self.tear = WTEAR
         self.block.update_size(end+1)
-        
+
     def set_init_values(self):
         self.address = range(0, self.block.size, 1)
         self.values = [0]*self.block.size

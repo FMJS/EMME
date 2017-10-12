@@ -35,6 +35,7 @@ LICENSE += "// See the License for the specific language governing permissions a
 LICENSE += "// limitations under the License.\n\n"
 
 FLOAT_APPROX = 4
+EXP_START = "1e+10"
 
 ASMACCESS = ""
 ASMACCESS += "let asm_memacc = `(function Module(stdlib, foreign, heap) {\n"
@@ -204,6 +205,14 @@ class EPrinter(object):
     def print_event(self, event, postfix=None):
         pass
 
+    def print_float(self, value):
+        if value > float(EXP_START):
+            return '{:.15e}'.format(value) #re.sub('[0]+e','e','{:.15e}'.format(value))
+        return (self.float_pri_js)%(float_approx(value))
+
+    def print_js_float(self, value):
+        return "%s > %s ? %s.toExponential(15) : %s%s"%(value, EXP_START, value, value, self.float_app_js)
+    
     def get_extension(self):
         return self.EXT
 
@@ -391,16 +400,16 @@ class JSV8Printer(EPrinter):
                                        event_values)
 
             if event.operation == READ:
-                approx = self.float_app_js if is_float else ""
-                    
                 mop = "%s = %s[%s]"%(event.name, \
                                      event.block.name, \
                                      addr)
 
                 if postfix:
-                    prt = "print(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
+                    prt = "print(\"%s_\"+%s+\": \"+%s)"%(event.name, postfix, \
+                                                           self.print_js_float(event.name) if is_float else event.name)
                 else:
-                    prt = "print(\"%s: \"+%s%s)"%(event.name, event.name, approx)
+                    prt = "print(\"%s: \"+%s)"%(event.name, \
+                                                  self.print_js_float(event.name) if is_float else event.name)
 
         if event.operation == READ:
             return "%s;\n"%("; ".join([var_def,mop,prt]))
@@ -437,7 +446,7 @@ class JST262_Printer(EPrinter):
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                output = ("%s: "+self.float_pri_js)%(el.name, float_approx(value))
+                output = "%s: %s"%(el.name, self.print_float(value))
             else:
                 output = "%s: %s"%(el.name, value)
             reads.append(output)
@@ -683,7 +692,7 @@ class JST262_Printer(EPrinter):
                     
             if event.operation == WRITE:
                 if is_float and event.address:
-                    event_values = self.float_pri_js%(float_approx(event_values))
+                    event_values = self.print_float(event_values)
 
                 if self.use_wasm and not is_float:
                     mop = ("(${asm_memacc}(this, {}, %s%s_sab)).store%s(%s, %s)")%("" if self.string_report else "data.", \
@@ -697,9 +706,6 @@ class JST262_Printer(EPrinter):
                                            event_values)
                     
             if event.operation == READ:
-                approx = self.float_app_js if is_float else ""
-                    
-
                 if self.use_wasm and not is_float:
                     mop = "%s = (${asm_memacc}(this, {}, %s%s_sab)).load%s(%s)"%(event.name, \
                                                                                  "" if self.string_report else "data.", \
@@ -713,9 +719,11 @@ class JST262_Printer(EPrinter):
                                            " | 0" if self.or_zero else "")
                     
                 if postfix:
-                    prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
+                    prt = "report.push(\"%s_\"+%s+\": \"+(%s))"%(event.name, postfix, \
+                                                                 self.print_js_float(event.name) if is_float else event.name)
                 else:
-                    prt = "report.push(\"%s: \"+%s%s)"%(event.name, event.name, approx)
+                    prt = "report.push(\"%s: \"+(%s))"%(event.name, \
+                                                        self.print_js_float(event.name) if is_float else event.name)
 
         assert mop
 

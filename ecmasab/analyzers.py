@@ -989,7 +989,7 @@ class ConstraintsAnalyzer(object):
     def __print_models(self, models):
         msg = " -> Found %s solution%s"%(len(models), "" if len(models) == 1 else "s")
         if models == ["()"]:
-            Logger.log("TRUE\n", 0)
+            Logger.log("VALID\n", 0)
         elif len(models) == 0:
             Logger.log("FALSE\n", 0)
         else:

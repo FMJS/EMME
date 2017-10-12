@@ -78,7 +78,7 @@ def print_evt(ev, value):
         if size == 32:
             length = 9
 
-        wvalue = int(str(value)*length)
+        wvalue = int(str((value % 9) + 1)*length)
     
     if ty == RIU:
         return "print(x-I%d[%d]);\n"%(size, index)
