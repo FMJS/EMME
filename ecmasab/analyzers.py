@@ -13,6 +13,7 @@ import re
 import random
 import math
 import configparser
+import pickle
 from ecmasab.solvers import CVC4Solver, AlloySolver, BDDSolver, ModelsManager
 from ecmasab.logger import Logger
 from ecmasab.encoders import CVC4Encoder, AlloyEncoder
@@ -405,7 +406,6 @@ class ValidExecutionAnalyzer(object):
         self.alloysolver = AlloySolver()
         self.alloyencoder = AlloyEncoder()
         
-
     def set_models_file(self, models_file):
         self.cvc4_vexecsmanager.models_file = models_file
         self.alloy_vexecsmanager.models_file = models_file
@@ -627,7 +627,6 @@ class EquivalentExecutionSynthetizerAlloy(object):
         self.allvexecsmanager.blocking_relations = prev_blocking
                 
         return ok
-    
 
 class EquivalentExecutionSynthetizerCVC4(object):
 
@@ -869,10 +868,15 @@ class ConstraintsAnalyzer(object):
     
     bsolver = None
 
+    outfile = None
+
     def set_models_file(self, models_file):
         self.c4_consamanager.models_file = models_file
         self.al_consamanager.models_file = models_file
-    
+
+    def set_outputs_file(self, outfile):
+        self.outfile = outfile
+        
     def __init__(self):
         self.c4_solver = CVC4Solver()
         self.c4_encoder = CVC4Encoder()
@@ -891,8 +895,8 @@ class ConstraintsAnalyzer(object):
         return self.analyze_constraints(program, model, jsengine, runs, threads, jsprogram, True)
         
     def analyze_constraints(self, program, model, jsengine, runs, threads, jsprogram, use_alloy):
-        matched = []
-        unmatched = []
+        matched = None
+        unmatched = None
 
         config = Config()
         config.command = jsengine
@@ -917,10 +921,14 @@ class ConstraintsAnalyzer(object):
             self.al_consamanager.labelling_vars = labelling_vars
         else:
             self.c4_consamanager.labelling_vars = labelling_vars
-            
-        timer = Logger.start_timer("Run Litmus")
-        (matched, unmatched) = run_litmus(config)
-        Logger.stop_timer(timer)        
+
+        (matched, unmatched) = self.__load_outputs(config.number, self.outfile)
+                    
+        if (matched is None) and (unmatched is None):
+            timer = Logger.start_timer("Run Litmus")
+            (matched, unmatched) = run_litmus(config)
+            Logger.stop_timer(timer)
+            self.__save_outputs(config.number, self.outfile, matched, unmatched)
 
         timer = Logger.start_timer("Analyze output")
 
@@ -995,7 +1003,30 @@ class ConstraintsAnalyzer(object):
         else:
             Logger.log(msg, 0)
             Logger.log("%s\n"%(" | \n".join(models)), 0)
+
+    def __save_outputs(self, times, filename, matched, unmatched):
+        value = (matched, unmatched)
+
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f:
+                run_map = pickle.load(f)
+        else:        
+            run_map = {}
             
+        run_map[times] = value
+        with open(filename, 'wb') as f:
+            pickle.dump(run_map, f)
+
+    def __load_outputs(self, times, filename):
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f:
+                run_map = pickle.load(f)
+            if times in run_map:
+                return run_map[times]
+            
+        return (None, None)
+
+    
     def user_defined_analyses(self, mmodels, nmodels):
         config = configparser.ConfigParser()
         config.optionxform=str

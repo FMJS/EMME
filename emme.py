@@ -40,6 +40,7 @@ BLOCK_TYPE = "block_type.cvc"
 BOUND_INT = "bound_int.cvc"
 ID_TYPE = "id_type.cvc"
 MODELS = "models.txt"
+OUTPUTS = "lit_outputs.txt"
 DOTS = "mm%s.dot"
 GRAP = "gmm%s.png"
 OUTPROGRAM = "program"
@@ -82,6 +83,7 @@ class Config(object):
     bound_int = None
     id_type = None
     models = None
+    outputs = None
     dots = None
     grap = None
     outprogram = None
@@ -133,6 +135,7 @@ class Config(object):
             self.bound_int = self.prefix+BOUND_INT
             self.id_type = self.prefix+ID_TYPE
             self.models = self.prefix+MODELS
+            self.outputs = self.prefix+OUTPUTS
             self.dots = self.prefix+DOTS
             self.grap = self.prefix+GRAP
             self.outprogram = self.prefix+OUTPROGRAM
@@ -269,6 +272,7 @@ def solve(config, program, strmodel):
 def unmatched_analysis(config):
     analyzer = ConstraintsAnalyzer()
     analyzer.set_models_file(config.models)
+    analyzer.set_outputs_file(config.outputs)
 
     Logger.log("\n** Unmatched Outputs Analysis **", 0)
     
@@ -292,6 +296,9 @@ def unmatched_analysis(config):
     if config.only_model:
         return 0
 
+    if (config.force_solving):
+        del_file(config.outputs)
+    
     if config.use_alloy:
         analyzer.analyze_constraints_alloy(program, \
                                            strmodel, \

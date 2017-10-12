@@ -6,3 +6,4 @@ prettytable
 dd
 asteval
 configparser
+pickle
