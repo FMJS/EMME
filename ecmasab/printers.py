@@ -546,8 +546,7 @@ class JST262_Printer(EPrinter):
             
             execs = self.compute_possible_executions(program, executions)
             ret += "\n".join(["outputs[%s] = \"%s\";"%(execs.index(x), x) for x in execs])
-            if self.output_assertion:
-                ret += "\nassert(-1 != outputs.indexOf(report));\n"
+            ret += "\n%sassert(-1 != outputs.indexOf(report));\n"%("" if self.output_assertion else "//")
 
         if executions and self.expected_outputs:
             linesize = 80

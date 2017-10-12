@@ -350,6 +350,7 @@ class AlloySolver(object):
         self.alloy_processes = None
 
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
+        num_t = 1
         self.__init_solvers(num_t)
         pre_objs = blocking_manager.load_models()
         ret = None

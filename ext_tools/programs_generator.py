@@ -67,22 +67,34 @@ def check_correctness(ev):
 
 def print_evt(ev, value):
     ty, size, index = ev
+
+    wvalue = value
+    
+    if ty in [WIU,WIA,WF]:
+        if size == 8:
+            length = 2
+        if size == 16:
+            length = 4
+        if size == 32:
+            length = 9
+
+        wvalue = int(str(value)*length)
     
     if ty == RIU:
         return "print(x-I%d[%d]);\n"%(size, index)
     elif ty == WIU:
-        return "x-I%d[%d] = %d;\n"%(size, index, value)
+        return "x-I%d[%d] = %d;\n"%(size, index, wvalue)
     elif ty == RIA:
         return "print(Atomics.load(x-I%d, %d));\n"%(size, index)
     elif ty == WIA:
-        return "Atomics.store(x-I%d, %d, %d);\n"%(size, index, value)
+        return "Atomics.store(x-I%d, %d, %d);\n"%(size, index, wvalue)
     else:
         pass
     
     if ty == RF:
         return "print(x-F%d[%d]);\n"%(size*2, index)
     elif ty == WF:
-        return "x-F%d[%d] = %d;\n"%(size*2, index, value)
+        return "x-F%d[%d] = %d.%d;\n"%(size*2, index, wvalue, int(str(value)*4))
     else:
         pass
 
@@ -153,10 +165,6 @@ def generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
             continue
         
         for ops in itertools.product(operators, repeat=(num_events-1)):
-
-            if en_random and (random.randint(0,1) == 1):
-                continue
-            
             conf = list(word)
             for i,v in enumerate(ops):
                 conf.insert(2*i+1,v)
