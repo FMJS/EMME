@@ -958,7 +958,7 @@ class ConstraintsAnalyzer(object):
             
         Logger.log(" DONE", 0)
         mmodels = self.bsolver.simplify(mmodels, True)
-        Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(mmodels), " | \n".join(mmodels)), 0)
+        self.__print_models(mmodels)
 
         objs = []
         Logger.log("Unmatched models analysis", 0)
@@ -975,17 +975,27 @@ class ConstraintsAnalyzer(object):
             
         Logger.log(" DONE", 0)
         nmodels = self.bsolver.simplify(nmodels, True)
-        Logger.log(" -> Found %s labelling solutions\n%s\n"%(len(nmodels), " | \n".join(nmodels)), 0)
+        self.__print_models(nmodels)
 
         Logger.log("Difference analysis (exist support(matched) in unmatched)", 0)
         diffmodels = self.bsolver.support_exist(" | ".join(mmodels), " | ".join(nmodels), True)
-        Logger.log(" -> Found %s labelling solutions\n%s"%(len(diffmodels), " | \n".join(diffmodels)), 0)
-
+        self.__print_models(diffmodels)
+        
         self.user_defined_analyses(mmodels, nmodels)
         
         Logger.stop_timer(timer)
         return (mmodels, nmodels, diffmodels)
-    
+
+    def __print_models(self, models):
+        msg = " -> Found %s solution%s"%(len(models), "" if len(models) == 1 else "s")
+        if models == ["()"]:
+            Logger.log("TRUE\n", 0)
+        elif len(models) == 0:
+            Logger.log("FALSE\n", 0)
+        else:
+            Logger.log(msg, 0)
+            Logger.log("%s\n"%(" | \n".join(models)), 0)
+            
     def user_defined_analyses(self, mmodels, nmodels):
         config = configparser.ConfigParser()
         config.optionxform=str
@@ -1001,8 +1011,8 @@ class ConstraintsAnalyzer(object):
             analyses.append((analysis[DESCRIPTION], analysis[FORMULA]))
 
         for analysis in analyses:
-            Logger.log("\n"+analysis[0], 0)
+            Logger.log(analysis[0], 0)
             formula = analysis[1].replace("unmatched", "{u}").replace("matched", "{m}").replace("!","~")
             formula = formula.format(m=" | ".join(mmodels), u=" | ".join(nmodels))
             formula = self.bsolver.simplify(formula, True)
-            Logger.log(" -> Found %s labelling solutions\n%s"%(len(formula), " | \n".join(formula)), 0)
+            self.__print_models(formula)
