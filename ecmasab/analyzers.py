@@ -922,13 +922,13 @@ class ConstraintsAnalyzer(object):
         else:
             self.c4_consamanager.labelling_vars = labelling_vars
 
-        (matched, unmatched) = self.__load_outputs(config.number, self.outfile)
+        (matched, unmatched) = self.__load_outputs(config.number, self.outfile, jsengine)
                     
         if (matched is None) and (unmatched is None):
             timer = Logger.start_timer("Run Litmus")
             (matched, unmatched) = run_litmus(config)
             Logger.stop_timer(timer)
-            self.__save_outputs(config.number, self.outfile, matched, unmatched)
+            self.__save_outputs(config.number, self.outfile, jsengine, matched, unmatched)
 
         timer = Logger.start_timer("Analyze output")
 
@@ -1004,7 +1004,7 @@ class ConstraintsAnalyzer(object):
             Logger.log(msg, 0)
             Logger.log("%s\n"%(" | \n".join(models)), 0)
 
-    def __save_outputs(self, times, filename, matched, unmatched):
+    def __save_outputs(self, times, filename, engine, matched, unmatched):
         value = (matched, unmatched)
 
         if os.path.exists(filename):
@@ -1013,16 +1013,17 @@ class ConstraintsAnalyzer(object):
         else:        
             run_map = {}
             
-        run_map[times] = value
+        run_map[(times, engine)] = value
         with open(filename, 'wb') as f:
             pickle.dump(run_map, f)
 
-    def __load_outputs(self, times, filename):
+    def __load_outputs(self, times, filename, engine):
         if os.path.exists(filename):
             with open(filename, 'rb') as f:
                 run_map = pickle.load(f)
-            if times in run_map:
-                return run_map[times]
+            key = (times, engine)
+            if key in run_map:
+                return run_map[key]
             
         return (None, None)
 
