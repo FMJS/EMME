@@ -173,6 +173,7 @@ def run_litmus(config):
         sys.stdout.flush()
         
     try:
+        if not config.silent: print("** Processing command \"%s\" **"%(" ".join(command)))
         if not config.silent: print("Running...")
         time.sleep(5)
         

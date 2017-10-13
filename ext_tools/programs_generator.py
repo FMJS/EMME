@@ -163,8 +163,13 @@ def generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
 
         if only_writes(word[0]):
             continue
+
+        iterops = itertools.product(operators, repeat=(num_events-1))
+        if en_random:
+            iterops = list(iterops)
+            random.shuffle(iterops)
         
-        for ops in itertools.product(operators, repeat=(num_events-1)):
+        for ops in iterops:
             conf = list(word)
             for i,v in enumerate(ops):
                 conf.insert(2*i+1,v)
