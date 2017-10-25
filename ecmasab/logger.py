@@ -8,14 +8,14 @@ class Logger(object):
     time = False
     
     @staticmethod        
-    def msg(msg, level, condition=True):
-        if (Logger.verbosity > level) and (condition):
+    def msg(msg, level, condition=True, max_level=10):
+        if (Logger.verbosity > level) and (Logger.verbosity <= max_level+1) and (condition):
             sys.stdout.write(msg)
             sys.stdout.flush()
 
     @staticmethod        
-    def log(msg, level, condition=True):
-        if (Logger.verbosity > level) and (condition): 
+    def log(msg, level, condition=True, max_level=10):
+        if (Logger.verbosity > level) and (Logger.verbosity <= max_level+1) and (condition):
             sys.stdout.write(msg+"\n")
             sys.stdout.flush()
 

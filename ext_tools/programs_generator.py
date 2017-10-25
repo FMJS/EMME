@@ -24,11 +24,14 @@ RIA = "RIA"
 WIA = "WIA"
 RF = "RF"
 WF = "WF"
+MA = "MA"
+MS = "MS"
+ME = "ME"
 
 PC = "|"
 SC = ";"
 
-types = [RIU,WIU,RIA,WIA,RF,WF]
+possible_types = [RIU,WIU,RIA,WIA,RF,WF,MA,MS,ME]
 operators = [PC,SC]
 
 def is_canonic(word):
@@ -56,7 +59,7 @@ def only_writes(word):
 def check_correctness(ev):
     ty, size = ev[:2]
     
-    if (ty in [RIU, WIU, RIA, WIA]) and (size in [8,16,32]):
+    if (ty in [RIU, WIU, RIA, WIA, MA, MS, ME]) and (size in [8,16,32]):
         return True
     
     if (ty in [RF, WF]) and (size in [16,32]):
@@ -68,9 +71,10 @@ def check_correctness(ev):
 def print_evt(ev, value):
     ty, size, index = ev
 
+    value = (value % 9) + 1
     wvalue = value
     
-    if ty in [WIU,WIA,WF]:
+    if ty in [WIU,WIA,WF,MA,MS,ME]:
         if size == 8:
             length = 2
         if size == 16:
@@ -78,7 +82,7 @@ def print_evt(ev, value):
         if size == 32:
             length = 9
 
-        wvalue = int(str((value % 9) + 1)*length)
+        wvalue = int(str(value)*length)
     
     if ty == RIU:
         return "print(x-I%d[%d]);\n"%(size, index)
@@ -88,6 +92,12 @@ def print_evt(ev, value):
         return "print(Atomics.load(x-I%d, %d));\n"%(size, index)
     elif ty == WIA:
         return "Atomics.store(x-I%d, %d, %d);\n"%(size, index, wvalue)
+    elif ty == MA:
+        return "print(Atomics.add(x-I%d, %d, %d));\n"%(size, index, wvalue)
+    elif ty == MS:
+        return "print(Atomics.sub(x-I%d, %d, %d));\n"%(size, index, wvalue)
+    elif ty == ME:
+        return "print(Atomics.exchange(x-I%d, %d, %d));\n"%(size, index, wvalue)
     else:
         pass
     
@@ -131,16 +141,17 @@ def write_program(conf, filename):
 
     return 0
 
-def generate_programs(num_events, num_programs, sizes, indexes, path, en_random):
+def generate_programs(num_events, num_programs, sizes, indexes, types, path, en_random):
     possible_events = []
     basic_name = "sv_%dev-%0"
 
     for ty in types:
-        for size in sizes:
-            for index in indexes:
-                if size == sizes[-1] and index == indexes[-1]:
-                    continue
-                possible_events.append((ty,size,index))
+        if ty in possible_types:
+            for size in sizes:
+                for index in indexes:
+                    if size == sizes[-1] and index == indexes[-1]:
+                        continue
+                    possible_events.append((ty,size,index))
 
     print("Starting computation ...")
                 
@@ -185,7 +196,7 @@ def generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
                     sys.stdout.flush()            
 
                 count += 1
-                if (num_programs != -1) and (count >= num_programs):
+                if ((num_programs != -1) and (count >= num_programs)) or en_random:
                     break
 
     print("\nGenerated %s programs"%(count))
@@ -217,6 +228,10 @@ def main(args):
     parser.add_argument('-i', '--indexes', metavar='indexes', type=str,
                         help='comma separated list of possible indexes. (Default is \"0,1\")')
 
+    parser.set_defaults(types="RIU,WIU,RIA,WIA,RF,WF")
+    parser.add_argument('-t', '--types', metavar='types', type=str, nargs='?',
+                        help='comma separated list of possible types. (Default is \"RIU,WIU,RIA,WIA,RF,WF\")')
+    
     if len(sys.argv)==1:
         parser.print_help()
         sys.exit(1)
@@ -228,13 +243,17 @@ def main(args):
     sizes = [int(x) for x in args.sizes.split(",")]
     indexes = [int(x) for x in args.indexes.split(",")]
     en_random = args.en_random
+    types = args.types.split(",")
 
+    if en_random:
+        types = [RIU,WIU,RIA,WIA,RF,WF,MA,MS,ME]
+    
     path = "%s/"%(args.directory)
 
     if not os.path.exists(path):
         os.makedirs(path)
 
-    generate_programs(num_events, num_programs, sizes, indexes, path, en_random)
+    generate_programs(num_events, num_programs, sizes, indexes, types, path, en_random)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

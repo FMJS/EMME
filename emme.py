@@ -703,7 +703,7 @@ def main(args):
         return ret
     except Exception as e:
         if config.debug: raise
-        print(e)
+        print("\nERROR! Run with --debug option for more information")
         return 1
     
 if __name__ == "__main__":

@@ -71,9 +71,9 @@ def decompress_string(input_str):
         return zlib.decompress(base64.b64decode(bytes(input_str, "utf-8"))).decode('utf-8')
 
 def auto_convert(strval):
-    if strval == "True":
+    if (strval.upper() == "TRUE") or (strval.upper() == "YES"):
         return True
-    if strval == "False":
+    if (strval.upper() == "FALSE") or (strval.upper() == "NO"):
         return False
     try:
         return int(strval)

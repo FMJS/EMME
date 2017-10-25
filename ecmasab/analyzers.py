@@ -43,6 +43,7 @@ class CVC4ValidExecsModelsManager(ModelsManager):
     shuffle_constraints = False
     program = None
     blocking_relations = [RBF]
+    models = []
 
     def set_additional_variables(self, variables):
         self.variables = variables
@@ -133,6 +134,8 @@ class CVC4ValidExecsModelsManager(ModelsManager):
         blocking = self.exprmgr.mkExpr(NOT, assigns)
 
         Logger.log("Blocking: %s"%(blocking.toString()), 2)
+        self.models.append(exe)
+        self.write_models(self.models, False)        
 
         return ([blocking], exe)
 
@@ -158,6 +161,8 @@ class CVC4ValidExecsModelsManager(ModelsManager):
             if os.path.exists(self.models_file):
                 with open(self.models_file, "r") as f:
                     shared_objs = (parser.executions_from_string(f.read())).executions
+
+        self.models = shared_objs                    
         return shared_objs
 
     def is_done(self):
@@ -196,6 +201,8 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
     encoder = None
 
     blocking_relations = [RBF]
+
+    models = []
     
     def __init__(self):
         self.encoder = AlloyEncoder()
@@ -224,6 +231,9 @@ class AlloyValidExecsModelsManager(CVC4ValidExecsModelsManager):
         blocking = "fact block_smt_%s {not (%s)}\n"%(AlloyValidExecsModelsManager.id_blocking, " and ".join(blocking))
 
         Logger.log("Blocking: %s"%(blocking), 2)
+
+        self.models.append(exe)
+        self.write_models(self.models, False)
         
         return (blocking, exe)
 
