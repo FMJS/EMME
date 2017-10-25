@@ -49,12 +49,15 @@ def is_canonic(word):
     rep.append(thr)
     return sorted(rep) == rep
 
-def only_writes(word):
-    for el in word:
-        if el in [RIU,RIA,RF]:
-            return False
+def writes_count(word):
+    return len([el for el in word if el in [RIU,RIA,RF]])
 
-    return True
+def read_or_modify_count(word):
+    return len(word) - writes_count(word)
+
+def only_writes(word):
+    return len(word) == writes_count(word)
+
 
 def check_correctness(ev):
     ty, size = ev[:2]
@@ -141,7 +144,9 @@ def write_program(conf, filename):
 
     return 0
 
-def generate_programs(num_events, num_programs, sizes, indexes, types, path, en_random):
+def generate_programs(params):
+    (num_events, num_programs, sizes, indexes, types, path, max_roms, en_random) = params
+    
     possible_events = []
     basic_name = "sv_%dev-%0"
 
@@ -173,6 +178,9 @@ def generate_programs(num_events, num_programs, sizes, indexes, types, path, en_
             picked.add(str(word))
 
         if only_writes(word[0]):
+            continue
+
+        if (max_roms != -1) and (read_or_modify_count(word[0]) > max_roms):
             continue
 
         iterops = itertools.product(operators, repeat=(num_events-1))
@@ -215,6 +223,10 @@ def main(args):
     parser.set_defaults(num_programs=-1)
     parser.add_argument('-p', '--num-programs', metavar='num_programs', type=int,
                         help='number of generated programs. (Default is all)')
+
+    parser.set_defaults(max_roms=-1)
+    parser.add_argument('-m', '--max-roms', metavar='max_roms', type=int,
+                        help='maximum number of read or modify events. (Default is Unbounded)')
     
     parser.set_defaults(random=False)
     parser.add_argument('-r', '--enable-random', dest='en_random', action='store_true',
@@ -244,6 +256,7 @@ def main(args):
     indexes = [int(x) for x in args.indexes.split(",")]
     en_random = args.en_random
     types = args.types.split(",")
+    max_roms = args.max_roms
 
     if en_random:
         types = [RIU,WIU,RIA,WIA,RF,WF,MA,MS,ME]
@@ -253,7 +266,10 @@ def main(args):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    generate_programs(num_events, num_programs, sizes, indexes, types, path, en_random)
+
+    params = (num_events, num_programs, sizes, indexes, types, path, max_roms, en_random)
+        
+    generate_programs(params)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
