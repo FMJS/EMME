@@ -34,10 +34,12 @@ Usage
 To start playing with the tool, you can run:
 
 1) ``python emme.py examples/single_var/sv_simple01.bex`` (to generate the valid executions in the folder examples/single_var/sv_simple01/)
-
-2) ``python emme.py examples/single_var/sv_simple01.bex --synth`` (to generate all equivalent programs in the folder examples/single_var/sv_simple01/)
   
-3) ``python litmus.py -c "bash ext_tools/run_v8.sh" -i examples/single_var/sv_simple01/program.js -n 1k -j 4`` (to check if the d8 engine obeys the expected results)
+2) ``python litmus.py -c "bash ext_tools/run_v8.sh" -i examples/single_var/sv_simple01/program.js -n 1k -j 4`` (to check if the d8 engine obeys the expected results)
+
+3) ``python emme.py examples/single_var/sv_simple01.bex --unmatched --jsengine="bash ext_tools/run_v8.sh" -n 1k -j 4`` (to perform the behavioral coverage constraint analysis)
+
+4) ``python emme.py examples/single_var/sv_simple01.bex --synth`` (to generate all equivalent programs in the folder examples/single_var/sv_simple01/)
 
 For more details on the license, have a look at LICENSE.txt
 
