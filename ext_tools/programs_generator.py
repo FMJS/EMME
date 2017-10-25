@@ -50,13 +50,19 @@ def is_canonic(word):
     return sorted(rep) == rep
 
 def writes_count(word):
-    return len([el for el in word if el in [RIU,RIA,RF]])
+    return len([el for el in word if el[0] in [WIU,WIA,WF]])
+
+def reads_count(word):
+    return len([el for el in word if el[0] in [RIU,RIA,RF]])
 
 def read_or_modify_count(word):
     return len(word) - writes_count(word)
 
 def only_writes(word):
     return len(word) == writes_count(word)
+
+def only_reads(word):
+    return len(word) == reads_count(word)
 
 
 def check_correctness(ev):
@@ -177,10 +183,10 @@ def generate_programs(params):
                 word = random.sample(possible_events, num_events)
             picked.add(str(word))
 
-        if only_writes(word[0]):
+        if only_writes(word) or only_reads(word):
             continue
 
-        if (max_roms != -1) and (read_or_modify_count(word[0]) > max_roms):
+        if (max_roms != -1) and (read_or_modify_count(word) > max_roms):
             continue
 
         iterops = itertools.product(operators, repeat=(num_events-1))
