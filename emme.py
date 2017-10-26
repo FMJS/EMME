@@ -28,6 +28,7 @@ from ecmasab.exceptions import UnreachableCodeException
 from ecmasab.analyzers import ValidExecutionAnalyzer, EquivalentExecutionSynthetizer, ConstraintsAnalyzer
 from ecmasab.preprocess import ExtPreprocessor, QuantPreprocessor, CPP
 from ecmasab.logger import Logger
+from ecmasab.utils import is_number, is_operator
 
 
 CVC_FORMAL_MODEL = "./model/memory_model.cvc"
@@ -412,18 +413,39 @@ def fuzz_program(program, executions, pprinter, cycles):
     
     Logger.log("Starting: %s "%p_execs_n, 1)
     beparser = BeParser()
-    events = [x for x in program.get_events() if x.is_write_or_modify()]
+    events = [x for x in program.get_events(False) if x.is_write_or_modify()]
 
     beprinter = BePrinter()
+
+    evdic = set([])
     
     cycle = 0
     while (cycle < cycles):
         cycle += 1
         
         for ev in events:
-            ev.set_values_from_num(get_wvalue(ev.get_size()))
+            if ev.is_init(): continue
+            if ev.is_parametric():
+                newoff = (float(random.randint(1,40))/10.0)-(2.0)
+                newoff = int(newoff) if not ev.is_wtear() else newoff
+                    
+                for i in range(len(ev.value)):
+                    newval = get_wvalue(ev.get_size())
+                    newval = int(newval) if not ev.is_wtear() else newval
+
+                    if is_number(ev.value[i]):
+                        ev.value[i] = str(newval)
+
+                if ev not in evdic:
+                    evdic.add(ev)
+                    ev.value.append("*"+str(newoff))
+                else:
+                    ev.value[-1] = "*"+str(newoff)
+            else:
+                ev.set_values_from_num(get_wvalue(ev.get_size()))
 
         executions.invalidate_executions()
+        program.expand_events(True)
         executions = beparser.compute_reads_values(executions)
         execs_n = len(pprinter.compute_possible_executions(program, executions))
         diff = execs_n - p_execs_n

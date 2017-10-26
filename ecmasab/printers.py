@@ -694,7 +694,8 @@ class JST262Printer(EPrinter):
                     
             if event.operation == WRITE:
                 if is_float and event.address:
-                    event_values = self.print_float(event_values)
+                    if not event.is_parametric():
+                        event_values = self.print_float(event_values)
 
                 if self.use_wasm and not is_float:
                     mop = ("(${asm_memacc}(this, {}, %s%s_sab)).store%s(%s, %s)")%("" if self.string_report else "data.", \

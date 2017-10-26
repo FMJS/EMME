@@ -341,9 +341,9 @@ class Program(object):
         for thread in self.threads:
             thread.apply_param(pardic)
 
-    def expand_events(self):
+    def expand_events(self, force=False):
         for thread in self.threads:
-            thread.expand_events()
+            thread.expand_events(force)
             
     def get_params(self):
         if not self.params:
@@ -393,10 +393,14 @@ class Program(object):
         self.get_conditions()
         return len(self.conditions)
     
-    def get_events(self):
+    def get_events(self, expand_loops=True):
         events = []
         for thread in self.threads:
-            events += thread.get_events(True)
+            events += thread.get_events(expand_loops)
+            if not expand_loops:
+                for i in range(len(events)):
+                    if isinstance(events[i], For_Loop):
+                        events = events[:i] + events[i].events + events[i+1:]
         return events
 
     def sort_threads(self):
@@ -464,8 +468,12 @@ class Thread(object):
         for event in self.events:
             event.apply_param(pardic)
 
-    def expand_events(self):
+    def expand_events(self, force=False):
         self.uevents = None
+        if force:
+            for el in self.events:
+                if isinstance(el, For_Loop):
+                    el.uevents = None
         self.get_events(True)
         
     def get_events(self, expand_loops, conditions=None):

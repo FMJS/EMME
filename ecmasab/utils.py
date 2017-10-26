@@ -82,3 +82,10 @@ def auto_convert(strval):
             return float(strval)
         except Exception:
             return strval
+
+def is_number(value):
+    value = auto_convert(str(value))
+    return (type(value) == int) or (type(value) == float)
+
+def is_operator(value):
+    return str(value) in ["+","-","*","/"]
