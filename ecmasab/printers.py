@@ -75,6 +75,8 @@ ASMACCESS += "  };\n"
 ASMACCESS += "})`;\n"
 
 def float_approx(value, approx=FLOAT_APPROX):
+    if value != value:
+        return value
     val = value*(10**approx)
     if (value*(10**approx)) % 1 >= float(0.5):
         val += 1
@@ -108,7 +110,7 @@ class PrintersFactory(object):
     # Additional printers should be registered here #
     @staticmethod
     def init_printers():
-        PrintersFactory.register_printer(JST262_Printer(), True)
+        PrintersFactory.register_printer(JST262Printer(), True)
 
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
@@ -419,7 +421,7 @@ class JSV8Printer(EPrinter):
     def get_extension(self):
         return self.EXT
 
-class JST262_Printer(EPrinter):
+class JST262Printer(EPrinter):
     name = "JS-TEST262"
     description = "TEST262 format (Standard)"
     string_report = True
@@ -953,7 +955,7 @@ class JSONPrinter(EPrinter):
     name = "JSON"
     description = "\tJSON format"
     TYPE = PrinterType.JSON
-    float_pri_js = "%.2f"
+    float_pri_js = "%."+str(FLOAT_APPROX)+"f"
     EXT = ".json"
 
     def __init__(self):

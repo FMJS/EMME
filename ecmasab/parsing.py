@@ -243,7 +243,7 @@ class BeParser(object):
         
         if program:
             program.expand_events()
-            self.__compute_reads_values(executions)
+            self.compute_reads_values(executions)
 
         return executions
 
@@ -311,7 +311,7 @@ class BeParser(object):
         events = [x[1] for x in events]
         return events
     
-    def __compute_reads_values(self, executions):
+    def compute_reads_values(self, executions):
         for exe in executions.executions:
             events = exe.get_events()
             ev_map = dict((x.name, x) for x in events)
@@ -354,6 +354,7 @@ class BeParser(object):
                 new_read_event = copy.deepcopy(read_event)
                 new_read_event.set_values(values)
                 exe.add_read_values(new_read_event)
+        return executions
 
     def __op_values(self, is_float, ev1, ev2, fun):
         val2 = ev2.values

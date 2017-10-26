@@ -81,6 +81,10 @@ class Executions(object):
         
     def get_size(self):
         return len(self.executions)
+
+    def invalidate_executions(self):
+        for exe in self.executions:
+            exe.reads_values = []
     
 class Execution(object):
     agent_order = None
@@ -898,6 +902,15 @@ class Memory_Event(object):
         if not self.info:
             return False
         return key in self.info
+
+    def set_values_from_num(self, value):
+        if self.is_wtear():
+            value = float(value)
+            self.set_values_from_float(value, self.address[0], self.address[-1])
+        else:
+            value = int(value)
+            self.set_values_from_int(value, self.address[0], self.address[-1])
+            
     
     def set_values_from_int(self, int_value, begin, end):
         self.offset = begin

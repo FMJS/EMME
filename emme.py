@@ -15,11 +15,13 @@ import os
 import sys
 from six.moves import range
 import subprocess
+import random
+import copy
 
 from argparse import RawTextHelpFormatter
 
 from ecmasab.parsing import BeParser
-from ecmasab.printers import DotPrinter, PrintersFactory, PrinterType, BePrinter
+from ecmasab.printers import DotPrinter, PrintersFactory, PrinterType, BePrinter, JSONPrinter
 from ecmasab.encoders import CVC4Encoder, AlloyEncoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
@@ -95,6 +97,7 @@ class Config(object):
     runs = None
     nexecs = None
     time = None
+    fuzzing = None
     
     def __init__(self):
         PrintersFactory.init_printers()
@@ -123,6 +126,7 @@ class Config(object):
         self.use_alloy = False
         self.hybrid = False
         self.time = False
+        self.fuzzing = False
 
     def generate_filenames(self):
         if self.prefix:
@@ -384,6 +388,55 @@ def synth_program(config):
 
     return 0
 
+
+def fuzz_program(program, executions, pprinter, cycles):
+
+    orig_program = copy.deepcopy(program)
+    orig_executions = copy.deepcopy(executions)
+    
+    def get_wvalue(size):
+        if size == 1:
+            length = 2
+        if size == 2:
+            length = 4
+        if size >= 4:
+            length = 9
+
+        retval = float("%s.%s"%(random.randint(0,(10**length)-1), random.randint(0,1000)))
+        return retval
+
+    p_execs_n = len(pprinter.compute_possible_executions(program, executions))
+
+    if len(executions.executions) == p_execs_n:
+        return (orig_program, orig_executions)
+    
+    Logger.log("Starting: %s "%p_execs_n, 1)
+    beparser = BeParser()
+    events = [x for x in program.get_events() if x.is_write_or_modify()]
+
+    beprinter = BePrinter()
+    
+    cycle = 0
+    while (cycle < cycles):
+        cycle += 1
+        
+        for ev in events:
+            ev.set_values_from_num(get_wvalue(ev.get_size()))
+
+        executions.invalidate_executions()
+        executions = beparser.compute_reads_values(executions)
+        execs_n = len(pprinter.compute_possible_executions(program, executions))
+        diff = execs_n - p_execs_n
+        Logger.msg("%s(%s) "%(execs_n, "+" if diff > 0 else "-" if diff < 0 else "="), 1)
+
+        if diff > 0:
+            Logger.msg("<-- BEST ", 1)
+            p_execs_n = execs_n
+            Logger.msg(".", 0)
+            (orig_program, orig_executions) = (copy.deepcopy(program), copy.deepcopy(executions))
+            
+    return (orig_program, orig_executions)
+
 def analyze_program(config):
     config.generate_filenames()
     
@@ -447,7 +500,24 @@ def analyze_program(config):
                 executions = parser.executions_from_string(modelfile.read(), program)
                 
             Logger.log("DONE", 0)
-                
+
+
+        if config.fuzzing:
+            Logger.msg("Fuzzing... ", 0)
+
+            len_execs = len(pprinter.compute_possible_executions(program, executions))
+            (program, executions) = fuzz_program(program, executions, pprinter, 100)
+            nlen_execs = len(pprinter.compute_possible_executions(program, executions))
+            
+            if len_execs != nlen_execs:
+                with open(config.inputfile, "w") as newfile:
+                    beprinter = BePrinter()
+                    newfile.write(beprinter.print_program(program, executions))
+
+                Logger.log(" DONE\n -> Increased possible outputs from %s to %s"%(len_execs, nlen_execs), 0)
+            else:
+                Logger.log("DONE", 0)
+
         Logger.msg("Generating program... ", 0)
 
         outfiles = [config.outprogram]
@@ -457,7 +527,7 @@ def analyze_program(config):
             outfiles = [outprogram]
 
         extension = pprinter.get_extension()
-            
+
         for outfile in outfiles:    
             with open(outfile+extension, "w") as f:
                 f.write(pprinter.print_program(program, executions))
@@ -557,6 +627,10 @@ def main(args):
     parser.add_argument('-v', dest='verbosity', metavar="verbosity", type=int,
                         help="verbosity level. (Default is \"%s\")"%1)
 
+    parser.set_defaults(fuzzing=False)
+    parser.add_argument('-z', '--fuzzing', dest='fuzzing', action='store_true',
+                        help="fuzz the input program in order to achieve better outputs coverage. (Default is \"%s\")"%False)
+    
     parser.set_defaults(nexecs=-1)
     parser.add_argument('-e', '--max-executions', dest='nexecs', metavar='nexecs', type=int,
                        help='maximum number of executions. (Default is \"unlimited\")')
@@ -646,6 +720,7 @@ def main(args):
     config.use_alloy = not args.use_cvc4
     config.unmatched = args.unmatched
     config.time = args.time
+    config.fuzzing = args.fuzzing
     
     if args.jsprinter in [str(x.get_name()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
         config.jsprinter = args.jsprinter
