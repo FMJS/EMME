@@ -174,3 +174,43 @@ fact rbf_sw {all er,ev,ew: mem_events, x,y: bytes | (RBF [er,x,ew] and RBF [er,y
 #endif
 
 -- Checks
+
+#if LABELLING == 1
+
+abstract sig boolean {}
+one sig TRUE extends boolean{}
+one sig FALSE extends boolean{}
+
+one sig L_RF_implies_HB {value: boolean}
+fact L_RF_implies_HB_def {(L_RF_implies_HB.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (RF [er,ew] => HB [ew,er])))}
+
+one sig L_HB_implies_RF {value: boolean}
+fact L_HB_implies_RF_def {(L_HB_implies_RF.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (HB [er,ew] => RF [ew,er])))}
+
+one sig L_RF_implies_SW {value: boolean}
+fact L_RF_implies_SW_def {(L_RF_implies_SW.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (RF [er,ew] => SW [ew,er])))}
+
+one sig L_SW_implies_RF {value: boolean}
+fact L_SW_implies_RF_def {(L_SW_implies_RF.value = TRUE) <=> (all ew,er : mem_events | (Active2 [ew,er] => (SW [er,ew] => RF [ew,er])))}
+
+one sig L_SW4 {value: boolean}
+one sig L_SW4c {value: boolean}
+one sig L_SW4d {value: boolean}
+
+fact L_SW4_def {(L_SW4.value = TRUE) <=> (all er,ew : mem_events | Active2 [ew,er] => (SW [ew,er] <=> SW4 [er,ew]))}
+fact L_SW4c_def {(L_SW4c.value = TRUE) <=> (all er,ew : mem_events | Active2 [ew,er] => (SW [ew,er] <=> SW4c [er,ew]))}
+fact L_SW4d_def {(L_SW4d.value = TRUE) <=> (all er,ew : mem_events | Active2 [ew,er] => (SW [ew,er] <=> SW4d [er,ew]))}
+
+
+one sig L_HB4a {value: boolean}
+one sig L_HB4b {value: boolean}
+one sig L_HB4c {value: boolean}
+one sig L_HB4d {value: boolean}
+
+fact L_HB4a_def {(L_HB4a.value = TRUE) <=> (all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee != ed) and (HB4a [ee,ed]))))}
+fact L_HB4b_def {(L_HB4b.value = TRUE) <=> (all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee != ed) and (HB4b [ee,ed]))))}
+fact L_HB4c_def {(L_HB4c.value = TRUE) <=> (all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee != ed) and (HB4c [ee,ed]))))}
+fact L_HB4d_def {(L_HB4d.value = TRUE) <=> (all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee != ed) and (HB4d [ee,ed]))))}
+
+
+#endif

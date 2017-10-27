@@ -4,3 +4,5 @@ nose
 numpy
 prettytable
 dd
+asteval
+configparser

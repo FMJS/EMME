@@ -10,13 +10,18 @@
 
 import re
 import json
+import configparser
 from six.moves import range
 
 from ecmasab.execution import RELATIONS, For_Loop, ITE_Statement, Memory_Event
 from ecmasab.execution import READ, WRITE, INIT, SC, UNORD, MAIN
 from ecmasab.parsing import T_INT8, T_INT16, T_INT32, T_FLO32, T_FLO64, T_VAL, T_OPE
 from ecmasab.exceptions import UnreachableCodeException
-from ecmasab.utils import compress_string
+from ecmasab.utils import compress_string, auto_convert
+
+PRINTERS_FILE = "configs/printers.ini"
+DEFAULT = "DEFAULT"
+TYPE = "type"
 
 LICENSE = ""
 LICENSE += "// Copyright 2017 Cristian Mattarei\n"
@@ -30,6 +35,7 @@ LICENSE += "// See the License for the specific language governing permissions a
 LICENSE += "// limitations under the License.\n\n"
 
 FLOAT_APPROX = 4
+EXP_START = "1e+10"
 
 ASMACCESS = ""
 ASMACCESS += "let asm_memacc = `(function Module(stdlib, foreign, heap) {\n"
@@ -97,29 +103,48 @@ class PrinterType(object):
     
 class PrintersFactory(object):
     printers = []
+    default_printer = None
 
     # Additional printers should be registered here #
     @staticmethod
     def init_printers():
-        PrintersFactory.register_printer(JST262_Printer())
-        
-        PrintersFactory.register_printer(JST262_V8_Printer())
-        PrintersFactory.register_printer(JST262_SM_Printer())
-        PrintersFactory.register_printer(JST262_JSC_Printer())
-        
-        PrintersFactory.register_printer(JSV8Printer())
-
-        PrintersFactory.register_printer(JST262_WASM_V8_Printer())
-        PrintersFactory.register_printer(JST262_WASM_JSC_Printer())
+        PrintersFactory.register_printer(JST262_Printer(), True)
 
         PrintersFactory.register_printer(DotPrinter())
         PrintersFactory.register_printer(BePrinter())
         PrintersFactory.register_printer(JSONPrinter())
-    
+
+        PrintersFactory.load_printers()
+
     @staticmethod
-    def register_printer(printer):
-        if printer.NAME not in dict(PrintersFactory.printers):
-            PrintersFactory.printers.append((printer.NAME, printer))
+    def load_printers():
+        config = configparser.ConfigParser()
+        config.optionxform=str
+        with open(PRINTERS_FILE, "r") as f:
+            config.read_string(u""+f.read())
+
+        for value in config:
+            if value == DEFAULT: continue
+            printer = config[value]
+            if TYPE in printer:
+                pinstance = globals()[printer[TYPE]]()
+                for attr in printer:
+                    if attr == TYPE: continue
+                    setattr(pinstance, attr, auto_convert(printer[attr]))
+                PrintersFactory.register_printer(pinstance)
+                if (DEFAULT in printer) and auto_convert(printer[DEFAULT]):
+                    PrintersFactory.default_printer = pinstance
+
+    @staticmethod
+    def get_default():
+        return PrintersFactory.default_printer
+                
+    @staticmethod
+    def register_printer(printer, default=False):
+        if printer.get_name() not in dict(PrintersFactory.printers):
+            PrintersFactory.printers.append((printer.get_name(), printer))
+            if default:
+                PrintersFactory.default_printer = printer
 
     @staticmethod    
     def printer_by_name(name):
@@ -143,15 +168,15 @@ class PrintersFactory(object):
         
         return [x[1] for x in PrintersFactory.printers if x[1].TYPE == printertype]
     
-class JSPrinter(object):
-    NAME = "JS-PRINTER"
-    DESC = "MISSING DESCRIPTION!"
+class EPrinter(object):
+    name = "PRINTER"
+    description = "MISSING DESCRIPTION!"
     TYPE = PrinterType.JS
-    EXT = ".js"
+    EXT  = ".js"
 
     DATA = "// Expected Output (Compressed Data) //"
-    OUT = "//output// "
-    MOD = "//model// "
+    OUT  = "//output// "
+    MOD  = "//model// "
     
     float_app_js = ".toFixed("+str(FLOAT_APPROX)+")"
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
@@ -180,12 +205,26 @@ class JSPrinter(object):
     def print_event(self, event, postfix=None):
         pass
 
+    def print_float(self, value):
+        if value > float(EXP_START):
+            return '{:.15e}'.format(value) #re.sub('[0]+e','e','{:.15e}'.format(value))
+        return (self.float_pri_js)%(float_approx(value))
+
+    def print_js_float(self, value):
+        return "%s > %s ? %s.toExponential(15) : %s%s"%(value, EXP_START, value, value, self.float_app_js)
+    
     def get_extension(self):
         return self.EXT
-        
-class JSV8Printer(JSPrinter):
-    NAME = "JS-V8"
-    DESC = "\t\tGoogle V8 format"
+
+    def get_desc(self):
+        return "\t"+self.description
+
+    def get_name(self):
+        return self.name
+    
+class JSV8Printer(EPrinter):
+    name = "JS-V8"
+    description = "\tGoogle V8 format"
     EXT = ".js"
 
     def print_execution(self, program, interp, models=False):
@@ -361,16 +400,16 @@ class JSV8Printer(JSPrinter):
                                        event_values)
 
             if event.operation == READ:
-                approx = self.float_app_js if is_float else ""
-                    
                 mop = "%s = %s[%s]"%(event.name, \
                                      event.block.name, \
                                      addr)
 
                 if postfix:
-                    prt = "print(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
+                    prt = "print(\"%s_\"+%s+\": \"+%s)"%(event.name, postfix, \
+                                                           self.print_js_float(event.name) if is_float else event.name)
                 else:
-                    prt = "print(\"%s: \"+%s%s)"%(event.name, event.name, approx)
+                    prt = "print(\"%s: \"+%s)"%(event.name, \
+                                                  self.print_js_float(event.name) if is_float else event.name)
 
         if event.operation == READ:
             return "%s;\n"%("; ".join([var_def,mop,prt]))
@@ -380,21 +419,25 @@ class JSV8Printer(JSPrinter):
     def get_extension(self):
         return self.EXT
 
-class JST262_Printer(JSPrinter):
-    NAME = "JS-TEST262"
-    DESC = "\tTEST262 format (Standard)"
-    str_report = True
-    exp_outputs = False
+class JST262_Printer(EPrinter):
+    name = "JS-TEST262"
+    description = "TEST262 format (Standard)"
+    string_report = True
+    expected_outputs = False
     or_zero = True
 
     waiting_time = 0
     agent_prefix = "$262"
 
-    asserts = True
+    output_assertion = True
     indent = "   "
 
-    use_asm = False
-    
+    use_wasm = False
+
+    add_wait = False
+    waiting_limit = 10000
+    only_reads_reports = False
+
     def print_execution(self, program, interp, models=False):
         reads = []
         output = ""
@@ -403,7 +446,7 @@ class JST262_Printer(JSPrinter):
             if el.is_wtear():
                 if (self.float_pri_js%value) == "-0.00":
                     value = 0
-                output = ("%s: "+self.float_pri_js)%(el.name, float_approx(value))
+                output = "%s: %s"%(el.name, self.print_float(value))
             else:
                 output = "%s: %s"%(el.name, value)
             reads.append(output)
@@ -421,7 +464,7 @@ class JST262_Printer(JSPrinter):
         
         ret = LICENSE
 
-        if self.use_asm:
+        if self.use_wasm:
             ret += ASMACCESS
 
         blocks = [(x.name, x.size) for x in program.get_blocks()]
@@ -436,7 +479,7 @@ class JST262_Printer(JSPrinter):
             ret += "%s.agent.start(\n"%self.agent_prefix
             ret += (ind*1)+"`%s.agent.receiveBroadcast(function thread_%s(%s) {\n"%(self.agent_prefix, \
                                                                                     thread.name, \
-                                                                                    str_blist if self.str_report else "data")
+                                                                                    str_blist if self.string_report else "data")
             ret += (ind*2)+"var report = [];\n"
 
             for ev in thread.get_events(False):
@@ -452,22 +495,22 @@ class JST262_Printer(JSPrinter):
             ret += (ind*1)+"})\n"
             ret += (ind*1)+"`);\n"
 
-        if not self.str_report:
+        if not self.string_report:
             ret += "\nvar data = {\n"
         for sab in blocks:
             size = sab[1]
             if (size % 8) != 0:
                 size = (int(size / 8)+1) * 8
                 
-            if self.str_report:
+            if self.string_report:
                 ret += "var %s_sab = new SharedArrayBuffer(%s);\n"%(sab[0], size)
             else:
                 ret += (ind*1)+"%s_sab : new SharedArrayBuffer(%s),\n"%(sab[0], size)
                 
-        if not self.str_report:
+        if not self.string_report:
             ret += "}\n"
 
-        if self.str_report:
+        if self.string_report:
             ret += "%s.agent.broadcast(%s);\n"%(self.agent_prefix, str_blist)
         else:
             ret += "%s.agent.broadcast(data);\n"%(self.agent_prefix)
@@ -490,29 +533,31 @@ class JST262_Printer(JSPrinter):
         ret += "while (true) {\n"
         ret += (ind*1)+"thread_report = %s.agent.getReport();\n"%self.agent_prefix
         ret += (ind*1)+"if (thread_report != null) {\n"
-        if self.str_report:
+        if self.string_report:
             ret += (ind*2)+"thread_report = thread_report.split(\",\");\n"
         ret += (ind*2)+"for(i=0; i < thread_report.length; i++){\n"
-        if self.str_report:
+        if self.string_report:
             ret += (ind*3)+"if(thread_report[i] == \"\") continue;\n"
         ret += (ind*3)+"report.push(thread_report[i]);\n"
         ret += (ind*3)+"print(thread_report[i]);\n"
         ret += (ind*2)+"}\n"
         ret += (ind*2)+"reports += 1;\n"
-        ret += (ind*2)+"if (reports >= %s) break;\n"%(len(program.threads)-1)
+        reports_num = len([x for x in program.threads if len([y for y in x.get_events(True) if y.is_read() or y.is_modify()])]) \
+                      if self.only_reads_reports else len(program.threads)-1
+        ret += (ind*2)+"if (reports >= %s) break;\n"%(reports_num)
         ret += (ind*1)+"}\n"
         ret += "}\n\n"
         
-        if self.asserts and executions:
+        if executions:
             ret += "report.sort();\n"
             ret += "report = report.join(\";\");\n"
             ret += "var outputs = [];\n"
             
             execs = self.compute_possible_executions(program, executions)
             ret += "\n".join(["outputs[%s] = \"%s\";"%(execs.index(x), x) for x in execs])
-            ret += "\nassert(-1 != outputs.indexOf(report));\n"
+            ret += "\n%sassert(-1 != outputs.indexOf(report));\n"%("" if self.output_assertion else "//")
 
-        if executions and self.exp_outputs:
+        if executions and self.expected_outputs:
             linesize = 80
             execs = self.compute_possible_executions(program, executions, True)
             execs = ["%s%s"%(self.OUT, x) for x in execs]
@@ -567,20 +612,20 @@ class JST262_Printer(JSPrinter):
         var_def = None
         prt = None
         mop = None
-        
+
         if (event.operation == WRITE) and (event.ordering == INIT):
             return ""
         
-        if (event.ordering != INIT) and (not self.use_asm):
+        if (event.ordering != INIT) and (not self.use_wasm):
             if is_float:
                 var_def = "var %s = new Float%sArray(%s%s)"%(event.block.name, \
                                                              event.get_size()*8, \
-                                                             "" if self.str_report else "data.", \
+                                                             "" if self.string_report else "data.", \
                                                              event.block.name+"_sab")
             else:
                 var_def = "var %s = new Int%sArray(%s%s)"%(event.block.name, \
                                                               event.get_size()*8, \
-                                                              "" if self.str_report else "data.", \
+                                                              "" if self.string_report else "data.", \
                                                               event.block.name+"_sab")
 
         if (event.is_write_or_modify()):
@@ -647,10 +692,10 @@ class JST262_Printer(JSPrinter):
                     
             if event.operation == WRITE:
                 if is_float and event.address:
-                    event_values = self.float_pri_js%(float_approx(event_values))
+                    event_values = self.print_float(event_values)
 
-                if self.use_asm and not is_float:
-                    mop = ("(${asm_memacc}(this, {}, %s%s_sab)).store%s(%s, %s)")%("" if self.str_report else "data.", \
+                if self.use_wasm and not is_float:
+                    mop = ("(${asm_memacc}(this, {}, %s%s_sab)).store%s(%s, %s)")%("" if self.string_report else "data.", \
                                                                                    event.block.name, \
                                                                                    event.get_size()*8, \
                                                                                    addr, \
@@ -661,12 +706,9 @@ class JST262_Printer(JSPrinter):
                                            event_values)
                     
             if event.operation == READ:
-                approx = self.float_app_js if is_float else ""
-                    
-
-                if self.use_asm and not is_float:
+                if self.use_wasm and not is_float:
                     mop = "%s = (${asm_memacc}(this, {}, %s%s_sab)).load%s(%s)"%(event.name, \
-                                                                                 "" if self.str_report else "data.", \
+                                                                                 "" if self.string_report else "data.", \
                                                                                  event.block.name, \
                                                                                  event.get_size()*8, \
                                                                                  addr)
@@ -677,57 +719,23 @@ class JST262_Printer(JSPrinter):
                                            " | 0" if self.or_zero else "")
                     
                 if postfix:
-                    prt = "report.push(\"%s_\"+%s+\": \"+%s%s)"%(event.name, postfix, event.name, approx)
+                    prt = "report.push(\"%s_\"+%s+\": \"+(%s))"%(event.name, postfix, \
+                                                                 self.print_js_float(event.name) if is_float else event.name)
                 else:
-                    prt = "report.push(\"%s: \"+%s%s)"%(event.name, event.name, approx)
+                    prt = "report.push(\"%s: \"+(%s))"%(event.name, \
+                                                        self.print_js_float(event.name) if is_float else event.name)
 
         assert mop
+
+        ret_ev = "".join("%s; "%x for x in [var_def,mop,prt] if x is not None)+"\n"
         
-        return "".join("%s; "%x for x in [var_def,mop,prt] if x is not None)+"\n"
+        if self.add_wait:
+            ret_ev = ("for (__ind__ = 0; __ind__ < %s; __ind__+=Math.random()*10); "%(self.waiting_limit)) + ret_ev
+
+        return ret_ev
     
-
-class JST262_JSC_Printer(JST262_Printer):
-    NAME = "JS-TEST262-JSC"
-    DESC = "\tTEST262 format (Accepted by JSC)"
-    str_report = True
-    exp_outputs = True
-    agent_prefix = "$"
-    or_zero = True
-    asserts = True
-
-class JST262_SM_Printer(JST262_Printer):
-    NAME = "JS-TEST262-SM"
-    DESC = "\tTEST262 format (Accepted by SM)"
-    str_report = True
-    exp_outputs = True
-    asserts = True
-
-class JST262_V8_Printer(JST262_Printer):
-    NAME = "JS-TEST262-V8"
-    DESC = "\tTEST262 format (Accepted by V8)"
-    str_report = False
-    exp_outputs = True
-    asserts = True
-
-class JST262_WASM_V8_Printer(JST262_Printer):
-    NAME = "JS-TEST262-W-V8"
-    DESC = "\tTEST262 format with WASM (Accepted by V8)"
-    str_report = False
-    exp_outputs = True
-    use_asm = True
-    asserts = True
-
-class JST262_WASM_JSC_Printer(JST262_Printer):
-    NAME = "JS-TEST262-W-JSC"
-    DESC = "\tTEST262 format with WASM (Accepted by JSC)"
-    str_report = True
-    exp_outputs = True
-    agent_prefix = "$"
-    use_asm = True
-    asserts = True
-    
-class DotPrinter(object):
-    NAME = "DOT"
+class DotPrinter(EPrinter):
+    name = "DOT"
     TYPE = PrinterType.GRAPH
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
     printing_relations = None
@@ -759,8 +767,7 @@ class DotPrinter(object):
             return True
         return relation in self.printing_relations
             
-    def print_execution(self, program, interp):
-
+    def print_execution(self, program, interp, models=False):
         reads_dic = dict([(x.name, x) for x in interp.reads_values])
         ev_dic = dict([(x.name, x) for x in interp.get_events()])
 
@@ -942,9 +949,9 @@ class DotPrinter(object):
                 raise UnreachableCodeException("Float size %s not valid"%str(size))
 
 
-class JSONPrinter(object):
-    NAME = "JSON"
-    DESC = "\t\tJSON format"
+class JSONPrinter(EPrinter):
+    name = "JSON"
+    description = "\tJSON format"
     TYPE = PrinterType.JSON
     float_pri_js = "%.2f"
     EXT = ".json"
@@ -994,9 +1001,9 @@ class JSONPrinter(object):
     def get_extension(self):
         return self.EXT
     
-class BePrinter(object):
-    NAME = "BE"
-    DESC = "\t\tBounded Execution format"
+class BePrinter(EPrinter):
+    name = "BE"
+    description = "\tBounded Execution format"
     TYPE = PrinterType.BEXEC
     EXT = ".bex"
 

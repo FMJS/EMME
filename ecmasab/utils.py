@@ -35,22 +35,26 @@ def float_from_values(values):
     return ret[0]
 
 def get_int_type(size):
+    endian = '<'
+    
     if size <= 1:
-        return '<b'
+        return endian+'b'
     elif size <= 2:
-        return '<h'
+        return endian+'h'
     elif size <= 4:
-        return '<i'
+        return endian+'i'
     elif size <= 8:
-        return '<q'
+        return endian+'q'
     else:
         raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
 
 def get_float_type(size):
+    endian = '<'
+    
     if size <= 4:
-        return '<f'
+        return endian+'f'
     elif size <= 8:
-        return '<d'
+        return endian+'d'
     else:
         raise UnreachableCodeException("Type size \"%s\" not valid"%(size))
 
@@ -65,3 +69,16 @@ def decompress_string(input_str):
         return zlib.decompress(base64.b64decode(bytes(input_str.decode('utf-8')))).decode('utf-8')
     else:
         return zlib.decompress(base64.b64decode(bytes(input_str, "utf-8"))).decode('utf-8')
+
+def auto_convert(strval):
+    if (strval.upper() == "TRUE") or (strval.upper() == "YES"):
+        return True
+    if (strval.upper() == "FALSE") or (strval.upper() == "NO"):
+        return False
+    try:
+        return int(strval)
+    except Exception:
+        try:
+            return float(strval)
+        except Exception:
+            return strval

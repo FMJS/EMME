@@ -18,7 +18,7 @@ import signal
 import time
 from six.moves import range
 from prettytable import PrettyTable
-from ecmasab.printers import JSPrinter
+from ecmasab.printers import EPrinter
 from ecmasab.parsing import BeParser
 from ecmasab.utils import decompress_string
 from ecmasab.models_evaluator import Evaluator, MatchType
@@ -132,8 +132,8 @@ def run_litmus(config):
             modelstr = None
             with open(config.input_file, "r") as f:
                 strfile = f.read()
-                if JSPrinter.DATA in strfile:
-                    modelstr = strfile[strfile.find(JSPrinter.DATA)+len(JSPrinter.DATA):]
+                if EPrinter.DATA in strfile:
+                    modelstr = strfile[strfile.find(EPrinter.DATA)+len(EPrinter.DATA):]
                     modelstr = modelstr.split("\n")
                     modelstr = [x[2:] for x in modelstr]
                     modelstr = "".join(modelstr)
@@ -141,8 +141,8 @@ def run_litmus(config):
                 input_file_has_models = True
                 i = 1
                 for line in decompress_string(modelstr).split("\n"):
-                    model = line[line.find(JSPrinter.MOD)+len(JSPrinter.MOD):]
-                    output = line[len(JSPrinter.OUT):line.find(JSPrinter.MOD)]
+                    model = line[line.find(EPrinter.MOD)+len(EPrinter.MOD):]
+                    output = line[len(EPrinter.OUT):line.find(EPrinter.MOD)]
                     output = output.split(";")
                     output.sort()
                     output = ";".join(output)
@@ -173,6 +173,7 @@ def run_litmus(config):
         sys.stdout.flush()
         
     try:
+        if not config.silent: print("** Processing command \"%s\" **"%(" ".join(command)))
         if not config.silent: print("Running...")
         time.sleep(5)
         
@@ -323,6 +324,9 @@ if __name__ == "__main__":
                        help='show the total number of matches')
 
     
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
 
     args = parser.parse_args()
 

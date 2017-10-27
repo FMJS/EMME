@@ -8,7 +8,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import CVC4
 import re
 import os
 from six.moves import range
@@ -16,14 +15,18 @@ from multiprocessing import Process, Manager
 from ecmasab.logger import Logger
 import subprocess
 
-from CVC4 import Options, \
-    ExprManager, \
-    ParserBuilder, \
-    SmtEngine, \
-    SExpr, \
-    CheckSatCommand, \
-    AssertCommand
-
+try:
+    import CVC4
+    from CVC4 import Options, \
+        ExprManager, \
+        ParserBuilder, \
+        SmtEngine, \
+        SExpr, \
+        CheckSatCommand, \
+        AssertCommand
+except Exception:
+    pass
+    
 from dd.autoref import BDD
 
 class ModelsManager(object):
@@ -64,6 +67,7 @@ class CVC4Solver(object):
     
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
         pre_objs = blocking_manager.load_models()
+        Logger.msg("."*len(pre_objs), 0, True, 0)
         if num_t > 1:
             rb_cons = blocking_manager.solutions_separators()
             num_t = min(len(rb_cons), num_t)
@@ -135,7 +139,7 @@ class CVC4Solver(object):
             if (self.verbosity > 0) and is_multithread and is_master:
                 if ((solsize - prvsolsize) > 1):
                     gain = (solsize-prvsolsize)-1
-                    Logger.msg("+%s%s"%(gain, "."*(gain)), 0)
+                    Logger.msg("+%s%s"%(gain, "."*(gain)), 0, True, 0)
 
             if not is_master:
                 if ret == 0: #UNSAT
@@ -234,7 +238,7 @@ class CVC4Solver(object):
                 assertion = AssertCommand(bclause)
                 assertion.invoke(smt)
 
-            Logger.msg(".", 0, constraints is None)
+            Logger.msg(".", 0, constraints is None, 0)
 
             ind +=1
             if (num != -1) and (ind >= num):
@@ -248,6 +252,8 @@ class BDDSolver(object):
         pass
     
     def simplify(self, strformula, lst=False):
+        if (strformula is None) or (strformula == ""):
+            return [] if lst else None
         variables = re.sub('[~\&\|\(\)]',' ',strformula)
         variables = re.sub(' +',' ',variables.strip())
         variables = variables.split(" ")
@@ -272,6 +278,9 @@ class BDDSolver(object):
         return " | ".join(conj)
 
     def support_exist(self, expr1, expr2, lst=False):
+        if ((expr1 is None) or (expr1 == "")) or ((expr2 is None) or (expr2 == "")):
+            return [] if lst else None
+
         variables = re.sub('[~\&\|\(\)]',' ',expr1+expr2)
         variables = re.sub(' +',' ',variables.strip())
         variables = variables.split(" ")
@@ -333,17 +342,20 @@ class AlloySolver(object):
     alloy_processes = None
 
     file_limit = 100
+    clean_calls = 0
 
     debug = False
-    
+
     def __init__(self):
         self.verbosity = 1
         self.models_file = None
         self.alloy_processes = None
 
     def solve_allsmt(self, model, blocking_manager, num_sols=-1, num_t=1):
+        num_t = 1
         self.__init_solvers(num_t)
         pre_objs = blocking_manager.load_models()
+        Logger.msg("."*len(pre_objs), 0, True, 0)
         ret = None
         if num_t > 1:
             rb_cons = blocking_manager.solutions_separators()
@@ -375,7 +387,13 @@ class AlloySolver(object):
 
         self.__quit_solvers()
         return ret
-        
+
+    def compute_models(self, model, blocking_manager, shared_objects=None):
+        self.__init_solvers(1)
+        ret = self.__solve_nsat(model, -1, blocking_manager, shared_objects)
+        self.__quit_solvers()
+        return ret
+    
     def __compute_models(self, model, solver, num, blocking_manager, constraints=None, shared_objects=None):
         if constraints:
             model += "\n"+constraints
@@ -388,11 +406,12 @@ class AlloySolver(object):
             if (num != -1) and (num_sols >= num):
                 break
             ret = self.solve_one(model, solver)
+            self.__clean_files()
             if ret is None:
                 return (shared_objects, 0)
             num_sols += 1
             (bclauses, shared_obj) = blocking_manager.compute_from_smt(ret)
-            Logger.msg(".", 0)
+            Logger.msg(".", 0, True, 0)
 
             if shared_obj not in shared_objects:
                 shared_objects.append(shared_obj)
@@ -407,25 +426,36 @@ class AlloySolver(object):
     def __init_solvers(self, n):
         self.alloy_processes = []
         command = "%s"%self.ALLOY_ABS
+        
         self.alloy_processes = [subprocess.Popen(command.split(), \
                                                  stdin=subprocess.PIPE, \
-                                                 stdout=subprocess.PIPE, shell=True) for x in range(n)]
+                                                 stdout=subprocess.PIPE, shell=True) for _ in range(n)]
 
     def __quit_solvers(self):
         for solver in self.alloy_processes:
             solver.stdin.write(("quit\n").encode())
             solver.stdin.flush()
 
-        self.__clean_files()
+        self.__clean_files(True)
 
-    def __clean_files(self):
+    def __clean_files(self, force=False):
+        self.clean_calls += 1
+        if self.clean_calls < self.file_limit:
+            return
+        else:
+            self.clean_calls = 0
         if self.debug:
             return
-        filelist = [ f for f in os.listdir("/tmp/") if f.startswith("kodkod")]
+        filelist = [f for f in os.listdir("/tmp/") if f.startswith("kodkod") or ("alloy" in f)]
         for f in filelist:
             os.remove("/tmp/%s"%f)
             
     def solve_one(self, model, solver):
+        if Logger.level(3):
+            linenum = 0
+            for line in model.split("\n"):
+                linenum += 1
+                Logger.log("%s: %s"%(linenum, line), 3)
         solver.stdin.write(('%s\nreset\n'%(model)).encode())
         solver.stdin.flush()
         out = ""
@@ -458,8 +488,7 @@ class AlloySolver(object):
             process = self.alloy_processes[0]
 
         if not is_multithread or is_master:
-            if ((len(shared_objs)%self.file_limit) > (self.file_limit-2)):
-                self.__clean_files()
+            self.__clean_files()
             
         if constraints is not None:
             applying_cons = constraints[id_thread]
@@ -470,7 +499,7 @@ class AlloySolver(object):
             for el in sol:
                 if el not in shared_objs:
                     shared_objs.append(el)
-
+            
             blocking_manager.write_models(shared_objs, ret == 0)
             return sol
             
@@ -492,7 +521,7 @@ class AlloySolver(object):
             if (self.verbosity > 0) and is_multithread and is_master:
                 if ((solsize - prvsolsize) > 1):
                     gain = (solsize-prvsolsize)-1
-                    Logger.msg("+%s%s"%(gain, "."*(gain)), 0)
+                    Logger.msg("+%s%s"%(gain, "."*(gain)), 0, True, 0)
 
             if not is_master:
                 if ret == 0: #UNSAT

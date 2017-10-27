@@ -19,7 +19,7 @@ import subprocess
 from argparse import RawTextHelpFormatter
 
 from ecmasab.parsing import BeParser
-from ecmasab.printers import JST262_V8_Printer, DotPrinter, PrintersFactory, PrinterType, BePrinter
+from ecmasab.printers import DotPrinter, PrintersFactory, PrinterType, BePrinter
 from ecmasab.encoders import CVC4Encoder, AlloyEncoder
 from ecmasab.execution import RBF, HB, SW
 from ecmasab.exceptions import UnreachableCodeException
@@ -40,6 +40,7 @@ BLOCK_TYPE = "block_type.cvc"
 BOUND_INT = "bound_int.cvc"
 ID_TYPE = "id_type.cvc"
 MODELS = "models.txt"
+OUTPUTS = "lit_outputs.txt"
 DOTS = "mm%s.dot"
 GRAP = "gmm%s.png"
 OUTPROGRAM = "program"
@@ -82,6 +83,7 @@ class Config(object):
     bound_int = None
     id_type = None
     models = None
+    outputs = None
     dots = None
     grap = None
     outprogram = None
@@ -95,6 +97,8 @@ class Config(object):
     time = None
     
     def __init__(self):
+        PrintersFactory.init_printers()
+
         self.inputfile = None
         self.preproc = CPP
         self.expand_bounded_sets = True
@@ -104,7 +108,7 @@ class Config(object):
         self.sat = False
         self.only_model = False
         self.skip_solving = False
-        self.jsprinter = JST262_V8_Printer().NAME
+        self.jsprinter = PrintersFactory.get_default().get_name()
         self.graphviz = None
         self.printing_relations = ",".join([RBF,HB,SW])
         self.jsdir = None
@@ -131,6 +135,7 @@ class Config(object):
             self.bound_int = self.prefix+BOUND_INT
             self.id_type = self.prefix+ID_TYPE
             self.models = self.prefix+MODELS
+            self.outputs = self.prefix+OUTPUTS
             self.dots = self.prefix+DOTS
             self.grap = self.prefix+GRAP
             self.outprogram = self.prefix+OUTPROGRAM
@@ -267,6 +272,7 @@ def solve(config, program, strmodel):
 def unmatched_analysis(config):
     analyzer = ConstraintsAnalyzer()
     analyzer.set_models_file(config.models)
+    analyzer.set_outputs_file(config.outputs)
 
     Logger.log("\n** Unmatched Outputs Analysis **", 0)
     
@@ -279,18 +285,34 @@ def unmatched_analysis(config):
     program = parse_program(config)
     
     Logger.msg("Generating model... ", 0)
-    strmodel = generate_cvc_model(config, program)
+
+    if config.use_alloy:
+        strmodel = generate_alloy_model(config, program)
+    else:
+        strmodel = generate_cvc_model(config, program)
+        
     Logger.log("DONE", 0)
 
     if config.only_model:
         return 0
 
-    programs = analyzer.analyze_constraints(strmodel, \
-                                            config.jsengine, \
-                                            config.runs, \
-                                            config.threads, \
-                                            config.outprogram+".js")
-
+    if (config.force_solving):
+        del_file(config.outputs)
+    
+    if config.use_alloy:
+        analyzer.analyze_constraints_alloy(program, \
+                                           strmodel, \
+                                           config.jsengine, \
+                                           config.runs, \
+                                           config.threads, \
+                                           config.outprogram+".js")
+    else:
+        analyzer.analyze_constraints_cvc4(program, \
+                                          strmodel, \
+                                          config.jsengine, \
+                                          config.runs, \
+                                          config.threads, \
+                                          config.outprogram+".js")
     return 0
     
 def synth_program(config):
@@ -341,7 +363,7 @@ def synth_program(config):
 
     Logger.msg("Generating equivalent programs... ", 0)
         
-    printer = PrintersFactory.printer_by_name(BePrinter.NAME)
+    printer = PrintersFactory.printer_by_name(BePrinter.get_name())
     filename = (config.inputfile.split("/")[-1]).split(".")[0]
     
     for i in range(len(programs)):
@@ -396,7 +418,7 @@ def analyze_program(config):
         
     # Generation of the JS litmus test #
     pprinter = PrintersFactory.printer_by_name(config.jsprinter)
-    dprinter = PrintersFactory.printer_by_name(DotPrinter().NAME)
+    dprinter = PrintersFactory.printer_by_name(DotPrinter().get_name())
     dprinter.set_printing_relations(config.printing_relations)
 
     prefix = config.prefix
@@ -430,7 +452,8 @@ def analyze_program(config):
 
         outfiles = [config.outprogram]
         if config.jsdir:
-            outprogram = "%s/%s"%(config.jsdir, config.outprogram.replace("/","-"))
+            filename = config.outprogram.replace("../","").replace("/","-").replace("..","")
+            outprogram = "%s/%s"%(config.jsdir, filename)
             outfiles = [outprogram]
 
         extension = pprinter.get_extension()
@@ -475,10 +498,9 @@ def main(args):
     parser.add_argument('input_file', metavar='program', type=str, 
                        help='the input file describing the program')
 
+    jsprinters = [" - \"%s\": %s"%(x.get_name(), x.get_desc()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
     config = Config()
     
-    jsprinters = [" - \"%s\": %s"%(x.NAME, x.DESC) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]
-
     # Files generation
     
     parser.set_defaults(jsprinter=config.jsprinter)
@@ -495,7 +517,7 @@ def main(args):
     
     parser.set_defaults(relations=config.printing_relations)
     parser.add_argument('-r', '--relations', metavar='relations', type=str, nargs='?',
-                        help='a (comma separated) list of relations to consider in the graphviz file. Keyword \"%s\" means all.'%ALL)
+                        help='a (comma separated) list of relations to consider in the graphviz file.\nKeyword \"%s\" means all.'%ALL)
 
     parser.set_defaults(prefix=None)
     parser.add_argument('-x', '--prefix', metavar='prefix', type=str, nargs='?',
@@ -510,12 +532,20 @@ def main(args):
     parser.set_defaults(unmatched=False)
     parser.add_argument('--unmatched', dest='unmatched', action='store_true',
                         help="enables unmatched outputs analysis. (Default is \"%s\")"%False)
+
+    parser.set_defaults(jsengine=None)
+    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
+                        help='the command used to call the JavaScript engine, to use with \"--unmatched\".')
+
+    parser.set_defaults(runs=10)
+    parser.add_argument('-n', '--runs', metavar='runs', type=str,
+                        help='number of runs for the unmatched outputs analysis, to use with \"--unmatched\".\n(Default is \"10\")')
     
     # Solvers selection
 
-    parser.set_defaults(use_alloy=False)
-    parser.add_argument('-a', '--use-alloy', dest='use_alloy', action='store_true',
-                        help="relies on Alloy Analyzer instead of CVC4. (Default is \"%s\")"%False)
+    parser.set_defaults(use_cvc4=False)
+    parser.add_argument('-c', '--use-cvc4', dest='use_cvc4', action='store_true',
+                        help="relies on CVC4 instead of Alloy Analyzer. (Default is \"%s\")"%False)
 
     parser.set_defaults(best=False)
     parser.add_argument('-b', '--best', dest='best', action='store_true',
@@ -565,14 +595,6 @@ def main(args):
     parser.add_argument('-t', '--time', dest='time', action='store_true',
                         help="enables time debugging setup. (Default is \"%s\")"%False)
     
-    parser.set_defaults(jsengine=None)
-    parser.add_argument('--jsengine', metavar='jsengine', type=str, nargs='?',
-                        help='the command used to call the JavaScript engine.')
-
-    parser.set_defaults(runs=10)
-    parser.add_argument('-n', '--runs', metavar='runs', type=str,
-                       help='number of runs for the unmatched outputs analysis. (Default is \"10\")')
-    
     parser.set_defaults(no_expand_bounded_sets=False)
     parser.add_argument('--no-exbounded', dest='no_expand_bounded_sets', action='store_true',
                         help="disables the bounded sets quantifier expansion. (Default is \"%s\")"%False)
@@ -621,16 +643,25 @@ def main(args):
     config.jsengine = args.jsengine
     config.runs = args.runs
     config.nexecs = args.nexecs
-    config.use_alloy = args.use_alloy
+    config.use_alloy = not args.use_cvc4
     config.unmatched = args.unmatched
     config.time = args.time
     
-    if args.jsprinter in [str(x.NAME) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
+    if args.jsprinter in [str(x.get_name()) for x in PrintersFactory.get_printers_by_type(PrinterType.PROGRAMS)]:
         config.jsprinter = args.jsprinter
-    
+    else:
+        Logger.error("Printer \"%s\" not found"%(args.jsprinter))
+        
     if config.unmatched and not config.jsengine:
         Logger.error("JavaScript engine not specified")
         return 1
+
+    if not config.use_alloy:
+        try:
+            import CVC4
+        except Exception:
+            Logger.error("Error importing CVC4 module")
+            return 1
     
     if args.synth and args.best:
         config.hybrid = True
@@ -672,7 +703,7 @@ def main(args):
         return ret
     except Exception as e:
         if config.debug: raise
-        print(e)
+        print("\nERROR! Run with --debug option for more information")
         return 1
     
 if __name__ == "__main__":
