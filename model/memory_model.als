@@ -102,6 +102,8 @@ pred RF(e1: mem_events, e2: mem_events) {(e1 -> e2)  in reads_from.rel}
 // pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(b in e2.M) and (b in e1.M) and ((e1 -> e2) in reads_from.rel)}
 pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(e1 -> b -> e2)  in reads_bytes_from.rel}
 
+fact RF_assert {all e1,e2: mem_events | (Active [e1,e2] & RF [e1,e2]) => (WoM [e2] & RoM [e1]}
+
 fact rbf_def {all er : mem_events | ((RoM [er] and Active [er]) => (all b : bytes | (b in er.M) => (one ew : mem_events | Active [ew] and (b in ew.M) and BlockEQ [er,ew] and WoM [ew] and RBF [er,b,ew]))) }
 fact rbf_def_2 {all er,ew : mem_events | (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew] and (b in er.M) and (b in ew.M)))}
 fact rbf_rf_def {all e1,e2 : mem_events | (RF [e1,e2] <=> (some b:bytes | RBF [e1,b,e2]))}
@@ -136,6 +138,8 @@ fact hb_def {all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee !=
 fact hb_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (HB [e1,e2] and HB [e2,e3] => HB [e1,e3])}
 fact hb_act {all e1,e2 : mem_events | HB [e1,e2] => Active2 [e1,e2]}
 
+fact HB_assert {all e1,e2: mem_events | (Active [e1,e2] & HB [e1,e2] & Init [e1]) => (not Init [e2])}
+
 -- Coherent Reads
 fact cr_def {all er,ew : mem_events | Active2 [er,ew] => ((RoM [er] and WoM[ew]) => (all b: bytes | (RBF [er,b,ew] => ((not HB [er,ew]) and (not (some ev: mem_events | Active [ev] and (WoM [ev] and (HB [ew,ev] and HB [ev,er] and BlockEQ [ev,ew] and (b in ev.M)))))))))}
 
@@ -159,6 +163,8 @@ fact mo_def {all ee,ed: mem_events | Active2 [ee,ed] => (MO3a [ee,ed] and MO3b [
 fact mo_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (MO [e1,e2] and MO [e2,e3] => MO [e1,e3])}
 fact mo_tot {all e1,e2 : mem_events | Active2 [e1,e2] => ((e1 != e2) => MO [e1,e2] <=> not (MO [e2,e1]))}
 fact mo_act {all e1,e2 : mem_events | MO [e1,e2] => Active2 [e1,e2]}
+
+-- fact MO_assert {all e1,e2: mem_events | (Active [e1,e2] & SW [e1,e2]) => (SeqCst [e2])}
 
 -- RBF(er,x,ew) and RBF(er,y,ev) => (x not in ev) or (y not in ew)
 
