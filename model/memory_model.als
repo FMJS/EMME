@@ -102,7 +102,7 @@ pred RF(e1: mem_events, e2: mem_events) {(e1 -> e2)  in reads_from.rel}
 // pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(b in e2.M) and (b in e1.M) and ((e1 -> e2) in reads_from.rel)}
 pred RBF(e1: mem_events, b: bytes, e2: mem_events) {(e1 -> b -> e2)  in reads_bytes_from.rel}
 
-fact RF_assert {all e1,e2: mem_events | (Active [e1,e2] & RF [e1,e2]) => (WoM [e2] & RoM [e1]}
+-- fact RF_assert {all e1,e2: mem_events | (Active [e1,e2] & RF [e1,e2]) => (WoM [e2] & RoM [e1]}
 
 fact rbf_def {all er : mem_events | ((RoM [er] and Active [er]) => (all b : bytes | (b in er.M) => (one ew : mem_events | Active [ew] and (b in ew.M) and BlockEQ [er,ew] and WoM [ew] and RBF [er,b,ew]))) }
 fact rbf_def_2 {all er,ew : mem_events | (all b : bytes | RBF [er,b,ew] => (RoM [er] and WoM [ew] and (b in er.M) and (b in ew.M)))}
@@ -138,7 +138,7 @@ fact hb_def {all ee,ed : mem_events | Active2 [ee,ed] => (HB [ee,ed] <=> ((ee !=
 fact hb_closure {all e1,e2,e3 : mem_events | Active3 [e1,e2,e3] => (HB [e1,e2] and HB [e2,e3] => HB [e1,e3])}
 fact hb_act {all e1,e2 : mem_events | HB [e1,e2] => Active2 [e1,e2]}
 
-fact HB_assert {all e1,e2: mem_events | (Active [e1,e2] & HB [e1,e2] & Init [e1]) => (not Init [e2])}
+-- fact HB_assert {all e1,e2: mem_events | (Active [e1,e2] & HB [e1,e2] & Init [e1]) => (not Init [e2])}
 
 -- Coherent Reads
 fact cr_def {all er,ew : mem_events | Active2 [er,ew] => ((RoM [er] and WoM[ew]) => (all b: bytes | (RBF [er,b,ew] => ((not HB [er,ew]) and (not (some ev: mem_events | Active [ev] and (WoM [ev] and (HB [ew,ev] and HB [ev,er] and BlockEQ [ev,ew] and (b in ev.M)))))))))}
