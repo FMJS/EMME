@@ -73,6 +73,9 @@
 %% Additional constraints bounding the VE
 #define en_SINGLE_WRITES 1
 
+%% Enabling assertions
+% #define en_ASSERTS 0
+
 %% Subconstraints Labelling
 %#define LABELLING 0
 
@@ -243,6 +246,16 @@ ASSERT (FORALL (e1,e2 : MEM_OP_TYPE) : (DO(e1,e2)  => ((e1 IS_IN ev_set) AND (e2
 
 #endif
 
+#if ! defined PROBLEM_DEF
+
+ASSERT rom_ev_set <= ev_set;
+ASSERT wom_ev_set <= ev_set;
+
+ASSERT (FORALL (ev : MEM_OP_TYPE) : (((ev IS_IN ev_set) AND RoM(ev)) => (ev IS_IN rom_ev_set)));
+ASSERT (FORALL (ev : MEM_OP_TYPE) : (((ev IS_IN ev_set) AND WoM(ev)) => (ev IS_IN wom_ev_set)));
+
+#endif
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Reads From relation %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -275,8 +288,20 @@ ASSERT en_RF => (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (RF(er,ew) <=> (E
 
 #endif
 
+#if en_ASSERTS==1
+RF_assert : BOOLEAN;
+ASSERT RF_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((Active2(e1,e2) AND RF(e1,e2)) => (WoM(e2) AND RoM(e1))));
+#endif
+
+
 #ifdef PROBLEM_DEF
 ASSERT RF <= comp_RF;
+#endif
+
+#ifdef TUPLE_QUANT
+ASSERT (FORALL (t : BITUP) : ((t IS_IN RF) => (((t.0) IS_IN ev_set) AND ((t.1) IS_IN ev_set))));
+#else
+ASSERT (FORALL (e1,e2 : MEM_OP_TYPE) : (FORALL (addr IN locs) : (RF(e1,e2) => ((e1 IS_IN ev_set) AND (e2 IS_IN ev_set)))));
 #endif
 
 #if ENCODE_CONDITIONS == 1
@@ -349,9 +374,9 @@ ASSERT RBF <= comp_RBF;
 #else
 
 #ifdef TUPLE_QUANT
-ASSERT (FORALL (t : TRTUP) : ((t IS_IN RBF) => (((t.0).0 IS_IN ev_set) AND ((t.0).1 IS_IN ev_set))));
+ASSERT (FORALL (t : TRTUP) : ((t IS_IN RBF) => (((t.0).0 IS_IN ev_set) AND ((t.0).1 IS_IN ev_set) AND (t.1 IS_IN Range((t.0).0)) AND (t.1 IS_IN Range((t.0).1) AND RoM((t.0).0) AND WoM((t.0).1)))));
 #else
-ASSERT (FORALL (e1,e2 : MEM_OP_TYPE) : (FORALL (addr IN locs) : (RBF(e1,addr,e2) => ((e1 IS_IN ev_set) AND (e2 IS_IN ev_set)))));
+ASSERT (FORALL (e1,e2 : MEM_OP_TYPE) : (FORALL (addr IN locs) : (RBF(e1,addr,e2) => ((e1 IS_IN ev_set) AND (e2 IS_IN ev_set) AND (addr IS_IN Range(e1)) AND (addr IS_IN Range(e2)) AND RoM(e1) AND WoM(e2)))));
 #endif
 
 #endif
@@ -479,6 +504,12 @@ ASSERT FORALL (tup : BITUP) : ((tup IS_IN HB) => ActiveT(tup));
 #endif
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_HB
+
+#if en_ASSERTS==1
+HB_assert : BOOLEAN;
+ASSERT HB_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) AND HB(e1,e2) AND Init(e1)) => (NOT Init(e2)));
+#endif
+
 
 #ifdef PROBLEM_DEF
 ASSERT HB <= pair_ev_set;
@@ -625,6 +656,12 @@ ASSERT FORALL (tup : BITUP) : ((tup IS_IN MO) => ActiveT(tup));
 #endif
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_MO
+
+#if en_ASSERTS==1
+MO_assert : BOOLEAN;
+ASSERT MO_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) AND SW(e1,e2)) => (SeqCst(e2)));
+#endif
+
 
 #ifdef PROBLEM_DEF
 ASSERT MO <= pair_ev_set;
@@ -802,6 +839,14 @@ ASSERT L_HB4d <=> (FORALL (ee,ed IN ev_set) : (Active2(ee,ed) => (HB(ee,ed) <=> 
 
 ASSERT FORALL (ttup1, ttup2: TRTUP) : (((ttup1 IS_IN RBF) AND (ttup2 IS_IN RBF) AND (TT_R(ttup1) = TT_R(ttup2)) AND NOT(TT_W(ttup1) = TT_W(ttup2)) AND NOT(TT_A(ttup1) = TT_A(ttup2))) => (NOT(TT_A(ttup1) IS_IN Range(TT_W(ttup2))) OR NOT(TT_A(ttup2) IS_IN Range(TT_W(ttup1)))));
 
+#endif
+
+
+
+#if en_ASSERTS==1
+ASSERT RF_assert;
+ASSERT HB_assert;
+ASSERT MO_assert;
 #endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
