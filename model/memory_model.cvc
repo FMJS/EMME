@@ -140,7 +140,7 @@ L_HB4d : BOOLEAN;
 #define TT_W(ttup) ((ttup.0).1)
 #define TT_A(ttup) (ttup.1)
 
-#if ENCODE_CONDITIONS == 1
+#if ENCODE_CONDITIONS == 1 && defined PROBLEM_DEF
 #define Active(ev) (ev.A = ENABLED)
 #define Active2(e1,e2) (Active(e1) AND Active(e2))
 #define Active3(e1,e2,e3) (Active(e1) AND Active(e2) AND Active(e3))
@@ -523,6 +523,9 @@ ASSERT HB_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) AND HB(e1,e2
 
 HB_MO_assert : BOOLEAN;
 ASSERT HB_MO_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) => (HB(e1, e2) => MO(e1, e2))));
+
+HB_CR_assert : BOOLEAN;
+ASSERT HB_CR_assert <=> (FORALL (ttup : TRTUP) : (Active2(TT_R(ttup), TT_W(ttup)) => ((ttup IS_IN RBF) => (NOT HB(TT_R(ttup),TT_W(ttup))))));
 #endif
 
 
@@ -572,7 +575,7 @@ ASSERT en_CR => (CR <=> (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (FORALL (
 
 #else
 
-ASSERT en_CR => (CR <=> (FORALL (er IN rom_ev_set) : (Active(er) => (FORALL (ew IN wom_ev_set) : Active(ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => ((NOT HB(er,ew)) AND (NOT (EXISTS (ev IN wom_ev_set) : Active(ev) AND (HB(ew,ev) AND HB(ev,er) AND BlockEQ(ev,ew) AND (addr IS_IN Range(ev))))))))))));
+ASSERT en_CR => (CR <=> (FORALL (er IN rom_ev_set) : (Active(er) => (FORALL (ew IN wom_ev_set) : (Active(ew) => (FORALL (addr IN locs) : (RBF(er,addr,ew) => ((NOT HB(er,ew)) AND (NOT (EXISTS (ev IN wom_ev_set) : (Active(ev) AND (HB(ew,ev) AND HB(ev,er) AND BlockEQ(ev,ew) AND (addr IS_IN Range(ev))))))))))))));
 
 #endif
 
@@ -870,6 +873,7 @@ ASSERT SW_assert;
 ASSERT SW_RF_assert;
 ASSERT MO_assert;
 ASSERT MO_IV_assert;
+ASSERT HB_CR_assert;
 #endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
