@@ -296,7 +296,6 @@ RBF_assert : BOOLEAN;
 ASSERT RBF_assert <=> (FORALL (ttup: TRTUP) : ((Active2(TT_R(ttup),TT_W(ttup)) AND (ttup IS_IN RBF)) => ((TT_A(ttup) IS_IN Range(TT_R(ttup))) AND (TT_A(ttup) IS_IN Range(TT_W(ttup))))));
 #endif
 
-
 #ifdef PROBLEM_DEF
 ASSERT RF <= comp_RF;
 #endif
@@ -432,6 +431,9 @@ ASSERT FORALL (tup : BITUP) : ((tup IS_IN SW) => ActiveT(tup));
 #if en_ASSERTS==1
 SW_assert : BOOLEAN;
 ASSERT SW_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((Active2(e1,e2) AND RangeEQ(e1, e2) AND SeqCst(e1) AND SeqCst(e2) AND RF(e2, e1)) => SW(e1,e2)));
+
+SW_SC_assert : BOOLEAN;
+ASSERT SW_SC_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((Active2(e1,e2) AND SW(e1,e2) => (SeqCst(e2) AND (SeqCst(e1) OR Init(e1))))));
 
 SW_RF_assert : BOOLEAN;
 ASSERT SW_RF_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) => (SW(e1, e2) => RF(e2,e1))));
@@ -874,6 +876,7 @@ ASSERT SW_RF_assert;
 ASSERT MO_assert;
 ASSERT MO_IV_assert;
 ASSERT HB_CR_assert;
+ASSERT SW_SC_assert;
 #endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -38,16 +38,18 @@ ASSERT ((FORALL (ev : MEM_OP_TYPE) : (((ev IS_IN ev_set) AND ((ev.O = R) OR (ev.
 ASSERT ((FORALL (ev : MEM_OP_TYPE) : (((ev IS_IN ev_set) AND ((ev.O = W) OR (ev.O = M))) => (ev IS_IN wom_ev_set))));
 en_RF: BOOLEAN;
 ASSERT en_RF;
-ASSERT (en_RF => (FORALL (er, ew : MEM_OP_TYPE) : (((er IS_IN ev_set) AND (ew IS_IN ev_set)) => (((TRUE) => (((er,ew) IS_IN RF) <=> (EXISTS (addr : INT) : (((addr IS_IN locs)) AND (((((er,ew),addr) IS_IN RBF)))))))))));
+ASSERT (en_RF => (FORALL (er, ew : MEM_OP_TYPE) : (((er IS_IN ev_set) AND (ew IS_IN ev_set)) => (((TRUE) => (((er,ew) IS_IN RF) <=> (EXISTS (addr : INT) : (((TRUE)) AND (((((er,ew),addr) IS_IN RBF)))))))))));
 RF_assert : BOOLEAN;
 ASSERT (RF_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (((TRUE) AND ((e1,e2) IS_IN RF)) => (((e2.O = W) OR (e2.O = M)) AND ((e1.O = R) OR (e1.O = M))))));
+RBF_assert : BOOLEAN;
+ASSERT (RBF_assert <=> (FORALL (ttup: TRTUP) : (((TRUE) AND (ttup IS_IN RBF)) => (((ttup.1) IS_IN ((ttup.0).0).M) AND ((ttup.1) IS_IN ((ttup.0).1).M)))));
 ASSERT ((FORALL (t : BITUP) : ((t IS_IN RF) => (((t.0) IS_IN ev_set) AND ((t.1) IS_IN ev_set)))));
 en_RBF1 : BOOLEAN;
 en_RBF2 : BOOLEAN;
 ASSERT en_RBF1;
 ASSERT en_RBF2;
-ASSERT (en_RBF1 => (FORALL (er : MEM_OP_TYPE) : (((er IS_IN rom_ev_set)) => (((TRUE) => ((FORALL (addr : INT) : (((addr IS_IN locs)) => (((addr IS_IN er.M) => (EXISTS (ew : MEM_OP_TYPE) : (((ew IS_IN wom_ev_set)) AND (((TRUE) AND ((((er,ew),addr) IS_IN RBF))))))))))))))));
-ASSERT (en_RBF2 => (FORALL (er, ew1, ew2 : MEM_OP_TYPE) : (((er IS_IN ev_set) AND (ew1 IS_IN ev_set) AND (ew2 IS_IN ev_set)) => (((TRUE) => ((((er.O = R) OR (er.O = M)) AND ((ew1.O = W) OR (ew1.O = M)) AND ((ew2.O = W) OR (ew2.O = M)) AND (er.B = ew1.B) AND (er.B = ew2.B)) => (FORALL (ind : INT) : (((ind IS_IN locs)) => (((ind IS_IN er.M) => NOT((((er,ew1),ind) IS_IN RBF) AND (((er,ew2),ind) IS_IN RBF) AND NOT(ew1 = ew2))))))))))));
+ASSERT (en_RBF1 => (FORALL (er : MEM_OP_TYPE) : (((er IS_IN rom_ev_set)) => (((TRUE) => ((FORALL (addr : INT) : (((TRUE)) => (((addr IS_IN er.M) => (EXISTS (ew : MEM_OP_TYPE) : (((ew IS_IN wom_ev_set)) AND (((TRUE) AND ((((er,ew),addr) IS_IN RBF))))))))))))))));
+ASSERT (en_RBF2 => (FORALL (er, ew1, ew2 : MEM_OP_TYPE) : (((er IS_IN ev_set) AND (ew1 IS_IN ev_set) AND (ew2 IS_IN ev_set)) => (((TRUE) => ((((er.O = R) OR (er.O = M)) AND ((ew1.O = W) OR (ew1.O = M)) AND ((ew2.O = W) OR (ew2.O = M)) AND (er.B = ew1.B) AND (er.B = ew2.B)) => (FORALL (ind : INT) : (((TRUE)) => (((ind IS_IN er.M) => NOT((((er,ew1),ind) IS_IN RBF) AND (((er,ew2),ind) IS_IN RBF) AND NOT(ew1 = ew2))))))))))));
 ASSERT ((FORALL (t : TRTUP) : ((t IS_IN RBF) => (((t.0).0 IS_IN ev_set) AND ((t.0).1 IS_IN ev_set) AND (t.1 IS_IN (t.0).0 .M) AND (t.1 IS_IN (t.0).1 .M AND (((t.0).0 .O = R) OR ((t.0).0 .O = M)) AND (((t.0).1 .O = W) OR ((t.0).1 .O = M)))))));
 en_SW4 : BOOLEAN;
 en_SW4c : BOOLEAN;
@@ -62,6 +64,12 @@ ASSERT en_SW4d;
 ASSERT en_SW5;
 ASSERT (en_SW => (FORALL (er, ew : MEM_OP_TYPE) : (((er IS_IN ev_set) AND (ew IS_IN ev_set)) => (((TRUE) => (((ew,er) IS_IN SW) <=> (((en_SW4 => ((er.R = SC) AND ((er,ew) IS_IN RF))) AND ((en_SW4c => ((ew.R = SC) AND ((er.M = ew.M) AND (er.B = ew.B)))) OR (en_SW4d => ((ew.R = I) AND (en_SW4di => (FORALL (ev : MEM_OP_TYPE) : (((ev IS_IN ev_set)) => (((TRUE) => (((er,ev) IS_IN RF) => (ev.R = I))))))))))) OR FALSE)))))));
 ASSERT en_SW;
+SW_assert : BOOLEAN;
+ASSERT (SW_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (((TRUE) AND ((e1.M = e2.M) AND (e1.B = e2.B)) AND (e1.R = SC) AND (e2.R = SC) AND ((e2,e1) IS_IN RF)) => ((e1,e2) IS_IN SW))));
+SW_SC_assert : BOOLEAN;
+ASSERT (SW_SC_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (((TRUE) AND ((e1,e2) IS_IN SW) => ((e2.R = SC) AND ((e1.R = SC) OR (e1.R = I)))))));
+SW_RF_assert : BOOLEAN;
+ASSERT (SW_RF_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((TRUE) => (((e1,e2) IS_IN SW) => ((e2,e1) IS_IN RF)))));
 ASSERT ((FORALL (tup : BITUP) : ((tup IS_IN SW) => ((tup.0 IS_IN ev_set) AND (tup.1 IS_IN ev_set)))));
 en_HB4a : BOOLEAN;
 en_HB4b : BOOLEAN;
@@ -80,13 +88,17 @@ ASSERT spo_HB <=> ((HB = TCLOSURE(HB)) AND NOT(HB = empty_rel_set));
 ASSERT (en_HB => (FORALL (ee, ed : MEM_OP_TYPE) : (((ee IS_IN ev_set) AND (ed IS_IN ev_set)) => (((TRUE) => (((ee,ed) IS_IN HB) <=> (NOT(ee = ed) AND ((en_HB4a => ((ee,ed) IS_IN AO)) OR (en_HB4b => ((ee,ed) IS_IN SW)) OR (en_HB4c => ((ee.R = I) AND ((NOT((ee.M & ed.M) = empty_int_set)) AND (ee.B = ed.B)))) OR (en_HB4d => (EXISTS (ef : MEM_OP_TYPE) : (((ef IS_IN ev_set)) AND (((TRUE) AND ((ee,ef) IS_IN HB) AND ((ef,ed) IS_IN HB))))))))))))));
 HB_assert : BOOLEAN;
 ASSERT (HB_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((TRUE) AND ((e1,e2) IS_IN HB) AND (e1.R = I)) => (NOT (e2.R = I))));
+HB_MO_assert : BOOLEAN;
+ASSERT (HB_MO_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((TRUE) => (((e1,e2) IS_IN HB) => ((e1,e2) IS_IN MO)))));
+HB_CR_assert : BOOLEAN;
+ASSERT (HB_CR_assert <=> (FORALL (ttup : TRTUP) : ((TRUE) => ((ttup IS_IN RBF) => (NOT ((((ttup.0).0),((ttup.0).1)) IS_IN HB))))));
 ASSERT ((FORALL (e1, e2 : MEM_OP_TYPE) : (((e1 IS_IN ev_set) AND (e2 IS_IN ev_set)) => (((TRUE) => (((e1,e2) IS_IN HB) => (NOT(e1 = e2))))))));
 ASSERT ((FORALL (tup : BITUP) : ((tup IS_IN HB) => ((tup.0 IS_IN ev_set) AND (tup.1 IS_IN ev_set) AND NOT(tup.0 = tup.1)))));
 en_CR2 : BOOLEAN;
 ASSERT en_CR2;
 CR : BOOLEAN;
 en_CR : BOOLEAN;
-ASSERT (en_CR => (CR <=> (FORALL (er : MEM_OP_TYPE) : (((er IS_IN rom_ev_set)) => (((TRUE) => (FORALL (ew : MEM_OP_TYPE) : (((ew IS_IN wom_ev_set)) => ((TRUE))))))))));
+ASSERT (en_CR => (CR <=> (FORALL (er : MEM_OP_TYPE) : (((er IS_IN rom_ev_set)) => (((TRUE) => (FORALL (ew : MEM_OP_TYPE) : (((ew IS_IN wom_ev_set)) => (((TRUE) => (FORALL (addr : INT) : (((TRUE)) => (((((er,ew),addr) IS_IN RBF) => ((NOT ((er,ew) IS_IN HB)) AND (NOT (EXISTS (ev : MEM_OP_TYPE) : (((ev IS_IN wom_ev_set)) AND (((TRUE) AND (((ew,ev) IS_IN HB) AND ((ev,er) IS_IN HB) AND (ev.B = ew.B) AND (addr IS_IN ev.M))))))))))))))))))))));
 ASSERT en_CR;
 OTA : BOOLEAN;
 en_OTA : BOOLEAN;
@@ -117,6 +129,8 @@ ASSERT (en_MO => (FORALL (e1, e2, e3 : MEM_OP_TYPE) : (((e1 IS_IN ev_set) AND (e
 ASSERT en_MO;
 MO_assert : BOOLEAN;
 ASSERT (MO_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((TRUE) AND ((e1,e2) IS_IN SW)) => ((e2.R = SC))));
+MO_IV_assert : BOOLEAN;
+ASSERT (MO_IV_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((TRUE) => (((e1,e2) IS_IN MO) => NOT ((e2,e1) IS_IN MO)))));
 ASSERT ((FORALL (tup : BITUP) : ((tup IS_IN MO) => ((tup.0 IS_IN ev_set) AND (tup.1 IS_IN ev_set)))));
 SCA : BOOLEAN;
 en_SCA : BOOLEAN;
@@ -132,8 +146,25 @@ ASSERT VE;
 ASSERT en_VE;
 ASSERT (FORALL (ttup1, ttup2: TRTUP) : (((ttup1 IS_IN RBF) AND (ttup2 IS_IN RBF) AND (((ttup1.0).0) = ((ttup2.0).0)) AND NOT(((ttup1.0).1) = ((ttup2.0).1)) AND NOT((ttup1.1) = (ttup2.1))) => (NOT((ttup1.1) IS_IN ((ttup2.0).1).M) OR NOT((ttup2.1) IS_IN ((ttup1.0).1).M))));
 
-ASSERT RF_assert;
-ASSERT HB_assert;
-ASSERT MO_assert;
+% ASSERT NOT RF_assert;
+% ASSERT NOT RBF_assert;
+% ASSERT NOT HB_assert;
+% ASSERT NOT HB_MO_assert;
+% ASSERT NOT SW_assert;
+% ASSERT NOT SW_RF_assert;
+% ASSERT NOT MO_assert;
+% ASSERT NOT MO_IV_assert;
+% ASSERT NOT HB_CR_assert;
+% ASSERT NOT SW_SC_assert;
 
+ASSERT (NOT RF_assert) OR
+       (NOT RBF_assert) OR
+       (NOT HB_MO_assert) OR
+       (NOT SW_assert) OR
+       (NOT SW_RF_assert) OR
+       (NOT MO_assert) OR
+       (NOT MO_IV_assert) OR
+       (NOT HB_CR_assert) OR
+       (NOT SW_SC_assert);
+       
 CHECKSAT;
