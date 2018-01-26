@@ -291,6 +291,9 @@ ASSERT en_RF => (FORALL (er,ew IN ev_set) : (Active2(er,ew) => (RF(er,ew) <=> (E
 #if en_ASSERTS==1
 RF_assert : BOOLEAN;
 ASSERT RF_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((Active2(e1,e2) AND RF(e1,e2)) => (WoM(e2) AND RoM(e1))));
+
+RBF_assert : BOOLEAN;
+ASSERT RBF_assert <=> (FORALL (ttup: TRTUP) : ((Active2(TT_R(ttup),TT_W(ttup)) AND (ttup IS_IN RBF)) => ((TT_A(ttup) IS_IN Range(TT_R(ttup))) AND (TT_A(ttup) IS_IN Range(TT_W(ttup))))));
 #endif
 
 
@@ -426,6 +429,15 @@ ASSERT FORALL (tup : BITUP) : ((tup IS_IN SW) => ActiveT(tup));
 
 #if defined RELATIONS_OVER_EV_SET && defined ENABLE_SW
 
+#if en_ASSERTS==1
+SW_assert : BOOLEAN;
+ASSERT SW_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : ((Active2(e1,e2) AND RangeEQ(e1, e2) AND SeqCst(e1) AND SeqCst(e2) AND RF(e2, e1)) => SW(e1,e2)));
+
+SW_RF_assert : BOOLEAN;
+ASSERT SW_RF_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) => (SW(e1, e2) => RF(e2,e1))));
+#endif
+
+
 #ifdef PROBLEM_DEF
 ASSERT SW <= pair_ev_set;
 #else
@@ -508,6 +520,9 @@ ASSERT FORALL (tup : BITUP) : ((tup IS_IN HB) => ActiveT(tup));
 #if en_ASSERTS==1
 HB_assert : BOOLEAN;
 ASSERT HB_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) AND HB(e1,e2) AND Init(e1)) => (NOT Init(e2)));
+
+HB_MO_assert : BOOLEAN;
+ASSERT HB_MO_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) => (HB(e1, e2) => MO(e1, e2))));
 #endif
 
 
@@ -660,6 +675,9 @@ ASSERT FORALL (tup : BITUP) : ((tup IS_IN MO) => ActiveT(tup));
 #if en_ASSERTS==1
 MO_assert : BOOLEAN;
 ASSERT MO_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) AND SW(e1,e2)) => (SeqCst(e2)));
+
+MO_IV_assert : BOOLEAN;
+ASSERT MO_IV_assert <=> (FORALL (e1,e2: MEM_OP_TYPE) : (Active2(e1,e2) => (MO(e1, e2) => NOT MO(e2, e1))));
 #endif
 
 
@@ -845,8 +863,13 @@ ASSERT FORALL (ttup1, ttup2: TRTUP) : (((ttup1 IS_IN RBF) AND (ttup2 IS_IN RBF) 
 
 #if en_ASSERTS==1
 ASSERT RF_assert;
+ASSERT RBF_assert;
 ASSERT HB_assert;
+ASSERT HB_MO_assert;
+ASSERT SW_assert;
+ASSERT SW_RF_assert;
 ASSERT MO_assert;
+ASSERT MO_IV_assert;
 #endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
