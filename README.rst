@@ -47,11 +47,7 @@ For more details on the license, have a look at LICENSE.txt
 Publications
 ========================
 
-- "EMME: a formal tool for ECMAScript Memory Model Evaluation". 
-
- *C. Mattarei, C. Barrett, S. Guo, B. Nelson, and B. Smith*. 
- 
- TACAS 2018, 24th International Conference on Tools and Algorithms for the Construction and Analysis of Systems. Thessaloniki (Greece).
+- "EMME: a formal tool for ECMAScript Memory Model Evaluation". *C. Mattarei, C. Barrett, S. Guo, B. Nelson, and B. Smith*. TACAS 2018, 24th International Conference on Tools and Algorithms for the Construction and Analysis of Systems. Thessaloniki (Greece).
 
 ========================
 Build Status
