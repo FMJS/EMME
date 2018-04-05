@@ -739,7 +739,7 @@ class DotPrinter(EPrinter):
     TYPE = PrinterType.GRAPH
     float_pri_js = "%."+str(FLOAT_APPROX)+"f"
     printing_relations = None
-    sepx = 3
+    sepx = 4
     sepy = 2
         
     def __init__(self):
@@ -857,7 +857,7 @@ class DotPrinter(EPrinter):
 
         mo_str = "<br align=\"left\"/>".join(self.__print_memory_order(interp))
         options = "splines=false, overlap=true, margin=0, shape=none"
-        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, %s, pos=\"%d,%d!\"]"%(mo_str, options, iposx+(1.5*self.sepx), maxy))
+        ret.append("MO [label=<<B>Memory Order</B><br/>%s<br align=\"left\"/>>, %s, pos=\"%d,%d!\"]"%(mo_str, options, iposx+(1.0*self.sepx), maxy))
         
         ret.append("}")
                 
