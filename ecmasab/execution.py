@@ -372,10 +372,10 @@ class Program(object):
         return ret
     
     def get_blocks(self):
-        blocks = []
+        blocks = set([])
         for thread in self.threads:
-            blocks += thread.get_blocks()
-        return list(set(blocks))
+            blocks = blocks.union(thread.get_blocks())
+        return list(blocks)
 
     def get_conditions(self):
         conditions = []
@@ -427,6 +427,12 @@ class Block(object):
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        return (other.name == self.name) and (other.size == self.size)
+
+    def __hash__(self):
+        return hash(self.name+str(self.size))
+    
     def update_size(self, size):
         if (not self.size) or (not size):
             return

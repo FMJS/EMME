@@ -123,12 +123,15 @@ class BeParser(object):
     
     DEBUG = False
 
+    single_init = False
+
     def __init__(self):
         Memory_Event.reset_unique_names()
         ITE_Statement.reset_unique_names()
 
         self.program_parser = self.__init_program_parser()
         self.execution_parser = self.__init_execution_parser()
+        self.single_init = False
 
     def __init_execution_parser(self):
         varname = Word(alphas+nums+T_US)
@@ -562,6 +565,7 @@ class BeParser(object):
     def __populate_program(self, commands):
         program = Program()
         thread = Thread(MAIN)
+        mainthread = thread
         program.add_thread(thread)
         floop = None
         params = False
@@ -603,7 +607,8 @@ class BeParser(object):
                 # Added to the SAB definitions since the size of the
                 # write will depend on the other writes and reads
                 sab_defs.append(me)
-                thread.append(me)
+                if self.single_init:
+                    thread.append(me)
                 
             elif command_name in [P_STORE, P_SABASS, P_ACCESS, P_LOAD, P_ADD, P_SUB, P_AND, P_XOR, P_OR, P_EXC]:
                 block_name = command.varname
@@ -765,7 +770,15 @@ class BeParser(object):
                 raise ParsingErrorException("ERROR (L%s): unhandled command \"%s\" (%s)"%(linenum, " ".join(command), name))
 
         for sdef in sab_defs:
-            sdef.set_init_values()
+            if self.single_init:
+                sdef.set_init_values()
+            else:
+                for i in range(sdef.block.size):
+                    ith_init = copy.deepcopy(sdef)
+                    ith_init.name = "%s_%s_%s"%(Memory_Event.get_unique_name(), WRITE, mainthread.name)
+                    ith_init.address = [i]
+                    ith_init.values = [0]
+                    mainthread.append(ith_init)
 
         return program
 
