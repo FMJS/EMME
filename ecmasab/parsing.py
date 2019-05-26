@@ -155,7 +155,7 @@ class BeParser(object):
     def __init_program_parser(self):
         ivalue = Word(nums)
         fvalue = Combine(ivalue + Optional(Literal(T_DOT) + Optional(ivalue)))
-        nvalue = fvalue | ivalue
+        nvalue = Optional(T_MIN) + (fvalue | ivalue)
         strname = Word(alphas+nums+T_US)
         
         parval = (Combine(Literal(T_LT) + Literal(T_VAL) + Word(alphas+nums+T_US) + Literal(T_GT)))(P_PARAM)
@@ -243,7 +243,7 @@ class BeParser(object):
         
         if program:
             program.expand_events()
-            self.__compute_reads_values(executions)
+            self.compute_reads_values(executions)
 
         return executions
 
@@ -311,7 +311,7 @@ class BeParser(object):
         events = [x[1] for x in events]
         return events
     
-    def __compute_reads_values(self, executions):
+    def compute_reads_values(self, executions):
         for exe in executions.executions:
             events = exe.get_events()
             ev_map = dict((x.name, x) for x in events)
@@ -354,6 +354,7 @@ class BeParser(object):
                 new_read_event = copy.deepcopy(read_event)
                 new_read_event.set_values(values)
                 exe.add_read_values(new_read_event)
+        return executions
 
     def __op_values(self, is_float, ev1, ev2, fun):
         val2 = ev2.values
@@ -542,7 +543,7 @@ class BeParser(object):
 
         if parametric:
             me.size = opsize
-            me.value = list(value)
+            me.value = self.__flat_expr(value)
             me.offset = offset
             me.tear = WTEAR if self.__var_type_is_float(command.typeop) else NTEAR
         elif me.is_write_or_modify():
@@ -559,6 +560,15 @@ class BeParser(object):
 
         return me
 
+    def __flat_expr(self, expr):
+        expr = list(expr)
+        for i in range(len(expr)):
+            if type(expr[i]) != str:
+                expr[i] = list(expr[i])
+                expr = expr[:i] + self.__flat_expr(expr[i]) + expr[i+1:]
+
+        return expr
+    
     def __populate_program(self, commands):
         program = Program()
         thread = Thread(MAIN)
